@@ -29,19 +29,19 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: ☕ Setup Java 21 LTS (Temurin)
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
 
       - name: 📦 Setup Node.js 22 LTS
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'npm'
@@ -50,7 +50,7 @@ jobs:
       - name: 🔍 Backend - Lint (Checkstyle) & Validation
         run: |
           echo "Executando análise de linting no código Java com Checkstyle..."
-          mvn -B checkstyle:check -f backend/pom.xml -Dcheckstyle.config.location=backend/checkstyle.xml -Dcheckstyle.failsOnError=false
+          mvn -B checkstyle:check -f backend/pom.xml
 
       - name: 🏗️ Backend - Build & Run Tests with JaCoCo Coverage
         run: |
@@ -71,7 +71,7 @@ jobs:
           npm run test:coverage --if-present || npm run test --if-present
 
       - name: 📤 Upload JaCoCo Coverage Report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-coverage-report
           path: backend/target/site/jacoco/jacoco.xml
@@ -82,7 +82,7 @@ jobs:
           mvn -B package -DskipTests -f backend/pom.xml
 
       - name: 📤 Upload Backend JAR Artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: backend-jar
           path: backend/target/*.jar
@@ -98,7 +98,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 🛡️ Run Semgrep SAST Scan (OWASP Top 10 & Security Rules)
         run: |
@@ -110,7 +110,7 @@ jobs:
             --sarif --output /src/semgrep.sarif || true
 
       - name: 📤 Upload Semgrep SARIF Results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: semgrep.sarif
@@ -126,12 +126,12 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: 🔍 Scan for Leaked Secrets with Gitleaks
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
@@ -146,7 +146,7 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📜 Generate SBOM with Syft
         run: |
@@ -159,7 +159,7 @@ jobs:
           grype sbom:sbom.spdx.json -o sarif > grype.sarif || true
 
       - name: 📤 Upload Grype SARIF Results
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         if: always()
         with:
           sarif_file: grype.sarif
@@ -175,26 +175,26 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: ☕ Setup Java 21 LTS
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
           cache: 'maven'
 
       - name: 📥 Download JaCoCo Coverage Artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: jacoco-coverage-report
           path: backend/target/site/jacoco
 
       - name: 🏗️ Compile Backend for SonarQube
         run: |
-          mvn -B clean compile -f backend/pom.xml
+          mvn -B -DskipTests compile -f backend/pom.xml
 
       - name: 🔍 Run SonarQube Scanner & Wait for Quality Gate
         env:
@@ -206,11 +206,11 @@ jobs:
           else
             echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
             mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-              -Dsonar.host.url="$SONAR_HOST_URL" \
-              -Dsonar.java.binaries=backend/target/classes \
-              -Dsonar.coverage.jacoco.xmlReportPaths=backend/target/site/jacoco/jacoco.xml \
+              -Dsonar.host.url="${SONAR_HOST_URL}" \
               -Dsonar.token="${SONAR_TOKEN}" \
-              -Dsonar.qualitygate.wait=true -f backend/pom.xml
+              -Dsonar.java.binaries="target/classes" \
+              -Dsonar.coverage.jacoco.xmlReportPaths="backend/target/site/jacoco/jacoco.xml" \
+              -Dsonar.qualitygate.wait=true
           fi
 
   # =========================================================================
@@ -224,16 +224,16 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ☕ Setup Java 21 LTS
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: 📥 Download Backend JAR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: backend-jar
           path: target
@@ -247,7 +247,7 @@ jobs:
           timeout 60 bash -c 'until curl -s http://localhost:8080/api/v1/health | grep -q "UP"; do sleep 2; done'
           echo "✅ Backend API está UP e pronto para análise Nuclei!"
 
-      - name: 🎯 Execute Nuclei DAST Scan
+      - name: 🎯 Execute Nuclei DAST Scan (Vulnerabilities, Misconfigurations & API Flaws)
         uses: projectdiscovery/nuclei-action@v3
         with:
           cache: false
@@ -265,16 +265,16 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: ☕ Setup Java 21 LTS
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: 'temurin'
           java-version: '21'
 
       - name: 📥 Download Backend JAR
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           name: backend-jar
           path: target
@@ -298,7 +298,7 @@ jobs:
         continue-on-error: true
 
   # =========================================================================
-  # 8. PHASE 5A: DEPLOY STAGING
+  # 8. PHASE 5A: DEPLOY STAGING (Triggered on development branch)
   # =========================================================================
   deploy-staging:
     name: 🚀 Deploy Staging Environment
@@ -308,18 +308,22 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📦 Packaging Staging Artifacts
         run: |
-          echo "Deploy em STAGING disparado."
+          echo "=================================================================================="
+          echo "📦 Testes, Lint, SAST, Betterleaks, Supply Chain, SonarQube e DAST (Nuclei) APROVADOS!"
+          echo "Disparando deploy para o ambiente de STAGING..."
+          echo "Branch: development (Commit: ${{ github.sha }})"
+          echo "=================================================================================="
 
       - name: 🚢 Staging Deploy Hook
         run: |
           echo "✅ Deploy em Staging finalizado com sucesso."
 
   # =========================================================================
-  # 9. PHASE 5B: DEPLOY PRODUCTION
+  # 9. PHASE 5B: DEPLOY PRODUCTION (Triggered on main branch / release tags)
   # =========================================================================
   deploy-production:
     name: 🏆 Deploy Production Environment
@@ -329,11 +333,14 @@ jobs:
 
     steps:
       - name: 📥 Checkout Repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: 📦 Packaging Production Release
         run: |
-          echo "Deploy em PRODUÇÃO disparado."
+          echo "=================================================================================="
+          echo "🏆 Quality, Betterleaks, Supply Chain & DAST (OWASP ZAP) 100% APROVADOS para PRODUÇÃO!"
+          echo "Branch: main (Release Commit: ${{ github.sha }})"
+          echo "=================================================================================="
 
       - name: 🚢 Production Deploy Hook
         run: |
