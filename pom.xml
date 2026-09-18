@@ -22,7 +22,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
 
         <!-- SonarQube Global Properties -->
-        <sonar.host.url>https://sonar.fchicout.dev</sonar.host.url>
+        <sonar.projectKey>Fullstack---Equipe-Azrael</sonar.projectKey>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/backend/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
