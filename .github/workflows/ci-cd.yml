@@ -90,6 +90,8 @@ jobs:
 
   # =========================================================================
   # 2. PHASE 2A: SAST (Static Application Security Testing - Semgrep)
+  #    Falha o job se houver achados de severidade ERROR.
+  #    O SARIF é sempre enviado ao GitHub (aba Security), mesmo com falha.
   # =========================================================================
   sast-semgrep:
     name: 🔒 SAST - Semgrep Security Audit
@@ -107,7 +109,9 @@ jobs:
             --config "p/owasp-top-ten" \
             --config "p/spring" \
             --config "p/typescript" \
-            --sarif --output /src/semgrep.sarif || true
+            --severity ERROR \
+            --error \
+            --sarif --output /src/semgrep.sarif
 
       - name: 📤 Upload Semgrep SARIF Results
         uses: github/codeql-action/upload-sarif@v4
@@ -118,6 +122,7 @@ jobs:
 
   # =========================================================================
   # 3. PHASE 2B: SECRET SCANNING (Gitleaks)
+  #    Agora bloqueante: se vazar segredo, o pipeline falha.
   # =========================================================================
   secret-scanning:
     name: 🔑 Secret Leak Detection (Gitleaks)
@@ -134,10 +139,10 @@ jobs:
         uses: gitleaks/gitleaks-action@v3
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        continue-on-error: true
 
   # =========================================================================
   # 4. PHASE 2C: SUPPLY CHAIN SECURITY (SBOM with Syft & CVEs with Grype)
+  #    Falha se houver vulnerabilidade CRÍTICA nas dependências.
   # =========================================================================
   supply-chain:
     name: 📦 Supply Chain - Syft (SBOM) & Grype (CVEs)
@@ -156,7 +161,15 @@ jobs:
       - name: 🔍 Scan SBOM & Dependencies for Vulnerabilities with Grype
         run: |
           curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-          grype sbom:sbom.spdx.json -o sarif > grype.sarif || true
+          grype sbom:sbom.spdx.json -o sarif --fail-on critical > grype.sarif
+
+      - name: 📤 Upload SBOM Artifact
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sbom-spdx
+          path: sbom.spdx.json
+          retention-days: 7
 
       - name: 📤 Upload Grype SARIF Results
         uses: github/codeql-action/upload-sarif@v4
@@ -167,6 +180,8 @@ jobs:
 
   # =========================================================================
   # 5. PHASE 3: SONARQUBE ANALYSIS & QUALITY GATE ENFORCEMENT
+  #    Requer os segredos SONAR_TOKEN e SONAR_HOST_URL.
+  #    Falha se os segredos faltarem ou se o Quality Gate for reprovado.
   # =========================================================================
   sonar:
     name: 🛡️ SonarQube Quality Gate
@@ -199,22 +214,26 @@ jobs:
       - name: 🔍 Run SonarQube Scanner & Wait for Quality Gate
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonar.fchicout.dev' }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         run: |
-          if [ -z "$SONAR_TOKEN" ]; then
-            echo "⚠️ SONAR_TOKEN não configurado nos segredos do repositório. Análise SonarQube opcional concluída."
-          else
-            echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
-            mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-              -Dsonar.host.url="${SONAR_HOST_URL}" \
-              -Dsonar.token="${SONAR_TOKEN}" \
-              -Dsonar.java.binaries="target/classes" \
-              -Dsonar.coverage.jacoco.xmlReportPaths="backend/target/site/jacoco/jacoco.xml" \
-              -Dsonar.qualitygate.wait=true
+          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_HOST_URL" ]; then
+            echo "::error::SONAR_TOKEN ou SONAR_HOST_URL não configurado nos segredos do repositório."
+            exit 1
           fi
+
+          echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
+          mvn -B -f backend/pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectKey=azreal \
+            -Dsonar.projectName=Azreal \
+            -Dsonar.host.url="${SONAR_HOST_URL}" \
+            -Dsonar.token="${SONAR_TOKEN}" \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300
 
   # =========================================================================
   # 6. PHASE 4A: DAST FOR DEVELOPMENT/STAGING (ProjectDiscovery Nuclei)
+  #    Informativo: não bloqueia o pipeline (continue-on-error).
   # =========================================================================
   dast-development-nuclei:
     name: ⚡ DAST Staging - Nuclei Scanner
@@ -256,6 +275,7 @@ jobs:
 
   # =========================================================================
   # 7. PHASE 4B: DAST FOR PRODUCTION/MAIN (OWASP ZAP Baseline Scan)
+  #    Informativo: não bloqueia o pipeline (continue-on-error).
   # =========================================================================
   dast-production-zap:
     name: 🛡️ DAST Production - OWASP ZAP Scan
@@ -313,7 +333,7 @@ jobs:
       - name: 📦 Packaging Staging Artifacts
         run: |
           echo "=================================================================================="
-          echo "📦 Testes, Lint, SAST, Betterleaks, Supply Chain, SonarQube e DAST (Nuclei) APROVADOS!"
+          echo "📦 Testes, Lint, SAST, Gitleaks, Supply Chain, SonarQube e DAST (Nuclei) concluídos!"
           echo "Disparando deploy para o ambiente de STAGING..."
           echo "Branch: development (Commit: ${{ github.sha }})"
           echo "=================================================================================="
@@ -338,7 +358,7 @@ jobs:
       - name: 📦 Packaging Production Release
         run: |
           echo "=================================================================================="
-          echo "🏆 Quality, Betterleaks, Supply Chain & DAST (OWASP ZAP) 100% APROVADOS para PRODUÇÃO!"
+          echo "🏆 Quality, Gitleaks, Supply Chain & DAST (OWASP ZAP) concluídos para PRODUÇÃO!"
           echo "Branch: main (Release Commit: ${{ github.sha }})"
           echo "=================================================================================="
 
