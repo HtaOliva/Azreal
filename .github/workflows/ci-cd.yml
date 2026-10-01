@@ -104,10 +104,10 @@ jobs:
 
       - name: 🛡️ Run Semgrep SAST Scan (OWASP Top 10 & Security Rules)
         run: |
-          docker run --rm -v "${{ github.workspace }}:/src" returntocorp/semgrep semgrep scan \
+          docker run --rm -v "${{ github.workspace }}:/src" semgrep/semgrep semgrep scan \
             --config "p/security-audit" \
             --config "p/owasp-top-ten" \
-            --config "p/spring" \
+            --config "p/java" \
             --config "p/typescript" \
             --severity ERROR \
             --error \
@@ -223,8 +223,7 @@ jobs:
 
           echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
           mvn -B -f backend/pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=azreal \
-            -Dsonar.projectName=Azreal \
+            -Dsonar.projectKey=azrael-backend \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
             -Dsonar.token="${SONAR_TOKEN}" \
             -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
