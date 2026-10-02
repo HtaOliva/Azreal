@@ -1,8 +1,8 @@
-import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
-import { CommonModule } from '@angular/common';
+import { Component, OnInit, signal, computed, inject, ChangeDetectionStrategy } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { catchError } from 'rxjs/operators';
 import { of } from 'rxjs';
+import { Audience, BENEFITS, EXAMPLES, STEPS } from './landing.content';
 
 export interface HealthStatus {
   status: string;
@@ -22,7 +22,7 @@ export interface HelloWorldResponse {
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css']
@@ -30,13 +30,24 @@ export interface HelloWorldResponse {
 export class AppComponent implements OnInit {
   private http = inject(HttpClient, { optional: true });
 
-  title = signal('Fullstack Starter (Spring Boot 3 + Angular)');
+  title = signal('Azreal');
   healthStatus = signal<HealthStatus | null>(null);
   helloMessage = signal<string>('Carregando saudação do backend...');
+
+  readonly steps = STEPS;
+  readonly examples = EXAMPLES;
+
+  audience = signal<Audience>('startup');
+  benefits = computed(() => BENEFITS[this.audience()]);
+  isOnline = computed(() => this.healthStatus()?.status === 'UP');
 
   ngOnInit(): void {
     this.checkBackendHealth();
     this.fetchHelloMessage();
+  }
+
+  selectAudience(audience: Audience): void {
+    this.audience.set(audience);
   }
 
   checkBackendHealth(): void {

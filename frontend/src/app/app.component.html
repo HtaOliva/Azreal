@@ -1,61 +1,132 @@
-<div class="container">
-  <header class="header">
-    <div class="badge">SENAC Fullstack Extension 2026.2 &bull; Enterprise Starter</div>
-    <h1>{{ title() }}</h1>
-    <p class="subtitle">Scaffolding com Quality Gates no SonarQube & Pipelines GitHub Actions</p>
-  </header>
+<div class="page" id="topo">
+  <div class="wrap">
+    <header class="nav">
+      <a class="brand" href="#topo" aria-label="Azreal, voltar ao topo">
+        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <defs>
+            <linearGradient id="wing" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#ffe19a" />
+              <stop offset="1" stop-color="#8b7cf6" />
+            </linearGradient>
+          </defs>
+          <path fill="url(#wing)" d="M2 24C3 13 11 5 23 5c4 0 6 .6 7 1-5 1-8 3-9.500 6 3-1 5.500-1 8-.500-4 1.500-6.500 3.500-8 6.500 2.500-.500 4.500-.500 6.500.500-5 4.500-12 6.500-17 5.500z" />
+        </svg>
+        <span>{{ title() }}</span>
+      </a>
+      <nav class="nav-links" aria-label="Seções da página">
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#para-quem">Para quem</a>
+        <a href="#exemplos">Exemplos</a>
+      </nav>
+      <span class="pill">
+        <span class="dot" [class.on]="isOnline()"></span>
+        {{ isOnline() ? 'Sistema online' : 'Modo demonstração' }}
+      </span>
+    </header>
 
-  <main class="content-grid">
-    <!-- Hello World Card -->
-    <div class="card hello-card">
-      <div class="card-header">
-        <span class="dot online"></span>
-        <h2>🎉 Hello World API Integration</h2>
+    <section class="hero">
+      <div>
+        <span class="eyebrow">Startups em estágio inicial &bull; Investimento anjo</span>
+        <h1>Onde ideias em fase inicial encontram <em>investidores anjo</em>.</h1>
+        <p class="lead">
+          O Azreal aproxima quem está começando de quem investe no começo. Menos pitch jogado ao vento,
+          mais conversas com a pessoa certa.
+        </p>
+        <div class="cta">
+          <a class="btn btn-primary" href="#para-quem" (click)="selectAudience('startup')">Sou startup</a>
+          <a class="btn btn-ghost" href="#para-quem" (click)="selectAudience('investidor')">Sou investidor</a>
+        </div>
       </div>
-      <div class="card-body">
-        <p class="hello-text">{{ helloMessage() }}</p>
-        <div class="endpoint-badge">GET /api/v1/hello &bull; HTTP 200 OK</div>
-      </div>
-    </div>
 
-    <!-- Backend Health Status Card -->
-    <div class="card status-card">
-      <div class="card-header">
-        <span class="dot" [class.online]="healthStatus()?.status === 'UP'"></span>
-        <h2>Status do Backend Spring Boot</h2>
-      </div>
-      @if (healthStatus(); as health) {
-        <div class="card-body">
-          <div class="metric-row">
-            <span class="label">Status:</span>
-            <span class="value" [class.badge-pass]="health.status === 'UP'">{{ health.status }}</span>
-          </div>
-          <div class="metric-row">
-            <span class="label">Aplicação:</span>
-            <span class="value">{{ health.application }}</span>
-          </div>
-          <div class="metric-row">
-            <span class="label">Ambiente:</span>
-            <span class="value">{{ health.environment }}</span>
-          </div>
-          <div class="metric-row">
-            <span class="label">Uptime:</span>
-            <span class="value">{{ health.uptimeMillis }} ms</span>
+      <div class="visual" aria-label="Exemplo ilustrativo de conexão entre startup e investidor">
+        <div class="visual-head">
+          <span>Conexão sugerida</span>
+          <span class="tag">Exemplo ilustrativo</span>
+        </div>
+        <div class="party">
+          <span class="avatar">S</span>
+          <div>
+            <strong>Healthtech &bull; Pré-seed</strong>
+            <small>Busca R$ 150 mil a R$ 300 mil</small>
           </div>
         </div>
-      } @else {
-        <p class="loading-text">Verificando conectividade com o Backend...</p>
-      }
-    </div>
+        <div class="link-line" aria-hidden="true"><span></span></div>
+        <div class="party">
+          <span class="avatar alt">I</span>
+          <div>
+            <strong>Investidor anjo</strong>
+            <small>Tese em saúde digital &bull; Tickets até R$ 300 mil</small>
+          </div>
+        </div>
+        <div class="fit">
+          <span>Alinhamento de tese</span>
+          <div class="bar"><span></span></div>
+        </div>
+      </div>
+    </section>
 
-    <div class="card info-card">
-      <h2>Pilares de Engenharia & Qualidade</h2>
-      <ul class="features-list">
-        <li><strong>Backend:</strong> Java 21 LTS, Spring Boot 3.3, ArchUnit, JaCoCo</li>
-        <li><strong>Frontend:</strong> Angular 22 (Signals, Standalone, OnPush, Vitest)</li>
-        <li><strong>Quality Gate:</strong> SonarQube em <a href="https://sonar.fchicout.dev" target="_blank">sonar.fchicout.dev</a></li>
-        <li><strong>CI/CD:</strong> GitHub Actions (Branch <code>development</code> &rarr; Staging, <code>main</code> &rarr; Produção)</li>
-      </ul>
-    </div>
-  </main>
+    <section id="como-funciona" class="section">
+      <h2>Como funciona</h2>
+      <p class="section-sub">Quatro passos, do primeiro cadastro à primeira conversa.</p>
+      <ol class="steps">
+        @for (step of steps; track step.title; let i = $index) {
+          <li class="card">
+            <span class="num">{{ i + 1 }}</span>
+            <h3>{{ step.title }}</h3>
+            <p>{{ step.text }}</p>
+          </li>
+        }
+      </ol>
+    </section>
+
+    <section id="para-quem" class="section">
+      <h2>Feito para os dois lados da mesa</h2>
+      <p class="section-sub">Escolha o seu perfil para ver o que o Azreal propõe.</p>
+      <div class="toggle" role="group" aria-label="Escolha o perfil">
+        <button type="button" [attr.aria-pressed]="audience() === 'startup'" (click)="selectAudience('startup')">
+          Para startups
+        </button>
+        <button type="button" [attr.aria-pressed]="audience() === 'investidor'" (click)="selectAudience('investidor')">
+          Para investidores
+        </button>
+      </div>
+      <div class="grid">
+        @for (benefit of benefits(); track benefit.title) {
+          <article class="card">
+            <h3>{{ benefit.title }}</h3>
+            <p>{{ benefit.text }}</p>
+          </article>
+        }
+      </div>
+    </section>
+
+    <section id="exemplos" class="section">
+      <h2>Como as startups aparecem</h2>
+      <p class="section-sub">Perfis fictícios, só para mostrar o formato. Nenhum dado aqui é real.</p>
+      <div class="grid">
+        @for (example of examples; track example.sector) {
+          <article class="card">
+            <div class="chips">
+              <span class="chip">{{ example.sector }}</span>
+              <span class="chip chip-gold">{{ example.stage }}</span>
+            </div>
+            <p>{{ example.summary }}</p>
+            <small class="ask">{{ example.ask }}</small>
+          </article>
+        }
+      </div>
+    </section>
+
+    <footer class="footer">
+      <p>Projeto acadêmico &bull; SENAC Fullstack 2026.2 &bull; Equipe Azrael</p>
+      @if (healthStatus(); as health) {
+        <dl class="status" aria-label="Status técnico do sistema">
+          <div><dt>Backend</dt><dd>{{ health.status }}</dd></div>
+          <div><dt>Ambiente</dt><dd>{{ health.environment }}</dd></div>
+          <div><dt>Uptime</dt><dd>{{ health.uptimeMillis }} ms</dd></div>
+          <div><dt>API</dt><dd>{{ helloMessage() }}</dd></div>
+        </dl>
+      }
+    </footer>
+  </div>
 </div>
