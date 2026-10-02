@@ -23,6 +23,7 @@
 
         <!-- SonarQube Global Properties -->
            <sonar.projectKey>azreal-backend</sonar.projectKey>
+         <sonar.projectName>azreal-backend</sonar.projectName>
         <sonar.java.coveragePlugin>jacoco</sonar.java.coveragePlugin>
         <sonar.dynamicAnalysis>reuseReports</sonar.dynamicAnalysis>
         <sonar.coverage.jacoco.xmlReportPaths>${project.basedir}/backend/target/site/jacoco/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
