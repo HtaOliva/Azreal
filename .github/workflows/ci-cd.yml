@@ -162,14 +162,21 @@ jobs:
         uses: actions/checkout@v7
 
       - name: 📜 Generate SBOM with Syft
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
-          syft scan dir:. -o spdx-json=sbom.spdx.json
+        uses: anchore/sbom-action@v0
+        with:
+          path: .
+          format: spdx-json
+          output-file: sbom.spdx.json
+          upload-artifact: false
 
       - name: 🔍 Scan SBOM & Dependencies for Vulnerabilities with Grype
-        run: |
-          curl -sSfL https://raw.githubusercontent.com/anchore/grype/main/install.sh | sh -s -- -b /usr/local/bin
-          grype sbom:sbom.spdx.json -o sarif --fail-on critical > grype.sarif
+        id: grype
+        uses: anchore/scan-action@v6
+        with:
+          sbom: sbom.spdx.json
+          fail-build: true
+          severity-cutoff: critical
+          output-format: sarif
 
       - name: 📤 Upload SBOM Artifact
         uses: actions/upload-artifact@v7
@@ -181,9 +188,9 @@ jobs:
 
       - name: 📤 Upload Grype SARIF Results
         uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        if: always() && steps.grype.outputs.sarif != ''
         with:
-          sarif_file: grype.sarif
+          sarif_file: ${{ steps.grype.outputs.sarif }}
         continue-on-error: true
 
   # =========================================================================
