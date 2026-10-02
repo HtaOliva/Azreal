@@ -102,16 +102,24 @@ jobs:
       - name: 📥 Checkout Repository
         uses: actions/checkout@v7
 
+      - name: 🐍 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: 📦 Install Semgrep
+        run: pip install semgrep
+
       - name: 🛡️ Run Semgrep SAST Scan (OWASP Top 10 & Security Rules)
         run: |
-          docker run --rm -v "${{ github.workspace }}:/src" semgrep/semgrep semgrep scan \
+          semgrep scan \
             --config "p/security-audit" \
             --config "p/owasp-top-ten" \
             --config "p/java" \
             --config "p/typescript" \
             --severity ERROR \
             --error \
-            --sarif --output /src/semgrep.sarif
+            --sarif --output semgrep.sarif
 
       - name: 📤 Upload Semgrep SARIF Results
         uses: github/codeql-action/upload-sarif@v4
@@ -214,19 +222,20 @@ jobs:
       - name: 🔍 Run SonarQube Scanner & Wait for Quality Gate
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonar.fchicout.dev' }}
         run: |
-          if [ -z "$SONAR_TOKEN" ] || [ -z "$SONAR_HOST_URL" ]; then
-            echo "::error::SONAR_TOKEN ou SONAR_HOST_URL não configurado nos segredos do repositório."
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::SONAR_TOKEN não configurado nos segredos do repositório."
             exit 1
           fi
 
           echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
-          mvn -B -f backend/pom.xml org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
-            -Dsonar.projectKey=azrael-backend \
+          # Roda a partir do pom.xml da raiz: ele já define sonar.projectKey e a versão do plugin.
+          mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
             -Dsonar.token="${SONAR_TOKEN}" \
-            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml \
+            -Dsonar.java.binaries="target/classes" \
+            -Dsonar.coverage.jacoco.xmlReportPaths="${GITHUB_WORKSPACE}/backend/target/site/jacoco/jacoco.xml" \
             -Dsonar.qualitygate.wait=true \
             -Dsonar.qualitygate.timeout=300
 
