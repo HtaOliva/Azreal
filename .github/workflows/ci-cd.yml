@@ -239,6 +239,7 @@ jobs:
           echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
           # Roda a partir do pom.xml da raiz: ele já define sonar.projectKey e a versão do plugin.
           mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectName=azreal-backend \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
             -Dsonar.token="${SONAR_TOKEN}" \
             -Dsonar.java.binaries="target/classes" \
