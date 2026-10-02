@@ -93,7 +93,7 @@ describe('AppComponent', () => {
     const comp = createComponent();
     expect(comp.steps).toBe(STEPS);
     expect(comp.examples).toBe(EXAMPLES);
-    expect(STEPS.length).toBe(4);
+    expect(STEPS).toHaveLength(4);
     expect(BENEFITS.startup.length).toBeGreaterThan(0);
     expect(BENEFITS.investidor.length).toBeGreaterThan(0);
     expect(EXAMPLES.length).toBeGreaterThan(0);

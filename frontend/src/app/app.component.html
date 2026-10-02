@@ -82,14 +82,15 @@
     <section id="para-quem" class="section">
       <h2>Feito para os dois lados da mesa</h2>
       <p class="section-sub">Escolha o seu perfil para ver o que o Azreal propõe.</p>
-      <div class="toggle" role="group" aria-label="Escolha o perfil">
+      <fieldset class="toggle">
+        <legend class="sr-only">Escolha o perfil</legend>
         <button type="button" [attr.aria-pressed]="audience() === 'startup'" (click)="selectAudience('startup')">
           Para startups
         </button>
         <button type="button" [attr.aria-pressed]="audience() === 'investidor'" (click)="selectAudience('investidor')">
           Para investidores
         </button>
-      </div>
+      </fieldset>
       <div class="grid">
         @for (benefit of benefits(); track benefit.title) {
           <article class="card">

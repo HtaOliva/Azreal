@@ -154,7 +154,7 @@ h1 em {
 .tag {
   padding: 3px 10px;
   border-radius: 999px;
-  background: rgba(139, 124, 246, 0.18);
+  background: #1f1e3d;
   color: #c9c2ff;
   font-size: 0.72rem;
 }

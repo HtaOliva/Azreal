@@ -130,7 +130,7 @@ button:focus-visible {
 .chip {
   padding: 4px 11px;
   border-radius: 999px;
-  background: rgba(139, 124, 246, 0.16);
+  background: #1c1c38;
   color: #c9c2ff;
   font-size: 0.78rem;
   font-weight: 700;
@@ -141,8 +141,18 @@ button:focus-visible {
   color: var(--gold-soft);
 }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .toggle {
   display: inline-flex;
+  min-width: 0;
   margin-bottom: 20px;
   padding: 4px;
   border: 1px solid var(--border);
