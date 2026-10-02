@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🚀 Azreal
+# 🪽 Azreal
 
 ### Fullstack · Spring Boot 3 + Angular 22 Zoneless
 
