@@ -239,10 +239,63 @@ jobs:
           echo "Iniciando análise estática e verificação do Quality Gate no SonarQube..."
           # Roda a partir do pom.xml da raiz: ele já define sonar.projectKey e a versão do plugin.
           mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+            -Dsonar.projectName=azreal-backend \
             -Dsonar.host.url="${SONAR_HOST_URL}" \
             -Dsonar.token="${SONAR_TOKEN}" \
             -Dsonar.java.binaries="target/classes" \
             -Dsonar.coverage.jacoco.xmlReportPaths="${GITHUB_WORKSPACE}/backend/target/site/jacoco/jacoco.xml" \
+            -Dsonar.qualitygate.wait=true \
+            -Dsonar.qualitygate.timeout=300
+
+  # =========================================================================
+  # 5B. PHASE 3B: SONARQUBE ANALYSIS & QUALITY GATE - FRONTEND (Angular)
+  #     Requer o segredo AZREAL_FRONTEND (token do projeto azreal-frontend).
+  # =========================================================================
+  sonar-frontend:
+    name: 🛡️ SonarQube Quality Gate (Frontend)
+    needs: [test, sast-semgrep, secret-scanning, supply-chain]
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 📦 Setup Node.js 22 LTS
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package.json'
+
+      - name: 🎨 Frontend - Install Dependencies & Generate Coverage
+        working-directory: ./frontend
+        run: |
+          npm ci || npm install
+          npm run test:coverage --if-present || npm run test --if-present
+
+      - name: 🔍 Run SonarQube Scanner (Frontend) & Wait for Quality Gate
+        working-directory: ./frontend
+        env:
+          SONAR_TOKEN: ${{ secrets.AZREAL_FRONTEND }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL || 'https://sonar.fchicout.dev' }}
+        run: |
+          if [ -z "$SONAR_TOKEN" ]; then
+            echo "::error::AZREAL_FRONTEND não configurado nos segredos do repositório."
+            exit 1
+          fi
+
+          npx --yes @sonar/scan \
+            -Dsonar.host.url="${SONAR_HOST_URL}" \
+            -Dsonar.token="${SONAR_TOKEN}" \
+            -Dsonar.projectKey=azreal-frontend \
+            -Dsonar.projectName=azreal-frontend \
+            -Dsonar.sources=src \
+            -Dsonar.tests=src \
+            -Dsonar.test.inclusions="**/*.spec.ts" \
+            -Dsonar.exclusions="**/node_modules/**,**/*.spec.ts" \
+            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info \
             -Dsonar.qualitygate.wait=true \
             -Dsonar.qualitygate.timeout=300
 
@@ -252,7 +305,7 @@ jobs:
   # =========================================================================
   dast-development-nuclei:
     name: ⚡ DAST Staging - Nuclei Scanner
-    needs: [sonar]
+    needs: [sonar, sonar-frontend]
     if: github.ref == 'refs/heads/development' || github.event_name == 'pull_request'
     runs-on: ubuntu-latest
 
@@ -294,7 +347,7 @@ jobs:
   # =========================================================================
   dast-production-zap:
     name: 🛡️ DAST Production - OWASP ZAP Scan
-    needs: [sonar]
+    needs: [sonar, sonar-frontend]
     if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
 
