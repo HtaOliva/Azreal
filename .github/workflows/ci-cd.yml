@@ -173,7 +173,7 @@ jobs:
         id: grype
         uses: anchore/scan-action@v6
         with:
-          sbom: sbom.spdx.json
+          path: '.'
           fail-build: true
           severity-cutoff: critical
           output-format: sarif
