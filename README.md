@@ -18,6 +18,7 @@ Docente: **Prof. Fábio Chicout**
 ![Java](https://img.shields.io/badge/Java-21_LTS-ED8B00?logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot-3.3-6DB33F?logo=springboot&logoColor=white)
 ![Angular](https://img.shields.io/badge/Angular-22-DD0031?logo=angular&logoColor=white)
+![Supabase](https://img.shields.io/badge/Supabase-PostgreSQL-3FCF8E?logo=supabase&logoColor=white)
 ![SonarQube](https://img.shields.io/badge/SonarQube-Quality_Gate-4E9BCD?logo=sonarqube&logoColor=white)
 ![GitHub Actions](https://img.shields.io/badge/CI%2FCD-GitHub_Actions-2088FF?logo=githubactions&logoColor=white)
 
@@ -38,6 +39,7 @@ Docente: **Prof. Fábio Chicout**
   - [Próximos passos](#próximos-passos)
   - [Equipe](#equipe)
 - [Visão geral técnica](#️-visão-geral-técnica)
+  - [Supabase](#supabase)
 - [Pipeline de CI/CD](#-pipeline-de-cicd)
 - [Política de branches](#-política-de-branches)
 - [Configuração: SonarQube e Secrets](#️-configuração-sonarqube-e-secrets)
@@ -160,10 +162,26 @@ Scaffolding padronizado para os projetos da Unidade de Extensão Fullstack.
 | Camada | Tecnologias |
 | --- | --- |
 | **Backend** | Java 21 LTS, Spring Boot 3.3, Spring Web, Spring Validation, Actuator, ArchUnit, Checkstyle, JaCoCo |
+| **Dados** | Supabase (PostgreSQL gerenciado), com escopo de uso em definição |
 | **Frontend** | Angular 22 (100% Zoneless), Signals, OnPush, Vitest, ESLint, build com esbuild/Vite |
 | **Qualidade** | SonarQube institucional com o padrão "Sonar way" |
 | **Segurança** | Semgrep (SAST), Gitleaks (segredos), Syft + Grype (supply chain), Nuclei e OWASP ZAP (DAST) |
 | **Entrega** | GitHub Actions, com deploy do frontend no GitHub Pages |
+
+### Supabase
+
+O Azreal vai usar o [Supabase](https://supabase.com) no lugar do padrão SQLite3 + LLDAP previsto no scaffold da disciplina. A troca foi **aprovada pelo professor**.
+
+| Ponto | Situação |
+| --- | --- |
+| Banco de dados (PostgreSQL) | ⏳ Em definição |
+| Autenticação (Supabase Auth ou LLDAP) | ⏳ Em definição |
+| Armazenamento de arquivos (Storage) | ⏳ Em definição |
+
+> [!IMPORTANT]
+> Credenciais do Supabase (URL do projeto, chaves de API, senha do banco) **nunca** vão para o código. Use variáveis de ambiente localmente e **GitHub Secrets** no pipeline. A chave `service_role` dá acesso total ao projeto e só pode ser usada no backend. O Gitleaks bloqueia o pipeline se alguma chave for commitada.
+
+Quando o escopo for definido, atualize esta tabela e registre a decisão como ADR em [`docs/00-architecture-frontier.md`](docs/00-architecture-frontier.md), que ainda descreve o SQLite3 e o LLDAP do modelo.
 
 ---
 
