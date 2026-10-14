@@ -2,10 +2,14 @@
 
 # 🪽 Azreal
 
-### Fullstack · Spring Boot 3 + Angular 22 Zoneless
+### Sua trajetória com orientação
+
+Plataforma de orientação para startups em fase inicial, centrada em mentoria.
 
 Projeto da **Unidade de Extensão Fullstack** — SENAC 2026.2
 Docente: **Prof. Fábio Chicout**
+
+`Spring Boot 3` · `Angular 22 Zoneless`
 
 [![CI/CD](https://github.com/HtaOliva/Azreal/actions/workflows/ci-cd.yml/badge.svg)](https://github.com/HtaOliva/Azreal/actions/workflows/ci-cd.yml)
 [![Quality Gate - Backend](https://sonar.fchicout.dev/api/project_badges/measure?project=azreal-backend&metric=alert_status)](https://sonar.fchicout.dev/dashboard?id=azreal-backend)
@@ -25,7 +29,15 @@ Docente: **Prof. Fábio Chicout**
 
 ## 📑 Índice
 
-- [Visão geral](#-visão-geral)
+- [Sobre o projeto](#-sobre-o-projeto)
+  - [Contexto e problema](#contexto-e-problema)
+  - [Público-alvo](#público-alvo)
+  - [Necessidades e comportamento atual](#necessidades-e-comportamento-atual)
+  - [Evidências e validação](#evidências-e-validação)
+  - [Direção da solução](#direção-da-solução)
+  - [Próximos passos](#próximos-passos)
+  - [Equipe](#equipe)
+- [Visão geral técnica](#️-visão-geral-técnica)
 - [Pipeline de CI/CD](#-pipeline-de-cicd)
 - [Política de branches](#-política-de-branches)
 - [Configuração: SonarQube e Secrets](#️-configuração-sonarqube-e-secrets)
@@ -33,7 +45,115 @@ Docente: **Prof. Fábio Chicout**
 
 ---
 
-## 🏛️ Visão geral
+## 🧭 Sobre o projeto
+
+O **Azreal** ajuda startups em fase inicial a registrar sua situação, conhecer os tipos de apoio disponíveis, pedir orientação a mentores e manter o histórico das orientações e dos apoios buscados.
+
+### Contexto e problema
+
+Startups *early stage* em incubação tomam várias decisões ao longo da trajetória, como validar a ideia, desenvolver o produto, buscar mentoria e participar de editais.
+
+**O que foi observado:** as duas startups entrevistadas esperavam um cronograma ou acompanhamento estruturado durante a incubação. Como não o receberam da forma esperada, buscaram direcionamento por conta própria e recorreram a mentores para dúvidas pontuais.
+
+**Oportunidade:** oferecer orientação e acompanhamento mais estruturados a startups *early stage*, reunindo a trajetória da startup, os apoios disponíveis e as recomendações de mentores.
+
+<details>
+<summary><b>Possíveis causas e consequências</b></summary>
+
+**Possíveis causas (ainda sem confirmação):**
+
+- Ausência de cronograma ou de canal estruturado de acompanhamento.
+- Desalinhamento entre o que as startups esperavam e o que a incubação oferece.
+- Dificuldade das startups em identificar o próprio estágio ou os tipos de apoio.
+
+> Ainda não se sabe qual dessas causas pesa mais.
+
+**Consequências observadas:** frustração relatada e necessidade de buscar direcionamento por conta própria.
+
+**Consequências sem evidência:** perda financeira, perda de oportunidades, atraso no desenvolvimento, abandono de startups, dificuldade de investimento, redução de faturamento e desperdício de recursos **não foram demonstrados**.
+
+</details>
+
+### Público-alvo
+
+| | Descrição |
+| --- | --- |
+| **Segmento** | Startups *early stage*, sem receita recorrente relevante, que citam prova de conceito como elemento importante, especialmente no contexto de incubação. |
+| **Usuário principal** | Fundadores ou integrantes dessas startups, com necessidade relatada diretamente. |
+| **Público relacionado** | Mentores, usados pelas startups para dúvidas pontuais. A disposição, a disponibilidade e as necessidades dos mentores ainda não foram investigadas. |
+
+**Características identificadas:** autodescrição como *early stage*; prova de conceito como elemento relevante; participação em incubação, editais, mentoria e eventos.
+
+### Necessidades e comportamento atual
+
+| Dores | Necessidades | Comportamento atual |
+| --- | --- | --- |
+| Expectativa de acompanhamento estruturado não atendida, com frustração *(relatado)* | Acompanhamento ou cronograma estruturado durante a incubação *(relatada diretamente)* | Buscam informações e direcionamento por conta própria |
+| Necessidade de buscar informações e direcionamento por conta própria *(relatado)* | Direcionamento no momento em que o apoio é necessário *(inferida)* | Participam de incubação, editais, mentoria e eventos |
+| Uso de mentores para dúvidas específicas *(relatado)* | Registro da trajetória, acesso a mentores e organização dos apoios buscados *(propostas do grupo, não relatadas pelas startups)* | Recorrem a mentores para dúvidas pontuais |
+
+**Possíveis dificuldades (hipóteses):** falta de sequência clara, busca descentralizada, orientações pontuais sem histórico e dificuldade de relacionar estágio e apoio.
+
+**Resultado desejado, compatível com a proposta:** maior visibilidade da startup sobre a própria trajetória, menor dependência de buscar informações dispersas e orientações e apoios buscados reunidos em um histórico.
+
+### Evidências e validação
+
+Hipóteses investigadas nas entrevistas:
+
+| Hipótese | Situação |
+| --- | --- |
+| As startups têm dificuldade para identificar o próximo apoio | Evidência parcial |
+| A origem do problema está na falta de acompanhamento, na falta de informação ou na falta de clareza sobre o próprio estágio | Não distinguido |
+| Existe um modelo de estágios, com um apoio para cada estágio | Perspectiva de um mentor |
+| Cerca de 90% das startups têm desalinhamento entre estágio e apoio | Percepção de um mentor |
+| O investidor anjo tem papel residual e o edital o substituiria nas fases iniciais | Percepção de um mentor |
+| Startups buscam investimento antes da hora | Percepção de um participante |
+
+### Direção da solução
+
+**Ideia inicial:** plataforma de orientação para startups em fase inicial, centrada em mentoria.
+
+**Valor que pretende gerar:**
+
+- Histórico da trajetória da startup
+- Solicitação de orientação
+- Registro de recomendações
+- Encaminhamento para mentor
+
+**Funcionalidades principais:**
+
+- Organizar a trajetória da startup e registrar o momento em que ela está
+- Apresentar e consultar os tipos de apoio disponíveis
+- Marcar os apoios já buscados
+- Possibilitar pedidos de orientação a mentores
+- Manter o histórico de orientações e de apoios buscados
+
+```mermaid
+flowchart LR
+    A([Startup registra<br/>o momento da trajetória]) --> B[Consulta os<br/>tipos de apoio]
+    B --> C[Marca os apoios<br/>já buscados]
+    B --> D[Pede orientação<br/>a um mentor]
+    D --> E[Mentor registra<br/>recomendações]
+    C --> F[(Histórico de orientações<br/>e apoios buscados)]
+    E --> F
+```
+
+### Próximos passos
+
+1. Validar com mais startups se o problema se repete.
+2. Investigar se a principal dificuldade está na ausência de acompanhamento estruturado.
+3. Ouvir incubadoras e instituições.
+4. Validar com outros mentores.
+5. Testar se a orientação resolve uma necessidade percebida.
+6. Validar as regras de correspondência entre estágio e apoio antes de tratá-las como regra do produto.
+
+### Equipe
+
+**Grupo 2 – Azrael:** Alanna Santos, Giselly Lima (representante), Ágata Oliveira, César Silva e Arthur Cunha.
+
+---
+
+## 🏛️ Visão geral técnica
 
 Scaffolding padronizado para os projetos da Unidade de Extensão Fullstack.
 
