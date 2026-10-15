@@ -15,7 +15,7 @@ public class FullstackApplication {
         SpringApplication.run(FullstackApplication.class, args);
     }
     // Esse método roda automaticamente logo após a aplicação iniciar
-    /* @Bean
+    @Bean
     public CommandLineRunner testarConexao(UsuarioRepository usuarioRepository) {
         return args -> {
             try {
@@ -32,5 +32,4 @@ public class FullstackApplication {
             }
         };
     }
-     */
 }
