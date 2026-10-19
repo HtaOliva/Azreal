@@ -28,7 +28,7 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/api/v1/hello").permitAll()
+                        .requestMatchers("/actuator/health", "/api/v1/health", "/api/v1/hello", "/api/v1/CAMINHO_DO_401").permitAll()
                         .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
