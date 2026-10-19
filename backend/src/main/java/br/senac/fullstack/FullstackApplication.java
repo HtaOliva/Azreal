@@ -1,14 +1,18 @@
 package br.senac.fullstack;
 
 import br.senac.fullstack.repository.UsuarioRepository;
+import javax.sql.DataSource;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.context.annotation.Bean;
-import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
+import org.springframework.context.annotation.Import;
+import br.senac.fullstack.config.SecurityConfig;
+
 
 @SpringBootApplication
-@EnableJpaRepositories(basePackages = "br.senac.fullstack.repository")
+@Import(SecurityConfig.class)
 public class FullstackApplication {
 
     public static void main(String[] args) {
@@ -16,6 +20,7 @@ public class FullstackApplication {
     }
     // Esse método roda automaticamente logo após a aplicação iniciar
     @Bean
+    @ConditionalOnBean(DataSource.class)
     public CommandLineRunner testarConexao(UsuarioRepository usuarioRepository) {
         return args -> {
             try {

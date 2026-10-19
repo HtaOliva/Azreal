@@ -1,5 +1,7 @@
 package br.senac.fullstack.controller;
 
-public class CadastroUsuarioController {
+import org.springframework.web.bind.annotation.RestController;
 
+@RestController
+public class CadastroUsuarioController {
 }
