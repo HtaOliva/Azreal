@@ -3,6 +3,9 @@
     <div class="badge">SENAC Fullstack Extension 2026.2 &bull; Enterprise Starter</div>
     <h1>{{ title() }}</h1>
     <p class="subtitle">Scaffolding com Quality Gates no SonarQube & Pipelines GitHub Actions</p>
+    @if (error()) {
+      <p class="error-text">{{ error() }}</p>
+    }
   </header>
 
   <main class="content-grid">

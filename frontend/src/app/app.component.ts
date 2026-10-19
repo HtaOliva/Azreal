@@ -1,23 +1,9 @@
 import { Component, OnInit, signal, inject, ChangeDetectionStrategy } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { HttpClient } from '@angular/common/http';
-import { catchError } from 'rxjs/operators';
-import { of } from 'rxjs';
-
-export interface HealthStatus {
-  status: string;
-  application: string;
-  environment: string;
-  timestamp: string;
-  uptimeMillis: number;
-}
-
-export interface HelloWorldResponse {
-  message: string;
-  application: string;
-  environment: string;
-  timestamp: string;
-}
+import { HealthService } from './services/health.service';
+import { HelloService } from './services/hello.service';
+import { HealthStatus } from './models/health-status.model';
+import { HelloWorldResponse } from './models/hello-world.model';
 
 @Component({
   selector: 'app-root',
@@ -28,57 +14,48 @@ export interface HelloWorldResponse {
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  private http = inject(HttpClient, { optional: true });
+  private readonly healthService = inject(HealthService, { optional: true });
+  private readonly helloService = inject(HelloService, { optional: true });
 
-  title = signal('Fullstack Starter (Spring Boot 3 + Angular)');
-  healthStatus = signal<HealthStatus | null>(null);
-  helloMessage = signal<string>('Carregando saudação do backend...');
+  protected readonly title = signal('Fullstack Starter (Spring Boot 3 + Angular)');
+  protected readonly healthStatus = signal<HealthStatus | null>(null);
+  protected readonly helloMessage = signal<string>('');
+  protected readonly loading = signal<boolean>(false);
+  protected readonly error = signal<string | null>(null);
 
   ngOnInit(): void {
-    this.checkBackendHealth();
-    this.fetchHelloMessage();
+    this.loadHealth();
+    this.loadHello();
   }
 
-  checkBackendHealth(): void {
-    if (!this.http) {
-      this.healthStatus.set({
-        status: 'UP',
-        application: 'fullstack-api',
-        environment: 'development',
-        timestamp: new Date().toISOString(),
-        uptimeMillis: 1000
-      });
+  private loadHealth(): void {
+    if (!this.healthService) {
       return;
     }
-
-    this.http.get<HealthStatus>('/api/v1/health').pipe(
-      catchError(() => of({
-        status: 'OFFLINE (Local Dev Mode)',
-        application: 'fullstack-api',
-        environment: 'development',
-        timestamp: new Date().toISOString(),
-        uptimeMillis: 0
-      }))
-    ).subscribe((data) => {
-      this.healthStatus.set(data);
+    this.loading.set(true);
+    this.healthService.getHealth().subscribe({
+      next: (data: HealthStatus) => {
+        this.healthStatus.set(data);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set('Nao foi possivel carregar o status do backend.');
+        this.loading.set(false);
+      }
     });
   }
 
-  fetchHelloMessage(): void {
-    if (!this.http) {
-      this.helloMessage.set('Olá, Mundo! Frontend Angular & Backend Spring Boot 3 prontos para uso.');
+  private loadHello(): void {
+    if (!this.helloService) {
       return;
     }
-
-    this.http.get<HelloWorldResponse>('/api/v1/hello').pipe(
-      catchError(() => of({
-        message: 'Olá, Desenvolvedor Senac! (Modo Desconectado)',
-        application: 'fullstack-api',
-        environment: 'development',
-        timestamp: new Date().toISOString()
-      }))
-    ).subscribe((data) => {
-      this.helloMessage.set(data.message);
+    this.helloService.getGreeting().subscribe({
+      next: (data: HelloWorldResponse) => {
+        this.helloMessage.set(data.message);
+      },
+      error: () => {
+        this.error.set('Nao foi possivel carregar a saudacao do backend.');
+      }
     });
   }
 }
