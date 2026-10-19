@@ -1,0 +1,43 @@
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+
+ :: Spring Boot ::                (v3.3.3)
+
+2026-10-19T17:04:07.693-03:00  INFO 6712 --- [fullstack-api] [           main] b.senac.fullstack.FullstackApplication   : Starting FullstackApplication using Java 24.0.1 with PID 6712 (C:\Users\gisel\OneDrive\Documentos\Estudos\Senac\Azreal\backend\target\backend-1.0.0-SNAPSHOT.jar started by gisel in C:\Users\gisel\OneDrive\Documentos\Estudos\Senac\Azreal\backend)
+2026-10-19T17:04:07.697-03:00  INFO 6712 --- [fullstack-api] [           main] b.senac.fullstack.FullstackApplication   : The following 1 profile is active: "dast"
+2026-10-19T17:04:10.847-03:00  INFO 6712 --- [fullstack-api] [           main] o.s.b.w.embedded.tomcat.TomcatWebServer  : Tomcat initialized with port 8080 (http)
+2026-10-19T17:04:10.876-03:00  INFO 6712 --- [fullstack-api] [           main] o.apache.catalina.core.StandardService   : Starting service [Tomcat]
+2026-10-19T17:04:10.877-03:00  INFO 6712 --- [fullstack-api] [           main] o.apache.catalina.core.StandardEngine    : Starting Servlet engine: [Apache Tomcat/10.1.28]
+2026-10-19T17:04:10.936-03:00  INFO 6712 --- [fullstack-api] [           main] o.a.c.c.C.[Tomcat].[localhost].[/]       : Initializing Spring embedded WebApplicationContext
+2026-10-19T17:04:10.937-03:00  INFO 6712 --- [fullstack-api] [           main] w.s.c.ServletWebServerApplicationContext : Root WebApplicationContext: initialization completed in 3146 ms
+2026-10-19T17:04:11.459-03:00  WARN 6712 --- [fullstack-api] [           main] .s.s.UserDetailsServiceAutoConfiguration : 
+
+Using generated security password: d0c71ecf-3501-438f-b502-2b72e33024c5
+
+This generated password is for development use only. Your security configuration must be updated before running your application in production.
+
+2026-10-19T17:04:11.484-03:00  INFO 6712 --- [fullstack-api] [           main] r$InitializeUserDetailsManagerConfigurer : Global AuthenticationManager configured with UserDetailsService bean with name inMemoryUserDetailsManager
+2026-10-19T17:04:12.263-03:00  INFO 6712 --- [fullstack-api] [           main] o.s.b.a.e.web.EndpointLinksResolver      : Exposing 3 endpoints beneath base path '/actuator'
+2026-10-19T17:04:13.948-03:00  WARN 6712 --- [fullstack-api] [           main] ConfigServletWebServerApplicationContext : Exception encountered during context initialization - cancelling refresh attempt: org.springframework.context.ApplicationContextException: Failed to start bean 'webServerStartStop'
+2026-10-19T17:04:14.029-03:00  INFO 6712 --- [fullstack-api] [           main] .s.b.a.l.ConditionEvaluationReportLogger : 
+
+Error starting ApplicationContext. To display the condition evaluation report re-run your application with 'debug' enabled.
+2026-10-19T17:04:14.088-03:00 ERROR 6712 --- [fullstack-api] [           main] o.s.b.d.LoggingFailureAnalysisReporter   : 
+
+***************************
+APPLICATION FAILED TO START
+***************************
+
+Description:
+
+Web server failed to start. Port 8080 was already in use.
+
+Action:
+
+Identify and stop the process that's listening on port 8080 or configure this application to listen on another port.
+
