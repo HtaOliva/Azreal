@@ -1,0 +1,5 @@
+[allowlist]
+paths = [
+  '''backend/backend-runtime.log''',
+  '''backend/backend-runtime.err''',
+]

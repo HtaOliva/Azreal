@@ -42,9 +42,9 @@ export class AppComponent implements OnInit {
   checkBackendHealth(): void {
     if (!this.http) {
       this.healthStatus.set({
-        status: 'UP (Standalone Mode)',
-        application: 'fullstack-starter-api',
-        environment: 'local',
+        status: 'UP',
+        application: 'fullstack-api',
+        environment: 'development',
         timestamp: new Date().toISOString(),
         uptimeMillis: 1000
       });
@@ -55,7 +55,7 @@ export class AppComponent implements OnInit {
       catchError(() => of({
         status: 'OFFLINE (Local Dev Mode)',
         application: 'fullstack-api',
-        environment: 'mock',
+        environment: 'development',
         timestamp: new Date().toISOString(),
         uptimeMillis: 0
       }))
@@ -74,7 +74,7 @@ export class AppComponent implements OnInit {
       catchError(() => of({
         message: 'Olá, Desenvolvedor Senac! (Modo Desconectado)',
         application: 'fullstack-api',
-        environment: 'local',
+        environment: 'development',
         timestamp: new Date().toISOString()
       }))
     ).subscribe((data) => {
