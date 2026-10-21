@@ -1,0 +1,431 @@
+openapi: 3.0.3
+info:
+  title: Azreal API
+  version: 1.0.0
+  description: |
+    Contrato API-first da plataforma Azreal (mentoria a startups).
+    Autenticação delegada ao LLDAP (JWT Bearer). Perfis: STARTUP, MENTOR, ADMIN.
+servers:
+  - url: http://localhost:8080
+    description: Local
+  - url: https://api.azreal.example.com
+    description: Produção
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      summary: Login via LLDAP
+      description: Valida credenciais contra o LLDAP e retorna JWT com os papéis do usuário.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /me:
+    get:
+      summary: Perfil do usuário autenticado
+      responses:
+        '200':
+          description: Perfil
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+        '401':
+          description: Não autenticado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /startups:
+    post:
+      summary: Cadastro de startup (público)
+      description: Criação de perfil de startup. Exige aceite dos termos (RN12).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupRequest'
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+        '400':
+          description: Validação falhou
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '409':
+          description: E-mail já cadastrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /startups/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Buscar startup por id
+      responses:
+        '200':
+          description: Startup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+        '404':
+          description: Não encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    put:
+      summary: Atualizar startup
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupUpdateRequest'
+      responses:
+        '200':
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+        '403':
+          description: Sem permissão
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /mentors:
+    post:
+      summary: Cadastro de mentor (público)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorRequest'
+      responses:
+        '201':
+          description: Criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorResponse'
+        '400':
+          description: Validação falhou
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /mentors/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Buscar mentor por id
+      responses:
+        '200':
+          description: Mentor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorResponse'
+        '404':
+          description: Não encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+    put:
+      summary: Atualizar mentor
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MentorUpdateRequest'
+      responses:
+        '200':
+          description: Atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MentorResponse'
+        '403':
+          description: Sem permissão
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /termos/aceite:
+    post:
+      summary: Registrar aceite de termos (LGPD)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AceiteTermoRequest'
+      responses:
+        '201':
+          description: Aceite registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AceiteTermoResponse'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresIn:
+          type: integer
+        roles:
+          type: array
+          items:
+            type: string
+
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        perfil:
+          type: string
+          enum: [STARTUP, MENTOR, ADMIN, NONE]
+
+    StartupRequest:
+      type: object
+      required: [nome, email, senha, aceiteTermoId]
+      properties:
+        nome:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+          minLength: 6
+        descricao:
+          type: string
+        areaAtuacao:
+          type: string
+        dataFundacao:
+          type: string
+          format: date
+        estagioAtual:
+          $ref: '#/components/schemas/Estagio'
+        aceiteTermoId:
+          type: string
+          format: uuid
+
+    StartupUpdateRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+        areaAtuacao:
+          type: string
+        estagioAtual:
+          $ref: '#/components/schemas/Estagio'
+        situacao:
+          type: string
+
+    StartupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        email:
+          type: string
+        descricao:
+          type: string
+        areaAtuacao:
+          type: string
+        dataFundacao:
+          type: string
+          format: date
+        estagioAtual:
+          $ref: '#/components/schemas/Estagio'
+        situacao:
+          type: string
+        dataCadastro:
+          type: string
+          format: date-time
+
+    MentorRequest:
+      type: object
+      required: [nome, email, senha, areasAtuacao, aceiteTermoId]
+      properties:
+        nome:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+          minLength: 6
+        areasAtuacao:
+          type: array
+          items:
+            type: string
+        disponibilidade:
+          type: string
+        aceiteTermoId:
+          type: string
+          format: uuid
+
+    MentorUpdateRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+        areasAtuacao:
+          type: array
+          items:
+            type: string
+        disponibilidade:
+          type: string
+
+    MentorResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        email:
+          type: string
+        areasAtuacao:
+          type: array
+          items:
+            type: string
+        disponibilidade:
+          type: string
+        dataCadastro:
+          type: string
+          format: date-time
+
+    AceiteTermoRequest:
+      type: object
+      required: [versaoTermo]
+      properties:
+        versaoTermo:
+          type: string
+        ip:
+          type: string
+
+    AceiteTermoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        versaoTermo:
+          type: string
+        dataHora:
+          type: string
+          format: date-time
+
+    Estagio:
+      type: string
+      enum: [IDEACAO, VALIDACAO, OPERACAO, ESCALA]
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string
