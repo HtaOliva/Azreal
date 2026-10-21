@@ -5,6 +5,7 @@ import { HttpClient } from '@angular/common/http';
 import { of } from 'rxjs';
 import { HealthService } from './services/health.service';
 import { HelloService } from './services/hello.service';
+import { UsuarioService } from './services/usuario.service';
 import { AppComponent } from './app.component';
 
 describe('AppComponent', () => {
@@ -20,6 +21,9 @@ describe('AppComponent', () => {
   it('should load health and greeting from the backend', () => {
     const fakeHttp = {
       get: (url: string) => {
+        if (url === '/usuarios') {
+          return of([]);
+        }
         if (url === '/api/v1/health') {
           return of({
             status: 'UP',
@@ -38,13 +42,20 @@ describe('AppComponent', () => {
           });
         }
         return of({});
+      },
+      post: (url: string) => {
+        if (url === '/usuarios') {
+          return of({ id: 1, nome: 'Teste', email: 'teste@example.com' });
+        }
+        return of({});
       }
     } as unknown as HttpClient;
 
     const injector = createEnvironmentInjector([
       { provide: HttpClient, useValue: fakeHttp },
       HealthService,
-      HelloService
+      HelloService,
+      UsuarioService
     ], Injector.NULL);
 
     const comp = runInInjectionContext(injector, () => new AppComponent());

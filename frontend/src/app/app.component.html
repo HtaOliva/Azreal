@@ -51,6 +51,28 @@
       }
     </div>
 
+    <!-- Cadastro de Usuario (Supabase) Card -->
+    <div class="card user-card">
+      <div class="card-header">
+        <span class="dot online"></span>
+        <h2>Cadastro de Usuario (Supabase)</h2>
+      </div>
+      <div class="card-body">
+        <div class="form-row">
+          <input type="text" placeholder="Nome" [value]="nome()" (input)="nome.set($any($event.target).value)" />
+          <input type="email" placeholder="Email" [value]="email()" (input)="email.set($any($event.target).value)" />
+          <input type="password" placeholder="Senha" [value]="senha()" (input)="senha.set($any($event.target).value)" />
+          <button type="button" (click)="salvarUsuario()" [disabled]="saving()">Salvar</button>
+        </div>
+        <ul class="user-list">
+          @for (u of usuarios(); track u.id) {
+            <li>{{ u.id }} - {{ u.nome }} ({{ u.email }})</li>
+          }
+        </ul>
+        <div class="endpoint-badge">GET/POST /usuarios &bull; Spring Boot + Supabase</div>
+      </div>
+    </div>
+
     <div class="card info-card">
       <h2>Pilares de Engenharia & Qualidade</h2>
       <ul class="features-list">
