@@ -72,7 +72,10 @@ public class LdapSecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(request -> request.getRequestURI().startsWith("/usuarios")).permitAll()
-                        .requestMatchers("/auth/login", "/startups", "/mentors", "/termos/aceite").permitAll()
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
+                                || request.getRequestURI().startsWith("/startups")
+                                || request.getRequestURI().startsWith("/mentors")
+                                || request.getRequestURI().startsWith("/termos")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return http.build();

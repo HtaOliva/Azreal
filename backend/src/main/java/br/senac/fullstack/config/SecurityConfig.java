@@ -34,7 +34,10 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/actuator/health", "/api/v1/health", "/api/v1/hello", "/api/v1/CAMINHO_DO_401").permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/usuarios")).permitAll()
-                        .requestMatchers("/auth/login", "/startups", "/mentors", "/termos/aceite").permitAll()
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
+                                || request.getRequestURI().startsWith("/startups")
+                                || request.getRequestURI().startsWith("/mentors")
+                                || request.getRequestURI().startsWith("/termos")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return http.build();

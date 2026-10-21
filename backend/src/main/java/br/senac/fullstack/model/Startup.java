@@ -1,20 +1,53 @@
 package br.senac.fullstack.model;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
+@Entity
+@Table(name = "tb_startup")
 public class Startup {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", nullable = false, updatable = false)
     private UUID id;
+
+    @Column(name = "nome", length = 120, nullable = false)
     private String nome;
+
+    @Column(name = "email", length = 180, nullable = false, unique = true)
     private String email;
+
+    @Column(name = "descricao", columnDefinition = "text")
     private String descricao;
+
+    @Column(name = "area_atuacao", length = 120)
     private String areaAtuacao;
+
+    @Column(name = "data_fundacao")
     private LocalDate dataFundacao;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estagio_atual", length = 30)
     private Estagio estagioAtual;
+
+    @Column(name = "situacao", length = 30)
     private String situacao;
+
+    @Column(name = "usuario_id")
     private UUID usuarioId;
+
+    @Column(name = "data_cadastro", nullable = false, updatable = false)
     private LocalDateTime dataCadastro;
 
     public Startup() {
