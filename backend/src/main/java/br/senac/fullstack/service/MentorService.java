@@ -52,6 +52,18 @@ public class MentorService {
         return toResponse(mentor);
     }
 
+    public Mentor buscarEntidadePorEmail(String email) {
+        MentorRepository repo = repository();
+        if (repo != null) {
+            return repo.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+        }
+        return memory.values().stream()
+                .filter(m -> email.equals(m.getEmail()))
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+    }
+
     public MentorResponseDTO buscar(UUID id) {
         MentorRepository repo = repository();
         Mentor mentor;
