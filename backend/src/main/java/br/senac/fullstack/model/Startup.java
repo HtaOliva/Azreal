@@ -44,6 +44,11 @@ public class Startup {
     @Column(name = "situacao", length = 30)
     private String situacao;
 
+    @jakarta.persistence.ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
+    @jakarta.persistence.CollectionTable(name = "tb_startup_integrante", joinColumns = @jakarta.persistence.JoinColumn(name = "startup_id"))
+    @jakarta.persistence.Column(name = "integrante", length = 120)
+    private java.util.List<String> integrantes = new java.util.ArrayList<>();
+
     @Column(name = "usuario_id")
     private UUID usuarioId;
 
@@ -71,6 +76,8 @@ public class Startup {
     public void setEstagioAtual(Estagio estagioAtual) { this.estagioAtual = estagioAtual; }
     public String getSituacao() { return situacao; }
     public void setSituacao(String situacao) { this.situacao = situacao; }
+    public java.util.List<String> getIntegrantes() { return integrantes; }
+    public void setIntegrantes(java.util.List<String> integrantes) { this.integrantes = integrantes; }
     public UUID getUsuarioId() { return usuarioId; }
     public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
     public LocalDateTime getDataCadastro() { return dataCadastro; }

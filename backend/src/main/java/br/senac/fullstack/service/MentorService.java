@@ -41,6 +41,7 @@ public class MentorService {
         mentor.setEmail(request.email());
         mentor.setAreasAtuacao(request.areasAtuacao());
         mentor.setDisponibilidade(request.disponibilidade());
+        mentor.setExperiencia(request.experiencia());
 
         MentorRepository repo = repository();
         if (repo != null) {
@@ -96,6 +97,7 @@ public class MentorService {
         if (request.nome() != null) mentor.setNome(request.nome());
         if (request.areasAtuacao() != null) mentor.setAreasAtuacao(request.areasAtuacao());
         if (request.disponibilidade() != null) mentor.setDisponibilidade(request.disponibilidade());
+        if (request.experiencia() != null) mentor.setExperiencia(request.experiencia());
 
         if (repo != null) {
             mentor = repo.save(mentor);
@@ -106,6 +108,6 @@ public class MentorService {
     private MentorResponseDTO toResponse(Mentor m) {
         return new MentorResponseDTO(
                 m.getId(), m.getNome(), m.getEmail(), m.getAreasAtuacao(),
-                m.getDisponibilidade(), m.getDataCadastro());
+                m.getDisponibilidade(), m.getExperiencia(), m.isPerfilCompleto(), m.getDataCadastro());
     }
 }

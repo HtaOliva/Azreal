@@ -15,5 +15,6 @@ public record StartupResponseDTO(
         LocalDate dataFundacao,
         Estagio estagioAtual,
         String situacao,
+        java.util.List<String> integrantes,
         LocalDateTime dataCadastro
 ) {}

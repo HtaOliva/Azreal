@@ -44,6 +44,7 @@ public class StartupService {
         startup.setDataFundacao(request.dataFundacao());
         startup.setEstagioAtual(request.estagioAtual());
         startup.setSituacao("ATIVA");
+        if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
 
         StartupRepository repo = repository();
         if (repo != null) {
@@ -101,6 +102,7 @@ public class StartupService {
         if (request.areaAtuacao() != null) startup.setAreaAtuacao(request.areaAtuacao());
         if (request.estagioAtual() != null) startup.setEstagioAtual(request.estagioAtual());
         if (request.situacao() != null) startup.setSituacao(request.situacao());
+        if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
 
         if (repo != null) {
             startup = repo.save(startup);
@@ -111,6 +113,6 @@ public class StartupService {
     private StartupResponseDTO toResponse(Startup s) {
         return new StartupResponseDTO(
                 s.getId(), s.getNome(), s.getEmail(), s.getDescricao(), s.getAreaAtuacao(),
-                s.getDataFundacao(), s.getEstagioAtual(), s.getSituacao(), s.getDataCadastro());
+                s.getDataFundacao(), s.getEstagioAtual(), s.getSituacao(), s.getIntegrantes(), s.getDataCadastro());
     }
 }

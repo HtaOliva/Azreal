@@ -17,5 +17,6 @@ public record StartupRequestDTO(
         String areaAtuacao,
         LocalDate dataFundacao,
         Estagio estagioAtual,
+        java.util.List<String> integrantes,
         @NotNull UUID aceiteTermoId
 ) {}

@@ -7,5 +7,6 @@ public record StartupUpdateDTO(
         String descricao,
         String areaAtuacao,
         Estagio estagioAtual,
-        String situacao
+        String situacao,
+        java.util.List<String> integrantes
 ) {}

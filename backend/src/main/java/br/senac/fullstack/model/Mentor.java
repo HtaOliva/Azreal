@@ -38,6 +38,9 @@ public class Mentor {
     @Column(name = "disponibilidade", length = 120)
     private String disponibilidade;
 
+    @Column(name = "experiencia", columnDefinition = "text")
+    private String experiencia;
+
     @Column(name = "usuario_id")
     private UUID usuarioId;
 
@@ -59,6 +62,16 @@ public class Mentor {
     public void setAreasAtuacao(List<String> areasAtuacao) { this.areasAtuacao = areasAtuacao; }
     public String getDisponibilidade() { return disponibilidade; }
     public void setDisponibilidade(String disponibilidade) { this.disponibilidade = disponibilidade; }
+    public String getExperiencia() { return experiencia; }
+    public void setExperiencia(String experiencia) { this.experiencia = experiencia; }
+
+    public boolean isPerfilCompleto() {
+        return nome != null && !nome.isBlank()
+                && email != null && !email.isBlank()
+                && areasAtuacao != null && !areasAtuacao.isEmpty()
+                && experiencia != null && !experiencia.isBlank()
+                && disponibilidade != null && !disponibilidade.isBlank();
+    }
     public UUID getUsuarioId() { return usuarioId; }
     public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
     public LocalDateTime getDataCadastro() { return dataCadastro; }
