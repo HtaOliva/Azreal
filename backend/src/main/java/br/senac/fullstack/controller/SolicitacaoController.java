@@ -45,13 +45,15 @@ public class SolicitacaoController {
     public ResponseEntity<SolicitacaoResponseDTO> responder(@PathVariable("id") UUID id,
                                                             @Valid @RequestBody RespostaPedidoRequestDTO request,
                                                             Authentication authentication) {
-        UUID mentorId = mentorService.buscarEntidadePorEmail(authentication.getName()).getId();
-        return ResponseEntity.ok(solicitacaoService.responder(id, mentorId, request));
+        var mentor = mentorService.buscarEntidadePorEmail(authentication.getName());
+        mentorService.exigirPerfilCompleto(mentor.getId());
+        return ResponseEntity.ok(solicitacaoService.responder(id, mentor.getId(), request));
     }
 
     @GetMapping("/mentor/{mentorId}/fila")
     @PreAuthorize("hasRole('MENTOR') or hasRole('ADMIN')")
     public ResponseEntity<List<FilaItemResponseDTO>> fila(@PathVariable("mentorId") UUID mentorId) {
+        mentorService.exigirPerfilCompleto(mentorId);
         return ResponseEntity.ok(solicitacaoService.filaDoMentor(mentorId));
     }
 }

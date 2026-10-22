@@ -64,6 +64,13 @@ public class MentorService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
     }
 
+    public void exigirPerfilCompleto(UUID id) {
+        MentorResponseDTO m = buscar(id);
+        if (!m.perfilCompleto()) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Perfil do mentor incompleto");
+        }
+    }
+
     public MentorResponseDTO buscar(UUID id) {
         MentorRepository repo = repository();
         Mentor mentor;

@@ -6,6 +6,7 @@ import br.senac.fullstack.dto.MentorUpdateDTO;
 import br.senac.fullstack.service.MentorService;
 import jakarta.validation.Valid;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -47,7 +48,16 @@ public class MentorController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MENTOR') or hasRole('ADMIN')")
     public ResponseEntity<MentorResponseDTO> atualizar(@PathVariable("id") UUID id,
-                                                       @Valid @RequestBody MentorUpdateDTO request) {
+                                                       @Valid @RequestBody MentorUpdateDTO request,
+                                                       Authentication authentication) {
+        boolean isAdmin = authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+        if (!isAdmin) {
+            MentorResponseDTO atual = mentorService.buscar(id);
+            if (atual.email() == null || !atual.email().equals(authentication.getName())) {
+                return ResponseEntity.status(403).build();
+            }
+        }
         return ResponseEntity.ok(mentorService.atualizar(id, request));
     }
 }
