@@ -5,6 +5,7 @@ import br.senac.fullstack.dto.UsuarioResponseDTO;
 import br.senac.fullstack.dto.UsuarioUpdateDTO;
 import br.senac.fullstack.service.UsuarioService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/usuarios")
+@PreAuthorize("hasRole('ADMIN')")
 public class CadastroUsuarioController {
 
     private final UsuarioService usuarioService;

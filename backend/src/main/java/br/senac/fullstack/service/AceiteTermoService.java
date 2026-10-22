@@ -27,10 +27,11 @@ public class AceiteTermoService {
         return repositoryProvider.getIfAvailable();
     }
 
-    public AceiteTermoResponseDTO registrar(AceiteTermoRequestDTO request) {
+    public AceiteTermoResponseDTO registrar(AceiteTermoRequestDTO request, java.util.UUID usuarioId, String ip) {
         AceiteTermo aceite = new AceiteTermo();
+        aceite.setUsuarioId(usuarioId);
         aceite.setVersaoTermo(request.versaoTermo());
-        aceite.setIp(request.ip());
+        aceite.setIp(ip != null ? ip : request.ip());
         AceiteTermoRepository repo = repository();
         if (repo != null) {
             aceite = repo.save(aceite);

@@ -5,6 +5,7 @@ import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
 import br.senac.fullstack.service.StartupService;
 import jakarta.validation.Valid;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,6 +45,7 @@ public class StartupController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
     public ResponseEntity<StartupResponseDTO> atualizar(@PathVariable("id") UUID id,
                                                        @Valid @RequestBody StartupUpdateDTO request) {
         return ResponseEntity.ok(startupService.atualizar(id, request));
