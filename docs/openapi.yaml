@@ -214,6 +214,108 @@ paths:
               schema:
                 $ref: '#/components/schemas/AceiteTermoResponse'
 
+  /solicitacoes:
+    post:
+      summary: Criar pedido de orientação (startup)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitacaoRequest'
+      responses:
+        '201':
+          description: Pedido criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitacaoResponse'
+        '400':
+          description: Validação falhou
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '422':
+          description: Limite de 2 pedidos em aberto excedido
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /solicitacoes/{id}/responder:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      summary: Responder pedido (mentor)
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespostaPedidoRequest'
+      responses:
+        '200':
+          description: Resposta registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SolicitacaoResponse'
+        '403':
+          description: Sem permissão
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+        '404':
+          description: Pedido não encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /mentors/{id}/fila:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Fila de pedidos do mentor
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Fila
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FilaItemResponse'
+
+  /startups/{id}/vinculo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Vínculo de mentoria da startup (regras + contato)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Vínculo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoResponse'
+        '404':
+          description: Sem vínculo
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -415,6 +517,95 @@ components:
     Estagio:
       type: string
       enum: [IDEACAO, VALIDACAO, OPERACAO, ESCALA]
+
+    SolicitacaoRequest:
+      type: object
+      required: [startupId, mentorId, assunto]
+      properties:
+        startupId:
+          type: string
+          format: uuid
+        mentorId:
+          type: string
+          format: uuid
+        assunto:
+          type: string
+          maxLength: 200
+
+    SolicitacaoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        mentorId:
+          type: string
+          format: uuid
+        assunto:
+          type: string
+        status:
+          type: string
+          enum: [PENDENTE, ACEITO, RECUSADO, EXPIRADO]
+        dataSolicitacao:
+          type: string
+          format: date-time
+        dataExpiracao:
+          type: string
+          format: date-time
+
+    RespostaPedidoRequest:
+      type: object
+      required: [aceitar]
+      properties:
+        aceitar:
+          type: boolean
+        observacao:
+          type: string
+
+    FilaItemResponse:
+      type: object
+      properties:
+        solicitacaoId:
+          type: string
+          format: uuid
+        startupNome:
+          type: string
+        startupDescricao:
+          type: string
+        assunto:
+          type: string
+        integrantes:
+          type: array
+          items:
+            type: string
+
+    VinculoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        mentorId:
+          type: string
+          format: uuid
+        dataInicio:
+          type: string
+          format: date-time
+        dataFim:
+          type: string
+          format: date-time
+        status:
+          type: string
+        regras:
+          type: string
+        contatoMentor:
+          type: string
 
     ProblemDetail:
       type: object
