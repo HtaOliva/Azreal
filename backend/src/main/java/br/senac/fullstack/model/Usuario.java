@@ -25,6 +25,9 @@ public class Usuario {
     @Column(name = "senha_hash", length = 255)
     private String senhaHash;
 
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true;
+
     public Usuario() {
     }
 
@@ -64,5 +67,13 @@ public class Usuario {
 
     public void setSenhaHash(String senhaHash) {
         this.senhaHash = senhaHash;
+    }
+
+    public boolean isAtivo() {
+        return ativo;
+    }
+
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
     }
 }
