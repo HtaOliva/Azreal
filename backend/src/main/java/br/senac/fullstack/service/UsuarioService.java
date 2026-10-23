@@ -90,6 +90,18 @@ public class UsuarioService {
         return toResponse(salvo);
     }
 
+    public UsuarioResponseDTO definirAtivo(Long id, boolean ativo) {
+        UsuarioRepository repository = usuarioRepository();
+        if (repository == null) {
+            throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Repositorio de usuarios indisponivel");
+        }
+        Usuario usuario = repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+        usuario.setAtivo(ativo);
+        Usuario salvo = repository.save(usuario);
+        return toResponse(salvo);
+    }
+
     public void deletar(Long id) {
         UsuarioRepository repository = usuarioRepository();
         if (repository == null) {

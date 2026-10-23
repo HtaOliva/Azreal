@@ -170,6 +170,18 @@ public class SolicitacaoService {
         return data;
     }
 
+    public List<br.senac.fullstack.dto.SolicitacaoResponseDTO> listarPorStartup(UUID startupId) {
+        SolicitacaoOrientacaoRepository repo = repository();
+        List<SolicitacaoOrientacao> items;
+        if (repo != null) {
+            items = repo.findByStartupId(startupId);
+        } else {
+            items = memory.values().stream()
+                    .filter(s -> s.getStartupId().equals(startupId)).collect(java.util.stream.Collectors.toList());
+        }
+        return items.stream().map(this::toResponse).collect(java.util.stream.Collectors.toList());
+    }
+
     private SolicitacaoResponseDTO toResponse(SolicitacaoOrientacao s) {
         return new SolicitacaoResponseDTO(
                 s.getId(), s.getStartupId(), s.getMentorId(), s.getAssunto(),

@@ -1,5 +1,6 @@
 package br.senac.fullstack.controller;
 
+import br.senac.fullstack.dto.AtivarContaRequestDTO;
 import br.senac.fullstack.dto.UsuarioRequestDTO;
 import br.senac.fullstack.dto.UsuarioResponseDTO;
 import br.senac.fullstack.dto.UsuarioUpdateDTO;
@@ -50,6 +51,13 @@ public class CadastroUsuarioController {
     public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable("id") Long id,
                                                       @Valid @RequestBody UsuarioUpdateDTO request) {
         return ResponseEntity.ok(usuarioService.atualizar(id, request));
+    }
+
+    @PutMapping("/{id}/ativo")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UsuarioResponseDTO> definirAtivo(@PathVariable("id") Long id,
+                                                          @Valid @RequestBody AtivarContaRequestDTO request) {
+        return ResponseEntity.ok(usuarioService.definirAtivo(id, request.ativo()));
     }
 
     @DeleteMapping("/{id}")
