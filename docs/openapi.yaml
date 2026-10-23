@@ -316,6 +316,128 @@ paths:
               schema:
                 $ref: '#/components/schemas/ProblemDetail'
 
+  /vinculos/{id}/encerrar:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      summary: Encerrar vínculo de mentoria (RF13)
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Vínculo encerrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VinculoResponse'
+        '404':
+          description: Vínculo não encontrado
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /recomendacoes:
+    post:
+      summary: Registrar recomendação (RF14)
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RecomendacaoRequest'
+      responses:
+        '201':
+          description: Recomendação registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecomendacaoResponse'
+
+  /startups/{id}/apoios-buscados:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      summary: Marcar apoio buscado (RF16)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApoioBuscadoRequest'
+      responses:
+        '201':
+          description: Apoio registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ApoioBuscadoResponse'
+
+  /startups/{id}/anotacoes:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      summary: Criar anotação de mentoria (RF17)
+      security:
+        - bearerAuth: [ROLE_MENTOR, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnotacaoRequest'
+      responses:
+        '201':
+          description: Anotação criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AnotacaoResponse'
+
+  /startups/{id}/historico:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Histórico da startup (RF17)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_MENTOR, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Histórico
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HistoricoResponse'
+
+  /usuarios/{id}/ativo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      summary: Ativar/desativar conta (RF22, admin)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ativo]
+              properties:
+                ativo:
+                  type: boolean
+      responses:
+        '200':
+          description: Conta atualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -606,6 +728,97 @@ components:
           type: string
         contatoMentor:
           type: string
+
+    RecomendacaoRequest:
+      type: object
+      required: [mentorId, startupId, tipoApoio]
+      properties:
+        mentorId:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        tipoApoio:
+          type: string
+        observacao:
+          type: string
+
+    RecomendacaoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mentorId:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        tipoApoio:
+          type: string
+        observacao:
+          type: string
+        dataHora:
+          type: string
+          format: date-time
+
+    ApoioBuscadoRequest:
+      type: object
+      required: [startupId, tipoApoio]
+      properties:
+        startupId:
+          type: string
+          format: uuid
+        tipoApoio:
+          type: string
+
+    ApoioBuscadoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        tipoApoio:
+          type: string
+        dataRegistro:
+          type: string
+          format: date-time
+
+    AnotacaoRequest:
+      type: object
+      required: [mentorId, startupId, conteudo]
+      properties:
+        mentorId:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        conteudo:
+          type: string
+
+    AnotacaoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        mentorId:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        conteudo:
+          type: string
+        dataHora:
+          type: string
+          format: date-time
 
     ProblemDetail:
       type: object
