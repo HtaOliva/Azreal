@@ -438,6 +438,151 @@ paths:
               schema:
                 $ref: '#/components/schemas/MeResponse'
 
+  /cursos:
+    get:
+      summary: Listar cursos gratuitos ativos (RF06)
+      responses:
+        '200':
+          description: Lista de cursos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CursoResponse'
+    post:
+      summary: Criar curso (admin, RF23)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CursoRequest'
+      responses:
+        '201':
+          description: Curso criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CursoResponse'
+
+  /cursos/{id}/ativo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      summary: Ativar/inativar curso (admin, RF23)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ativo]
+              properties:
+                ativo:
+                  type: boolean
+      responses:
+        '204':
+          description: Atualizado
+
+  /incubadoras:
+    get:
+      summary: Listar incubadoras ativas (RF19)
+      responses:
+        '200':
+          description: Lista de incubadoras
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IncubadoraResponse'
+    post:
+      summary: Criar incubadora (admin, RF24)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncubadoraRequest'
+      responses:
+        '201':
+          description: Incubadora criada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncubadoraResponse'
+
+  /incubadoras/{id}/ativo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      summary: Ativar/inativar incubadora (admin, RF24)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ativo]
+              properties:
+                ativo:
+                  type: boolean
+      responses:
+        '204':
+          description: Atualizado
+
+  /startups/{id}/certificados:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      summary: Listar certificados da startup (RF07/RF17)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_MENTOR, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Lista de certificados
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CertificadoResponse'
+    post:
+      summary: Anexar certificado (RF07)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '201':
+          description: Certificado anexado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CertificadoResponse'
+        '413':
+          description: Arquivo muito grande
+        '415':
+          description: Tipo de arquivo não permitido
+
 components:
   securitySchemes:
     bearerAuth:
@@ -817,6 +962,89 @@ components:
         conteudo:
           type: string
         dataHora:
+          type: string
+          format: date-time
+
+    CursoRequest:
+      type: object
+      required: [titulo]
+      properties:
+        titulo:
+          type: string
+        descricao:
+          type: string
+        url:
+          type: string
+        ativo:
+          type: boolean
+
+    CursoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        titulo:
+          type: string
+        descricao:
+          type: string
+        url:
+          type: string
+        ativo:
+          type: boolean
+        dataCadastro:
+          type: string
+          format: date-time
+
+    IncubadoraRequest:
+      type: object
+      required: [nome]
+      properties:
+        nome:
+          type: string
+        descricao:
+          type: string
+        link:
+          type: string
+        ativo:
+          type: boolean
+
+    IncubadoraResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        descricao:
+          type: string
+        link:
+          type: string
+        ativo:
+          type: boolean
+        dataCadastro:
+          type: string
+          format: date-time
+
+    CertificadoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        tipo:
+          type: string
+        tamanho:
+          type: integer
+        arquivoUrl:
+          type: string
+        dataUpload:
           type: string
           format: date-time
 
