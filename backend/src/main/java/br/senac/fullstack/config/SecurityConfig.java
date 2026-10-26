@@ -39,7 +39,9 @@ public class SecurityConfig {
                         .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
                                 || request.getRequestURI().startsWith("/startups")
                                 || request.getRequestURI().startsWith("/mentors")
-                                || request.getRequestURI().startsWith("/termos")).permitAll()
+                                || request.getRequestURI().startsWith("/termos")
+                                || request.getRequestURI().startsWith("/cursos")
+                                || request.getRequestURI().startsWith("/incubadoras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return http.build();
