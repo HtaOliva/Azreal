@@ -12,18 +12,21 @@ public class HistoricoService {
     private final ApoioBuscadoService apoioBuscadoService;
     private final RecomendacaoService recomendacaoService;
     private final AnotacaoService anotacaoService;
+    private final CertificadoService certificadoService;
     private final StartupService startupService;
     private final MentorService mentorService;
     private final VinculoService vinculoService;
 
     public HistoricoService(SolicitacaoService solicitacaoService, ApoioBuscadoService apoioBuscadoService,
                             RecomendacaoService recomendacaoService, AnotacaoService anotacaoService,
+                            CertificadoService certificadoService,
                             StartupService startupService, MentorService mentorService,
                             VinculoService vinculoService) {
         this.solicitacaoService = solicitacaoService;
         this.apoioBuscadoService = apoioBuscadoService;
         this.recomendacaoService = recomendacaoService;
         this.anotacaoService = anotacaoService;
+        this.certificadoService = certificadoService;
         this.startupService = startupService;
         this.mentorService = mentorService;
         this.vinculoService = vinculoService;
@@ -56,6 +59,7 @@ public class HistoricoService {
                 solicitacaoService.listarPorStartup(startupId),
                 apoioBuscadoService.listarPorStartup(startupId),
                 recomendacaoService.listarPorStartup(startupId),
-                anotacaoService.listarPorStartup(startupId));
+                anotacaoService.listarPorStartup(startupId),
+                certificadoService.listarPorStartup(startupId));
     }
 }
