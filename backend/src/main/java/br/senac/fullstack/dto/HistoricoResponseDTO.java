@@ -6,5 +6,6 @@ public record HistoricoResponseDTO(
         List<SolicitacaoResponseDTO> pedidos,
         List<ApoioBuscadoResponseDTO> apoiosBuscados,
         List<RecomendacaoResponseDTO> recomendacoes,
-        List<AnotacaoResponseDTO> anotacoes
+        List<AnotacaoResponseDTO> anotacoes,
+        List<CertificadoResponseDTO> certificados
 ) {}
