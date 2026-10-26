@@ -36,3 +36,5 @@ yarn-error.log*
 # SonarQube Local Cache
 .sonar/
 .scannerwork/
+backend-runtime.log
+backend-runtime.err
