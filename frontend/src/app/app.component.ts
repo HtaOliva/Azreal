@@ -55,7 +55,7 @@ export class AppComponent implements OnInit {
       catchError(() => of({
         status: 'OFFLINE (Local Dev Mode)',
         application: 'fullstack-api',
-        environment: 'development',
+        environment: 'mock',
         timestamp: new Date().toISOString(),
         uptimeMillis: 0
       }))
