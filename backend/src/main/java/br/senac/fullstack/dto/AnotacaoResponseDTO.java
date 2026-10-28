@@ -9,4 +9,4 @@ public record AnotacaoResponseDTO(
         UUID startupId,
         String conteudo,
         LocalDateTime dataHora
-) {}
+) { /* empty */ }

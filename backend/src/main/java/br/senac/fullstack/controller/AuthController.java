@@ -44,9 +44,14 @@ public class AuthController {
         }
         List<String> roles = authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority()).toList();
-        String perfil = roles.contains("ROLE_ADMIN") ? "ADMIN"
-                : roles.contains("ROLE_MENTOR") ? "MENTOR"
-                : roles.contains("ROLE_STARTUP") ? "STARTUP" : "NONE";
+        String perfil = "NONE";
+        if (roles.contains("ROLE_ADMIN")) {
+            perfil = "ADMIN";
+        } else if (roles.contains("ROLE_MENTOR")) {
+            perfil = "MENTOR";
+        } else if (roles.contains("ROLE_STARTUP")) {
+            perfil = "STARTUP";
+        }
         return ResponseEntity.ok(new MeResponseDTO(
                 UUID.randomUUID(), authentication.getName(), authentication.getName(), roles, perfil));
     }

@@ -9,4 +9,4 @@ public record MeResponseDTO(
         String email,
         List<String> roles,
         String perfil
-) {}
+) { /* empty */ }

@@ -9,4 +9,4 @@ public record FilaItemResponseDTO(
         String startupDescricao,
         String assunto,
         List<String> integrantes
-) {}
+) { /* empty */ }

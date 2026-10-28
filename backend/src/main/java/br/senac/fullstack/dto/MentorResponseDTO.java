@@ -18,4 +18,4 @@ public record MentorResponseDTO(
         boolean perfilCompleto,
         boolean aprovado,
         LocalDateTime dataCadastro
-) {}
+) { /* empty */ }

@@ -9,4 +9,4 @@ public record SolicitacaoRequestDTO(
         @NotNull UUID startupId,
         @NotNull UUID mentorId,
         @NotBlank String assunto
-) {}
+) { /* empty */ }

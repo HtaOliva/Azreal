@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class RegraPlataformaService {
@@ -80,7 +79,7 @@ public class RegraPlataformaService {
         } else {
             items = new java.util.ArrayList<>(memory.values());
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     public RegraPlataformaResponseDTO buscarAtiva() {
@@ -89,7 +88,7 @@ public class RegraPlataformaService {
         if (repo != null) {
             items = repo.findByAtivoTrue();
         } else {
-            items = memory.values().stream().filter(RegraPlataforma::isAtivo).collect(Collectors.toList());
+            items = memory.values().stream().filter(RegraPlataforma::isAtivo).toList();
         }
         if (items.isEmpty()) throw new IllegalArgumentException("Regra nao encontrada");
         return toResponse(items.get(0));

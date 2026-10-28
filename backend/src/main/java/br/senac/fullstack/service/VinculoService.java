@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class VinculoService {
@@ -51,7 +50,7 @@ public class VinculoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(v -> v.getStartupId().equals(startupId)).collect(Collectors.toList());
+                    .filter(v -> v.getStartupId().equals(startupId)).toList();
         }
         return items.stream().anyMatch(v ->
                 v.getMentorId().equals(mentorId) && v.getStatus().equals(StatusVinculo.ATIVO));
@@ -78,7 +77,7 @@ public class VinculoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(v -> v.getStartupId().equals(startupId)).collect(Collectors.toList());
+                    .filter(v -> v.getStartupId().equals(startupId)).toList();
         }
         if (items.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Sem vinculo de mentoria");
@@ -89,8 +88,7 @@ public class VinculoService {
         try {
             var mentor = mentorService.buscar(v.getMentorId());
             contato = mentor.email();
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { /* empty */ }
         String regras = "Regras da plataforma: respeitar cronograma, manter comunicacao e registrar orientacoes.";
         return new VinculoResponseDTO(v.getId(), v.getStartupId(), v.getMentorId(),
                 v.getDataInicio(), v.getDataFim(), v.getStatus(), regras, contato);

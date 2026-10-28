@@ -2,7 +2,6 @@ package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
-import br.senac.fullstack.dto.StartupUpdateDTO;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.repository.StartupRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -81,11 +80,7 @@ public class StartupService {
         } else {
             items = new ArrayList<>(memory.values());
         }
-        List<StartupResponseDTO> result = new ArrayList<>();
-        for (Startup s : items) {
-            result.add(toResponse(s));
-        }
-        return result;
+        return items.stream().map(this::toResponse).toList();
     }
 
     public StartupResponseDTO atualizar(UUID id, br.senac.fullstack.dto.StartupUpdateDTO request) {

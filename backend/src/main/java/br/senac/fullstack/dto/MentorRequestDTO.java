@@ -21,4 +21,4 @@ public record MentorRequestDTO(
         String telefone,
         String linkedin,
         @NotNull UUID aceiteTermoId
-) {}
+) { /* empty */ }

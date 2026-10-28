@@ -14,4 +14,4 @@ public record VinculoResponseDTO(
         StatusVinculo status,
         String regras,
         String contatoMentor
-) {}
+) { /* empty */ }

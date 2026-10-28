@@ -6,4 +6,4 @@ public record LoginResponseDTO(
         String token,
         long expiresIn,
         List<String> roles
-) {}
+) { /* empty */ }

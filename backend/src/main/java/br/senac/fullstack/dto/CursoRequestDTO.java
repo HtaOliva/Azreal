@@ -7,4 +7,4 @@ public record CursoRequestDTO(
         String descricao,
         String url,
         Boolean ativo
-) {}
+) { /* empty */ }

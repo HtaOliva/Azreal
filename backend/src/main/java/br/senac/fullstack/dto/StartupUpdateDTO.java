@@ -14,4 +14,4 @@ public record StartupUpdateDTO(
         String localidadeAtuacao,
         Boolean ligadaIncubadora,
         String incubadoraLigada
-) {}
+) { /* empty */ }

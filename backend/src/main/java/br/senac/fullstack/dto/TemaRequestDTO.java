@@ -6,4 +6,4 @@ public record TemaRequestDTO(
         @NotBlank String nome,
         String descricao,
         Boolean ativo
-) {}
+) { /* empty */ }

@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class TemaService {
@@ -77,9 +76,9 @@ public class TemaService {
         if (repo != null) {
             items = repo.findByAtivoTrue();
         } else {
-            items = memory.values().stream().filter(Tema::isAtivo).collect(Collectors.toList());
+            items = memory.values().stream().filter(Tema::isAtivo).toList();
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     public List<TemaResponseDTO> listarTodos() {
@@ -90,7 +89,7 @@ public class TemaService {
         } else {
             items = new java.util.ArrayList<>(memory.values());
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     private TemaResponseDTO toResponse(Tema t) {

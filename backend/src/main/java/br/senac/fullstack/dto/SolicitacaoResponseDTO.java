@@ -13,4 +13,4 @@ public record SolicitacaoResponseDTO(
         StatusSolicitacao status,
         LocalDateTime dataSolicitacao,
         LocalDateTime dataExpiracao
-) {}
+) { /* empty */ }

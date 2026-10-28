@@ -24,4 +24,4 @@ public record StartupRequestDTO(
         Boolean ligadaIncubadora,
         String incubadoraLigada,
         @NotNull UUID aceiteTermoId
-) {}
+) { /* empty */ }

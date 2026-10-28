@@ -8,4 +8,4 @@ import java.util.UUID;
 public record ApoioBuscadoRequestDTO(
         @NotNull UUID startupId,
         @NotBlank String tipoApoio
-) {}
+) { /* empty */ }

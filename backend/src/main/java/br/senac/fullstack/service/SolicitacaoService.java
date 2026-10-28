@@ -5,7 +5,6 @@ import br.senac.fullstack.dto.RespostaPedidoRequestDTO;
 import br.senac.fullstack.dto.SolicitacaoRequestDTO;
 import br.senac.fullstack.dto.SolicitacaoResponseDTO;
 import br.senac.fullstack.model.SolicitacaoOrientacao;
-import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.model.StatusSolicitacao;
 import br.senac.fullstack.repository.SolicitacaoOrientacaoRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -20,7 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class SolicitacaoService {
@@ -107,8 +105,7 @@ public class SolicitacaoService {
                 nome = startup.nome();
                 descricao = startup.descricao() != null ? startup.descricao() : "";
                 integrantes = startup.integrantes() != null ? startup.integrantes() : List.of();
-            } catch (Exception ignored) {
-            }
+            } catch (Exception ignored) { /* empty */ }
             result.add(new FilaItemResponseDTO(sol.getId(), nome, descricao, sol.getAssunto(), integrantes));
         }
         return result;
@@ -119,11 +116,11 @@ public class SolicitacaoService {
         SolicitacaoOrientacaoRepository repo = repository();
         if (repo != null) {
             return repo.findByStartupId(startupId).stream()
-                    .filter(s -> s.getStatus().equals(StatusSolicitacao.PENDENTE)).collect(Collectors.toList());
+                    .filter(s -> s.getStatus().equals(StatusSolicitacao.PENDENTE)).toList();
         }
         return memory.values().stream()
                 .filter(s -> s.getStartupId().equals(startupId) && s.getStatus().equals(StatusSolicitacao.PENDENTE))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private List<SolicitacaoOrientacao> listarPendentesPorMentor(UUID mentorId) {
@@ -133,7 +130,7 @@ public class SolicitacaoService {
         }
         return memory.values().stream()
                 .filter(s -> s.getMentorId().equals(mentorId) && s.getStatus().equals(StatusSolicitacao.PENDENTE))
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private SolicitacaoOrientacao buscar(UUID id) {

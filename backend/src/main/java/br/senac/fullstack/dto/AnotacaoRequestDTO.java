@@ -9,4 +9,4 @@ public record AnotacaoRequestDTO(
         @NotNull UUID mentorId,
         @NotNull UUID startupId,
         @NotBlank String conteudo
-) {}
+) { /* empty */ }

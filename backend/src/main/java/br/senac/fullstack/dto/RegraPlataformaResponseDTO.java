@@ -8,4 +8,4 @@ public record RegraPlataformaResponseDTO(
         String texto,
         boolean ativo,
         LocalDateTime dataAtualizacao
-) {}
+) { /* empty */ }

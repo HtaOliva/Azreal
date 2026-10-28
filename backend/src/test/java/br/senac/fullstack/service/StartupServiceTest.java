@@ -45,6 +45,7 @@ class StartupServiceTest {
 
     @Test
     void buscarInexistenteLanca404() {
-        assertThrows(ResponseStatusException.class, () -> startupService.buscar(UUID.randomUUID()));
+        UUID id = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> startupService.buscar(id));
     }
 }

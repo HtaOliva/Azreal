@@ -21,4 +21,4 @@ public record StartupResponseDTO(
         boolean ligadaIncubadora,
         String incubadoraLigada,
         LocalDateTime dataCadastro
-) {}
+) { /* empty */ }

@@ -16,4 +16,4 @@ public record IncubadoraResponseDTO(
         String link,
         boolean ativo,
         LocalDateTime dataCadastro
-) {}
+) { /* empty */ }

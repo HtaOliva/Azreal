@@ -11,4 +11,4 @@ public record CertificadoResponseDTO(
         Long tamanho,
         String arquivoUrl,
         LocalDateTime dataUpload
-) {}
+) { /* empty */ }

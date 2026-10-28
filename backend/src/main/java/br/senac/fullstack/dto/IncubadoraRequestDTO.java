@@ -14,4 +14,4 @@ public record IncubadoraRequestDTO(
         String descricao,
         String link,
         Boolean ativo
-) {}
+) { /* empty */ }

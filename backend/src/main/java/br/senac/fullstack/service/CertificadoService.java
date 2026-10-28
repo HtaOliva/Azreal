@@ -10,7 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class CertificadoService {
@@ -50,9 +49,9 @@ public class CertificadoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(c -> c.getStartupId().equals(startupId)).collect(Collectors.toList());
+                    .filter(c -> c.getStartupId().equals(startupId)).toList();
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     private CertificadoResponseDTO toResponse(Certificado c) {

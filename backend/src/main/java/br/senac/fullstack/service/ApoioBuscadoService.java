@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class ApoioBuscadoService {
@@ -48,10 +47,10 @@ public class ApoioBuscadoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(a -> a.getStartupId().equals(startupId)).collect(Collectors.toList());
+                    .filter(a -> a.getStartupId().equals(startupId)).toList();
         }
         return items.stream()
                 .map(a -> new ApoioBuscadoResponseDTO(a.getId(), a.getStartupId(), a.getTipoApoio(), a.getDataRegistro()))
-                .collect(Collectors.toList());
+                .toList();
     }
 }

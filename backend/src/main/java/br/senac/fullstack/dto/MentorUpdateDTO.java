@@ -11,4 +11,4 @@ public record MentorUpdateDTO(
         String localidade,
         String telefone,
         String linkedin
-) {}
+) { /* empty */ }

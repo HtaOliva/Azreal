@@ -10,4 +10,4 @@ public record RecomendacaoRequestDTO(
         @NotNull UUID startupId,
         @NotBlank String tipoApoio,
         String observacao
-) {}
+) { /* empty */ }

@@ -10,4 +10,4 @@ public record CursoResponseDTO(
         String url,
         boolean ativo,
         LocalDateTime dataCadastro
-) {}
+) { /* empty */ }

@@ -8,4 +8,4 @@ public record ApoioBuscadoResponseDTO(
         UUID startupId,
         String tipoApoio,
         LocalDateTime dataRegistro
-) {}
+) { /* empty */ }

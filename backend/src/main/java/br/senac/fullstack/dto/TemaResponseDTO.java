@@ -9,4 +9,4 @@ public record TemaResponseDTO(
         String descricao,
         boolean ativo,
         LocalDateTime dataCadastro
-) {}
+) { /* empty */ }

@@ -28,8 +28,7 @@ public class Usuario {
     @Column(name = "ativo", nullable = false)
     private boolean ativo = true;
 
-    public Usuario() {
-    }
+    public Usuario() { /* empty */ }
 
     public Usuario(String nome, String email, String senhaHash) {
         this.nome = nome;

@@ -10,4 +10,4 @@ public record RecomendacaoResponseDTO(
         String tipoApoio,
         String observacao,
         LocalDateTime dataHora
-) {}
+) { /* empty */ }

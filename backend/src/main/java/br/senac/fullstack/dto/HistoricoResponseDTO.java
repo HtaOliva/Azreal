@@ -8,4 +8,4 @@ public record HistoricoResponseDTO(
         List<RecomendacaoResponseDTO> recomendacoes,
         List<AnotacaoResponseDTO> anotacoes,
         List<CertificadoResponseDTO> certificados
-) {}
+) { /* empty */ }

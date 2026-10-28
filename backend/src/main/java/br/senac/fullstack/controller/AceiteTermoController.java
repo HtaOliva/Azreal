@@ -34,7 +34,6 @@ public class AceiteTermoController {
         if (authentication != null && authentication.isAuthenticated()
                 && !"anonymousUser".equals(authentication.getPrincipal())) {
             // LLDAP principal name is not a UUID; keep null for anonymous/public cadastro
-            usuarioId = null;
         }
         String ip = httpRequest.getRemoteAddr();
         if (request.ip() != null && !request.ip().isBlank()) {

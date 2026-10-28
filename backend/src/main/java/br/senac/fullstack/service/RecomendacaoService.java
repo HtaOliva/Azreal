@@ -13,7 +13,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class RecomendacaoService {
@@ -57,9 +56,9 @@ public class RecomendacaoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(r -> r.getStartupId().equals(startupId)).collect(Collectors.toList());
+                    .filter(r -> r.getStartupId().equals(startupId)).toList();
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     private RecomendacaoResponseDTO toResponse(Recomendacao r) {

@@ -101,11 +101,7 @@ public class MentorService {
         } else {
             items = new ArrayList<>(memory.values());
         }
-        List<MentorResponseDTO> result = new ArrayList<>();
-        for (Mentor m : items) {
-            result.add(toResponse(m));
-        }
-        return result;
+        return items.stream().map(this::toResponse).toList();
     }
 
     public MentorResponseDTO atualizar(UUID id, MentorUpdateDTO request) {

@@ -39,16 +39,14 @@ public class HistoricoService {
             if (startup.email() != null && startup.email().equals(principal)) {
                 return;
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { /* empty */ }
         // mentor vinculado?
         try {
             var mentor = mentorService.buscarEntidadePorEmail(principal);
             if (vinculoService.temVinculoAtivo(startupId, mentor.getId())) {
                 return;
             }
-        } catch (Exception ignored) {
-        }
+        } catch (Exception ignored) { /* empty */ }
         throw new org.springframework.web.server.ResponseStatusException(
                 org.springframework.http.HttpStatus.FORBIDDEN, "Sem permissao para acessar o historico");
     }

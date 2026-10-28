@@ -7,4 +7,4 @@ public record AceiteTermoResponseDTO(
         UUID id,
         String versaoTermo,
         LocalDateTime dataHora
-) {}
+) { /* empty */ }

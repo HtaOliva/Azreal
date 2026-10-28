@@ -11,7 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.stream.Collectors;
 
 @Service
 public class IncubadoraService {
@@ -89,9 +88,9 @@ public class IncubadoraService {
         if (repo != null) {
             items = repo.findByAtivoTrue();
         } else {
-            items = memory.values().stream().filter(Incubadora::isAtivo).collect(Collectors.toList());
+            items = memory.values().stream().filter(Incubadora::isAtivo).toList();
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     public List<IncubadoraResponseDTO> listarTodos() {
@@ -102,7 +101,7 @@ public class IncubadoraService {
         } else {
             items = new java.util.ArrayList<>(memory.values());
         }
-        return items.stream().map(this::toResponse).collect(Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     private IncubadoraResponseDTO toResponse(Incubadora i) {
