@@ -54,7 +54,7 @@ public class VinculoService {
                     .filter(v -> v.getStartupId().equals(startupId)).collect(Collectors.toList());
         }
         return items.stream().anyMatch(v ->
-                v.getMentorId().equals(mentorId) && v.getStatus() == StatusVinculo.ATIVO);
+                v.getMentorId().equals(mentorId) && v.getStatus().equals(StatusVinculo.ATIVO));
     }
 
     public void encerrar(UUID id) {

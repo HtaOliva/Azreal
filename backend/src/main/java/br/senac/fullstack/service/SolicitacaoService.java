@@ -76,7 +76,7 @@ public class SolicitacaoService {
         if (!sol.getMentorId().equals(mentorId)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Pedido nao pertence a este mentor");
         }
-        if (sol.getStatus() != StatusSolicitacao.PENDENTE) {
+        if (!sol.getStatus().equals(StatusSolicitacao.PENDENTE)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Pedido ja respondido ou expirado");
         }
         if (LocalDateTime.now().isAfter(sol.getDataExpiracao())) {
@@ -119,10 +119,10 @@ public class SolicitacaoService {
         SolicitacaoOrientacaoRepository repo = repository();
         if (repo != null) {
             return repo.findByStartupId(startupId).stream()
-                    .filter(s -> s.getStatus() == StatusSolicitacao.PENDENTE).collect(Collectors.toList());
+                    .filter(s -> s.getStatus().equals(StatusSolicitacao.PENDENTE)).collect(Collectors.toList());
         }
         return memory.values().stream()
-                .filter(s -> s.getStartupId().equals(startupId) && s.getStatus() == StatusSolicitacao.PENDENTE)
+                .filter(s -> s.getStartupId().equals(startupId) && s.getStatus().equals(StatusSolicitacao.PENDENTE))
                 .collect(Collectors.toList());
     }
 
@@ -132,7 +132,7 @@ public class SolicitacaoService {
             return repo.findByMentorIdAndStatus(mentorId, StatusSolicitacao.PENDENTE);
         }
         return memory.values().stream()
-                .filter(s -> s.getMentorId().equals(mentorId) && s.getStatus() == StatusSolicitacao.PENDENTE)
+                .filter(s -> s.getMentorId().equals(mentorId) && s.getStatus().equals(StatusSolicitacao.PENDENTE))
                 .collect(Collectors.toList());
     }
 

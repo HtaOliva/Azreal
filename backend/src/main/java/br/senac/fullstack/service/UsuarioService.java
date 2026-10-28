@@ -16,6 +16,8 @@ import java.util.List;
 @Service
 public class UsuarioService {
 
+    private static final String USUARIO_NAO_ENCONTRADO = "Usuario nao encontrado";
+
     private final ObjectProvider<UsuarioRepository> usuarioRepositoryProvider;
     private final PasswordEncoder passwordEncoder;
 
@@ -44,7 +46,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Repositorio de usuarios indisponivel");
         }
         Usuario usuario = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NAO_ENCONTRADO));
         return toResponse(usuario);
     }
 
@@ -70,7 +72,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Repositorio de usuarios indisponivel");
         }
         Usuario usuario = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NAO_ENCONTRADO));
 
         if (request.email() != null && !request.email().equals(usuario.getEmail())
                 && repository.existsByEmail(request.email())) {
@@ -96,7 +98,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Repositorio de usuarios indisponivel");
         }
         Usuario usuario = repository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NAO_ENCONTRADO));
         usuario.setAtivo(ativo);
         Usuario salvo = repository.save(usuario);
         return toResponse(salvo);
@@ -108,7 +110,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.SERVICE_UNAVAILABLE, "Repositorio de usuarios indisponivel");
         }
         if (!repository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario nao encontrado");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, USUARIO_NAO_ENCONTRADO);
         }
         repository.deleteById(id);
     }

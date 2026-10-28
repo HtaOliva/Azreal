@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class MentorService {
 
+    private static final String MENTOR_NAO_ENCONTRADO = "Mentor nao encontrado";
+
     private final ObjectProvider<MentorRepository> repositoryProvider;
     private final AceiteTermoService aceiteTermoService;
     private final Map<UUID, Mentor> memory = new ConcurrentHashMap<>();
@@ -61,12 +63,12 @@ public class MentorService {
         MentorRepository repo = repository();
         if (repo != null) {
             return repo.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO));
         }
         return memory.values().stream()
                 .filter(m -> email.equals(m.getEmail()))
                 .findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO));
     }
 
     public void exigirPerfilCompleto(UUID id) {
@@ -81,11 +83,11 @@ public class MentorService {
         Mentor mentor;
         if (repo != null) {
             mentor = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO));
         } else {
             mentor = memory.get(id);
             if (mentor == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO);
             }
         }
         return toResponse(mentor);
@@ -111,11 +113,11 @@ public class MentorService {
         Mentor mentor;
         if (repo != null) {
             mentor = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO));
         } else {
             mentor = memory.get(id);
             if (mentor == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Mentor nao encontrado");
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO);
             }
         }
         if (request.nome() != null) mentor.setNome(request.nome());
