@@ -78,7 +78,6 @@ public class LdapSecurityConfig {
                                 || request.getRequestURI().startsWith("/startups")
                                 || request.getRequestURI().startsWith("/mentors")
                                 || request.getRequestURI().startsWith("/termos")
-                                || request.getRequestURI().startsWith("/cursos")
                                 || request.getRequestURI().startsWith("/incubadoras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
