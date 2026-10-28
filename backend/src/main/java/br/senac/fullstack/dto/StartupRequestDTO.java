@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 public record StartupRequestDTO(
@@ -17,6 +18,10 @@ public record StartupRequestDTO(
         String areaAtuacao,
         LocalDate dataFundacao,
         Estagio estagioAtual,
-        java.util.List<String> integrantes,
+        List<String> integrantes,
+        String localidadeSede,
+        String localidadeAtuacao,
+        Boolean ligadaIncubadora,
+        String incubadoraLigada,
         @NotNull UUID aceiteTermoId
 ) {}

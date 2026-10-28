@@ -9,8 +9,13 @@ public record MentorResponseDTO(
         String nome,
         String email,
         List<String> areasAtuacao,
-        String disponibilidade,
+        List<String> temas,
         String experiencia,
+        String disponibilidade,
+        String localidade,
+        String telefone,
+        String linkedin,
         boolean perfilCompleto,
+        boolean aprovado,
         LocalDateTime dataCadastro
 ) {}

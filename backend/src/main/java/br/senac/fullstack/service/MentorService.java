@@ -40,8 +40,13 @@ public class MentorService {
         mentor.setNome(request.nome());
         mentor.setEmail(request.email());
         mentor.setAreasAtuacao(request.areasAtuacao());
-        mentor.setDisponibilidade(request.disponibilidade());
+        if (request.temas() != null) mentor.setTemas(request.temas());
         mentor.setExperiencia(request.experiencia());
+        mentor.setDisponibilidade(request.disponibilidade());
+        if (request.localidade() != null) mentor.setLocalidade(request.localidade());
+        if (request.telefone() != null) mentor.setTelefone(request.telefone());
+        if (request.linkedin() != null) mentor.setLinkedin(request.linkedin());
+        mentor.setAprovado(mentor.isPerfilCompleto());
 
         MentorRepository repo = repository();
         if (repo != null) {
@@ -115,8 +120,13 @@ public class MentorService {
         }
         if (request.nome() != null) mentor.setNome(request.nome());
         if (request.areasAtuacao() != null) mentor.setAreasAtuacao(request.areasAtuacao());
-        if (request.disponibilidade() != null) mentor.setDisponibilidade(request.disponibilidade());
+        if (request.temas() != null) mentor.setTemas(request.temas());
         if (request.experiencia() != null) mentor.setExperiencia(request.experiencia());
+        if (request.disponibilidade() != null) mentor.setDisponibilidade(request.disponibilidade());
+        if (request.localidade() != null) mentor.setLocalidade(request.localidade());
+        if (request.telefone() != null) mentor.setTelefone(request.telefone());
+        if (request.linkedin() != null) mentor.setLinkedin(request.linkedin());
+        mentor.setAprovado(mentor.isAprovado() || mentor.isPerfilCompleto());
 
         if (repo != null) {
             mentor = repo.save(mentor);
@@ -126,7 +136,8 @@ public class MentorService {
 
     private MentorResponseDTO toResponse(Mentor m) {
         return new MentorResponseDTO(
-                m.getId(), m.getNome(), m.getEmail(), m.getAreasAtuacao(),
-                m.getDisponibilidade(), m.getExperiencia(), m.isPerfilCompleto(), m.getDataCadastro());
+                m.getId(), m.getNome(), m.getEmail(), m.getAreasAtuacao(), m.getTemas(),
+                m.getExperiencia(), m.getDisponibilidade(), m.getLocalidade(), m.getTelefone(),
+                m.getLinkedin(), m.isPerfilCompleto(), m.isAprovado(), m.getDataCadastro());
     }
 }

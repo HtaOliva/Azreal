@@ -37,7 +37,8 @@ class StartupServiceTest {
 
         StartupRequestDTO request = new StartupRequestDTO(
                 "Startup X", "sx@example.com", "senha123", "desc", "tech",
-                LocalDate.now(), Estagio.IDEACAO, java.util.List.of("Joao"), aceiteId);
+                LocalDate.now(), Estagio.IDEACAO, java.util.List.of("Joao"),
+                "PE-Recife", "PE-Recife", Boolean.FALSE, null, aceiteId);
 
         assertThrows(ResponseStatusException.class, () -> startupService.criar(request));
     }

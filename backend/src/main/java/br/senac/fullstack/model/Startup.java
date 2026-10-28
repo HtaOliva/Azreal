@@ -11,6 +11,8 @@ import jakarta.persistence.Table;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 @Entity
@@ -41,13 +43,22 @@ public class Startup {
     @Column(name = "estagio_atual", length = 30)
     private Estagio estagioAtual;
 
-    @Column(name = "situacao", length = 30)
-    private String situacao;
+    @Column(name = "localidade_sede", length = 120)
+    private String localidadeSede;
+
+    @Column(name = "localidade_atuacao", length = 120)
+    private String localidadeAtuacao;
+
+    @Column(name = "ligada_incubadora", nullable = false)
+    private boolean ligadaIncubadora = false;
+
+    @Column(name = "incubadora_ligada", length = 180)
+    private String incubadoraLigada;
 
     @jakarta.persistence.ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
     @jakarta.persistence.CollectionTable(name = "tb_startup_integrante", joinColumns = @jakarta.persistence.JoinColumn(name = "startup_id"))
     @jakarta.persistence.Column(name = "integrante", length = 120)
-    private java.util.List<String> integrantes = new java.util.ArrayList<>();
+    private List<String> integrantes = new ArrayList<>();
 
     @Column(name = "usuario_id")
     private UUID usuarioId;
@@ -74,10 +85,16 @@ public class Startup {
     public void setDataFundacao(LocalDate dataFundacao) { this.dataFundacao = dataFundacao; }
     public Estagio getEstagioAtual() { return estagioAtual; }
     public void setEstagioAtual(Estagio estagioAtual) { this.estagioAtual = estagioAtual; }
-    public String getSituacao() { return situacao; }
-    public void setSituacao(String situacao) { this.situacao = situacao; }
-    public java.util.List<String> getIntegrantes() { return integrantes; }
-    public void setIntegrantes(java.util.List<String> integrantes) { this.integrantes = integrantes; }
+    public String getLocalidadeSede() { return localidadeSede; }
+    public void setLocalidadeSede(String localidadeSede) { this.localidadeSede = localidadeSede; }
+    public String getLocalidadeAtuacao() { return localidadeAtuacao; }
+    public void setLocalidadeAtuacao(String localidadeAtuacao) { this.localidadeAtuacao = localidadeAtuacao; }
+    public boolean isLigadaIncubadora() { return ligadaIncubadora; }
+    public void setLigadaIncubadora(boolean ligadaIncubadora) { this.ligadaIncubadora = ligadaIncubadora; }
+    public String getIncubadoraLigada() { return incubadoraLigada; }
+    public void setIncubadoraLigada(String incubadoraLigada) { this.incubadoraLigada = incubadoraLigada; }
+    public List<String> getIntegrantes() { return integrantes; }
+    public void setIntegrantes(List<String> integrantes) { this.integrantes = integrantes; }
     public UUID getUsuarioId() { return usuarioId; }
     public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
     public LocalDateTime getDataCadastro() { return dataCadastro; }

@@ -43,8 +43,11 @@ public class StartupService {
         startup.setAreaAtuacao(request.areaAtuacao());
         startup.setDataFundacao(request.dataFundacao());
         startup.setEstagioAtual(request.estagioAtual());
-        startup.setSituacao("ATIVA");
         if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
+        if (request.localidadeSede() != null) startup.setLocalidadeSede(request.localidadeSede());
+        if (request.localidadeAtuacao() != null) startup.setLocalidadeAtuacao(request.localidadeAtuacao());
+        if (request.ligadaIncubadora() != null) startup.setLigadaIncubadora(request.ligadaIncubadora());
+        if (request.incubadoraLigada() != null) startup.setIncubadoraLigada(request.incubadoraLigada());
 
         StartupRepository repo = repository();
         if (repo != null) {
@@ -101,8 +104,11 @@ public class StartupService {
         if (request.descricao() != null) startup.setDescricao(request.descricao());
         if (request.areaAtuacao() != null) startup.setAreaAtuacao(request.areaAtuacao());
         if (request.estagioAtual() != null) startup.setEstagioAtual(request.estagioAtual());
-        if (request.situacao() != null) startup.setSituacao(request.situacao());
         if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
+        if (request.localidadeSede() != null) startup.setLocalidadeSede(request.localidadeSede());
+        if (request.localidadeAtuacao() != null) startup.setLocalidadeAtuacao(request.localidadeAtuacao());
+        if (request.ligadaIncubadora() != null) startup.setLigadaIncubadora(request.ligadaIncubadora());
+        if (request.incubadoraLigada() != null) startup.setIncubadoraLigada(request.incubadoraLigada());
 
         if (repo != null) {
             startup = repo.save(startup);
@@ -113,6 +119,8 @@ public class StartupService {
     private StartupResponseDTO toResponse(Startup s) {
         return new StartupResponseDTO(
                 s.getId(), s.getNome(), s.getEmail(), s.getDescricao(), s.getAreaAtuacao(),
-                s.getDataFundacao(), s.getEstagioAtual(), s.getSituacao(), s.getIntegrantes(), s.getDataCadastro());
+                s.getDataFundacao(), s.getEstagioAtual(), s.getIntegrantes(),
+                s.getLocalidadeSede(), s.getLocalidadeAtuacao(), s.isLigadaIncubadora(),
+                s.getIncubadoraLigada(), s.getDataCadastro());
     }
 }

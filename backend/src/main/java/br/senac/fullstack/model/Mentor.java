@@ -35,11 +35,31 @@ public class Mentor {
     @Column(name = "area", length = 120)
     private List<String> areasAtuacao = new ArrayList<>();
 
-    @Column(name = "disponibilidade", length = 120)
-    private String disponibilidade;
+    @ElementCollection(fetch = jakarta.persistence.FetchType.EAGER)
+    @CollectionTable(name = "tb_mentor_tema", joinColumns = @JoinColumn(name = "mentor_id"))
+    @Column(name = "tema", length = 120)
+    private List<String> temas = new ArrayList<>();
 
     @Column(name = "experiencia", columnDefinition = "text")
     private String experiencia;
+
+    @Column(name = "disponibilidade", length = 120)
+    private String disponibilidade;
+
+    @Column(name = "localidade", length = 120)
+    private String localidade;
+
+    @Column(name = "telefone", length = 40)
+    private String telefone;
+
+    @Column(name = "linkedin", length = 255)
+    private String linkedin;
+
+    @Column(name = "aprovado", nullable = false)
+    private boolean aprovado = false;
+
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true;
 
     @Column(name = "usuario_id")
     private UUID usuarioId;
@@ -60,20 +80,34 @@ public class Mentor {
     public void setEmail(String email) { this.email = email; }
     public List<String> getAreasAtuacao() { return areasAtuacao; }
     public void setAreasAtuacao(List<String> areasAtuacao) { this.areasAtuacao = areasAtuacao; }
-    public String getDisponibilidade() { return disponibilidade; }
-    public void setDisponibilidade(String disponibilidade) { this.disponibilidade = disponibilidade; }
+    public List<String> getTemas() { return temas; }
+    public void setTemas(List<String> temas) { this.temas = temas; }
     public String getExperiencia() { return experiencia; }
     public void setExperiencia(String experiencia) { this.experiencia = experiencia; }
+    public String getDisponibilidade() { return disponibilidade; }
+    public void setDisponibilidade(String disponibilidade) { this.disponibilidade = disponibilidade; }
+    public String getLocalidade() { return localidade; }
+    public void setLocalidade(String localidade) { this.localidade = localidade; }
+    public String getTelefone() { return telefone; }
+    public void setTelefone(String telefone) { this.telefone = telefone; }
+    public String getLinkedin() { return linkedin; }
+    public void setLinkedin(String linkedin) { this.linkedin = linkedin; }
+    public boolean isAprovado() { return aprovado; }
+    public void setAprovado(boolean aprovado) { this.aprovado = aprovado; }
+    public boolean isAtivo() { return ativo; }
+    public void setAtivo(boolean ativo) { this.ativo = ativo; }
+    public UUID getUsuarioId() { return usuarioId; }
+    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
+    public LocalDateTime getDataCadastro() { return dataCadastro; }
+    public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
 
     public boolean isPerfilCompleto() {
         return nome != null && !nome.isBlank()
                 && email != null && !email.isBlank()
                 && areasAtuacao != null && !areasAtuacao.isEmpty()
+                && temas != null && !temas.isEmpty()
                 && experiencia != null && !experiencia.isBlank()
-                && disponibilidade != null && !disponibilidade.isBlank();
+                && disponibilidade != null && !disponibilidade.isBlank()
+                && localidade != null && !localidade.isBlank();
     }
-    public UUID getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
-    public LocalDateTime getDataCadastro() { return dataCadastro; }
-    public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
 }

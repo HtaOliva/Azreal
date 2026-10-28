@@ -30,6 +30,11 @@ public class IncubadoraService {
     public IncubadoraResponseDTO criar(IncubadoraRequestDTO request) {
         Incubadora i = new Incubadora();
         i.setNome(request.nome());
+        i.setFoco(request.foco());
+        i.setCriteriosEntrada(request.criteriosEntrada());
+        i.setLocalidade(request.localidade());
+        if (request.abrangencia() != null) i.setAbrangencia(request.abrangencia());
+        i.setModalidade(request.modalidade());
         i.setDescricao(request.descricao());
         i.setLink(request.link());
         if (request.ativo() != null) i.setAtivo(request.ativo());
@@ -53,6 +58,11 @@ public class IncubadoraService {
             if (i == null) throw new IllegalArgumentException("Incubadora nao encontrada");
         }
         if (request.nome() != null) i.setNome(request.nome());
+        if (request.foco() != null) i.setFoco(request.foco());
+        if (request.criteriosEntrada() != null) i.setCriteriosEntrada(request.criteriosEntrada());
+        if (request.localidade() != null) i.setLocalidade(request.localidade());
+        if (request.abrangencia() != null) i.setAbrangencia(request.abrangencia());
+        if (request.modalidade() != null) i.setModalidade(request.modalidade());
         if (request.descricao() != null) i.setDescricao(request.descricao());
         if (request.link() != null) i.setLink(request.link());
         if (request.ativo() != null) i.setAtivo(request.ativo());
@@ -96,6 +106,8 @@ public class IncubadoraService {
     }
 
     private IncubadoraResponseDTO toResponse(Incubadora i) {
-        return new IncubadoraResponseDTO(i.getId(), i.getNome(), i.getDescricao(), i.getLink(), i.isAtivo(), i.getDataCadastro());
+        return new IncubadoraResponseDTO(i.getId(), i.getNome(), i.getFoco(), i.getCriteriosEntrada(),
+                i.getLocalidade(), i.getAbrangencia(), i.getModalidade(), i.getDescricao(), i.getLink(),
+                i.isAtivo(), i.getDataCadastro());
     }
 }

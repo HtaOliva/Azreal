@@ -14,7 +14,11 @@ public record MentorRequestDTO(
         @NotBlank @Email @Size(max = 180) String email,
         @NotBlank @Size(min = 6, max = 120) String senha,
         @NotEmpty List<String> areasAtuacao,
-        String disponibilidade,
+        List<String> temas,
         String experiencia,
+        String disponibilidade,
+        String localidade,
+        String telefone,
+        String linkedin,
         @NotNull UUID aceiteTermoId
 ) {}
