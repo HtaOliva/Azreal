@@ -39,16 +39,40 @@ public class Curso {
         this.dataCadastro = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getTitulo() { return titulo; }
-    public void setTitulo(String titulo) { this.titulo = titulo; }
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
-    public String getUrl() { return url; }
-    public void setUrl(String url) { this.url = url; }
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
-    public LocalDateTime getDataCadastro() { return dataCadastro; }
-    public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public String getTitulo() {
+        return titulo;
+    }
+    public void setTitulo(String titulo) {
+        this.titulo = titulo;
+    }
+    public String getDescricao() {
+        return descricao;
+    }
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+    public String getUrl() {
+        return url;
+    }
+    public void setUrl(String url) {
+        this.url = url;
+    }
+    public boolean isAtivo() {
+        return ativo;
+    }
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
 }

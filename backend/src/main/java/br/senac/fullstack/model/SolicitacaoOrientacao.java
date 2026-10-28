@@ -46,18 +46,46 @@ public class SolicitacaoOrientacao {
         this.status = StatusSolicitacao.PENDENTE;
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getStartupId() { return startupId; }
-    public void setStartupId(UUID startupId) { this.startupId = startupId; }
-    public UUID getMentorId() { return mentorId; }
-    public void setMentorId(UUID mentorId) { this.mentorId = mentorId; }
-    public String getAssunto() { return assunto; }
-    public void setAssunto(String assunto) { this.assunto = assunto; }
-    public StatusSolicitacao getStatus() { return status; }
-    public void setStatus(StatusSolicitacao status) { this.status = status; }
-    public LocalDateTime getDataSolicitacao() { return dataSolicitacao; }
-    public void setDataSolicitacao(LocalDateTime dataSolicitacao) { this.dataSolicitacao = dataSolicitacao; }
-    public LocalDateTime getDataExpiracao() { return dataExpiracao; }
-    public void setDataExpiracao(LocalDateTime dataExpiracao) { this.dataExpiracao = dataExpiracao; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public UUID getStartupId() {
+        return startupId;
+    }
+    public void setStartupId(UUID startupId) {
+        this.startupId = startupId;
+    }
+    public UUID getMentorId() {
+        return mentorId;
+    }
+    public void setMentorId(UUID mentorId) {
+        this.mentorId = mentorId;
+    }
+    public String getAssunto() {
+        return assunto;
+    }
+    public void setAssunto(String assunto) {
+        this.assunto = assunto;
+    }
+    public StatusSolicitacao getStatus() {
+        return status;
+    }
+    public void setStatus(StatusSolicitacao status) {
+        this.status = status;
+    }
+    public LocalDateTime getDataSolicitacao() {
+        return dataSolicitacao;
+    }
+    public void setDataSolicitacao(LocalDateTime dataSolicitacao) {
+        this.dataSolicitacao = dataSolicitacao;
+    }
+    public LocalDateTime getDataExpiracao() {
+        return dataExpiracao;
+    }
+    public void setDataExpiracao(LocalDateTime dataExpiracao) {
+        this.dataExpiracao = dataExpiracao;
+    }
 }

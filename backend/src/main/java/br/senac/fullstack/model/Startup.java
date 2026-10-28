@@ -71,32 +71,88 @@ public class Startup {
         this.dataCadastro = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
-    public String getAreaAtuacao() { return areaAtuacao; }
-    public void setAreaAtuacao(String areaAtuacao) { this.areaAtuacao = areaAtuacao; }
-    public LocalDate getDataFundacao() { return dataFundacao; }
-    public void setDataFundacao(LocalDate dataFundacao) { this.dataFundacao = dataFundacao; }
-    public Estagio getEstagioAtual() { return estagioAtual; }
-    public void setEstagioAtual(Estagio estagioAtual) { this.estagioAtual = estagioAtual; }
-    public String getLocalidadeSede() { return localidadeSede; }
-    public void setLocalidadeSede(String localidadeSede) { this.localidadeSede = localidadeSede; }
-    public String getLocalidadeAtuacao() { return localidadeAtuacao; }
-    public void setLocalidadeAtuacao(String localidadeAtuacao) { this.localidadeAtuacao = localidadeAtuacao; }
-    public boolean isLigadaIncubadora() { return ligadaIncubadora; }
-    public void setLigadaIncubadora(boolean ligadaIncubadora) { this.ligadaIncubadora = ligadaIncubadora; }
-    public String getIncubadoraLigada() { return incubadoraLigada; }
-    public void setIncubadoraLigada(String incubadoraLigada) { this.incubadoraLigada = incubadoraLigada; }
-    public List<String> getIntegrantes() { return integrantes; }
-    public void setIntegrantes(List<String> integrantes) { this.integrantes = integrantes; }
-    public UUID getUsuarioId() { return usuarioId; }
-    public void setUsuarioId(UUID usuarioId) { this.usuarioId = usuarioId; }
-    public LocalDateTime getDataCadastro() { return dataCadastro; }
-    public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public String getNome() {
+        return nome;
+    }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+    public String getEmail() {
+        return email;
+    }
+    public void setEmail(String email) {
+        this.email = email;
+    }
+    public String getDescricao() {
+        return descricao;
+    }
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+    public String getAreaAtuacao() {
+        return areaAtuacao;
+    }
+    public void setAreaAtuacao(String areaAtuacao) {
+        this.areaAtuacao = areaAtuacao;
+    }
+    public LocalDate getDataFundacao() {
+        return dataFundacao;
+    }
+    public void setDataFundacao(LocalDate dataFundacao) {
+        this.dataFundacao = dataFundacao;
+    }
+    public Estagio getEstagioAtual() {
+        return estagioAtual;
+    }
+    public void setEstagioAtual(Estagio estagioAtual) {
+        this.estagioAtual = estagioAtual;
+    }
+    public String getLocalidadeSede() {
+        return localidadeSede;
+    }
+    public void setLocalidadeSede(String localidadeSede) {
+        this.localidadeSede = localidadeSede;
+    }
+    public String getLocalidadeAtuacao() {
+        return localidadeAtuacao;
+    }
+    public void setLocalidadeAtuacao(String localidadeAtuacao) {
+        this.localidadeAtuacao = localidadeAtuacao;
+    }
+    public boolean isLigadaIncubadora() {
+        return ligadaIncubadora;
+    }
+    public void setLigadaIncubadora(boolean ligadaIncubadora) {
+        this.ligadaIncubadora = ligadaIncubadora;
+    }
+    public String getIncubadoraLigada() {
+        return incubadoraLigada;
+    }
+    public void setIncubadoraLigada(String incubadoraLigada) {
+        this.incubadoraLigada = incubadoraLigada;
+    }
+    public List<String> getIntegrantes() {
+        return integrantes;
+    }
+    public void setIntegrantes(List<String> integrantes) {
+        this.integrantes = integrantes;
+    }
+    public UUID getUsuarioId() {
+        return usuarioId;
+    }
+    public void setUsuarioId(UUID usuarioId) {
+        this.usuarioId = usuarioId;
+    }
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
 }

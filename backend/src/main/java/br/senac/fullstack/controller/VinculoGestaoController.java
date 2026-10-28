@@ -1,6 +1,5 @@
 package br.senac.fullstack.controller;
 
-import br.senac.fullstack.dto.VinculoResponseDTO;
 import br.senac.fullstack.service.VinculoService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;

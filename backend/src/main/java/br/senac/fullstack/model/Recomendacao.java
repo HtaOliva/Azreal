@@ -39,16 +39,40 @@ public class Recomendacao {
         this.dataHora = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getMentorId() { return mentorId; }
-    public void setMentorId(UUID mentorId) { this.mentorId = mentorId; }
-    public UUID getStartupId() { return startupId; }
-    public void setStartupId(UUID startupId) { this.startupId = startupId; }
-    public String getTipoApoio() { return tipoApoio; }
-    public void setTipoApoio(String tipoApoio) { this.tipoApoio = tipoApoio; }
-    public String getObservacao() { return observacao; }
-    public void setObservacao(String observacao) { this.observacao = observacao; }
-    public LocalDateTime getDataHora() { return dataHora; }
-    public void setDataHora(LocalDateTime dataHora) { this.dataHora = dataHora; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public UUID getMentorId() {
+        return mentorId;
+    }
+    public void setMentorId(UUID mentorId) {
+        this.mentorId = mentorId;
+    }
+    public UUID getStartupId() {
+        return startupId;
+    }
+    public void setStartupId(UUID startupId) {
+        this.startupId = startupId;
+    }
+    public String getTipoApoio() {
+        return tipoApoio;
+    }
+    public void setTipoApoio(String tipoApoio) {
+        this.tipoApoio = tipoApoio;
+    }
+    public String getObservacao() {
+        return observacao;
+    }
+    public void setObservacao(String observacao) {
+        this.observacao = observacao;
+    }
+    public LocalDateTime getDataHora() {
+        return dataHora;
+    }
+    public void setDataHora(LocalDateTime dataHora) {
+        this.dataHora = dataHora;
+    }
 }

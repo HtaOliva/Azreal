@@ -61,26 +61,70 @@ public class Incubadora {
         this.dataCadastro = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
-    public String getFoco() { return foco; }
-    public void setFoco(String foco) { this.foco = foco; }
-    public String getCriteriosEntrada() { return criteriosEntrada; }
-    public void setCriteriosEntrada(String criteriosEntrada) { this.criteriosEntrada = criteriosEntrada; }
-    public String getLocalidade() { return localidade; }
-    public void setLocalidade(String localidade) { this.localidade = localidade; }
-    public List<String> getAbrangencia() { return abrangencia; }
-    public void setAbrangencia(List<String> abrangencia) { this.abrangencia = abrangencia; }
-    public String getModalidade() { return modalidade; }
-    public void setModalidade(String modalidade) { this.modalidade = modalidade; }
-    public String getDescricao() { return descricao; }
-    public void setDescricao(String descricao) { this.descricao = descricao; }
-    public String getLink() { return link; }
-    public void setLink(String link) { this.link = link; }
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
-    public LocalDateTime getDataCadastro() { return dataCadastro; }
-    public void setDataCadastro(LocalDateTime dataCadastro) { this.dataCadastro = dataCadastro; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public String getNome() {
+        return nome;
+    }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+    public String getFoco() {
+        return foco;
+    }
+    public void setFoco(String foco) {
+        this.foco = foco;
+    }
+    public String getCriteriosEntrada() {
+        return criteriosEntrada;
+    }
+    public void setCriteriosEntrada(String criteriosEntrada) {
+        this.criteriosEntrada = criteriosEntrada;
+    }
+    public String getLocalidade() {
+        return localidade;
+    }
+    public void setLocalidade(String localidade) {
+        this.localidade = localidade;
+    }
+    public List<String> getAbrangencia() {
+        return abrangencia;
+    }
+    public void setAbrangencia(List<String> abrangencia) {
+        this.abrangencia = abrangencia;
+    }
+    public String getModalidade() {
+        return modalidade;
+    }
+    public void setModalidade(String modalidade) {
+        this.modalidade = modalidade;
+    }
+    public String getDescricao() {
+        return descricao;
+    }
+    public void setDescricao(String descricao) {
+        this.descricao = descricao;
+    }
+    public String getLink() {
+        return link;
+    }
+    public void setLink(String link) {
+        this.link = link;
+    }
+    public boolean isAtivo() {
+        return ativo;
+    }
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+    public LocalDateTime getDataCadastro() {
+        return dataCadastro;
+    }
+    public void setDataCadastro(LocalDateTime dataCadastro) {
+        this.dataCadastro = dataCadastro;
+    }
 }

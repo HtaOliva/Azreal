@@ -33,12 +33,28 @@ public class ApoioBuscado {
         this.dataRegistro = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getStartupId() { return startupId; }
-    public void setStartupId(UUID startupId) { this.startupId = startupId; }
-    public String getTipoApoio() { return tipoApoio; }
-    public void setTipoApoio(String tipoApoio) { this.tipoApoio = tipoApoio; }
-    public LocalDateTime getDataRegistro() { return dataRegistro; }
-    public void setDataRegistro(LocalDateTime dataRegistro) { this.dataRegistro = dataRegistro; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public UUID getStartupId() {
+        return startupId;
+    }
+    public void setStartupId(UUID startupId) {
+        this.startupId = startupId;
+    }
+    public String getTipoApoio() {
+        return tipoApoio;
+    }
+    public void setTipoApoio(String tipoApoio) {
+        this.tipoApoio = tipoApoio;
+    }
+    public LocalDateTime getDataRegistro() {
+        return dataRegistro;
+    }
+    public void setDataRegistro(LocalDateTime dataRegistro) {
+        this.dataRegistro = dataRegistro;
+    }
 }

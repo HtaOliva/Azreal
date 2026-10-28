@@ -42,18 +42,46 @@ public class Certificado {
         this.dataUpload = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public UUID getStartupId() { return startupId; }
-    public void setStartupId(UUID startupId) { this.startupId = startupId; }
-    public String getNome() { return nome; }
-    public void setNome(String nome) { this.nome = nome; }
-    public String getTipo() { return tipo; }
-    public void setTipo(String tipo) { this.tipo = tipo; }
-    public Long getTamanho() { return tamanho; }
-    public void setTamanho(Long tamanho) { this.tamanho = tamanho; }
-    public String getArquivoUrl() { return arquivoUrl; }
-    public void setArquivoUrl(String arquivoUrl) { this.arquivoUrl = arquivoUrl; }
-    public LocalDateTime getDataUpload() { return dataUpload; }
-    public void setDataUpload(LocalDateTime dataUpload) { this.dataUpload = dataUpload; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public UUID getStartupId() {
+        return startupId;
+    }
+    public void setStartupId(UUID startupId) {
+        this.startupId = startupId;
+    }
+    public String getNome() {
+        return nome;
+    }
+    public void setNome(String nome) {
+        this.nome = nome;
+    }
+    public String getTipo() {
+        return tipo;
+    }
+    public void setTipo(String tipo) {
+        this.tipo = tipo;
+    }
+    public Long getTamanho() {
+        return tamanho;
+    }
+    public void setTamanho(Long tamanho) {
+        this.tamanho = tamanho;
+    }
+    public String getArquivoUrl() {
+        return arquivoUrl;
+    }
+    public void setArquivoUrl(String arquivoUrl) {
+        this.arquivoUrl = arquivoUrl;
+    }
+    public LocalDateTime getDataUpload() {
+        return dataUpload;
+    }
+    public void setDataUpload(LocalDateTime dataUpload) {
+        this.dataUpload = dataUpload;
+    }
 }

@@ -33,12 +33,28 @@ public class RegraPlataforma {
         this.dataAtualizacao = LocalDateTime.now();
     }
 
-    public UUID getId() { return id; }
-    public void setId(UUID id) { this.id = id; }
-    public String getTexto() { return texto; }
-    public void setTexto(String texto) { this.texto = texto; }
-    public boolean isAtivo() { return ativo; }
-    public void setAtivo(boolean ativo) { this.ativo = ativo; }
-    public LocalDateTime getDataAtualizacao() { return dataAtualizacao; }
-    public void setDataAtualizacao(LocalDateTime dataAtualizacao) { this.dataAtualizacao = dataAtualizacao; }
+    public UUID getId() {
+        return id;
+    }
+    public void setId(UUID id) {
+        this.id = id;
+    }
+    public String getTexto() {
+        return texto;
+    }
+    public void setTexto(String texto) {
+        this.texto = texto;
+    }
+    public boolean isAtivo() {
+        return ativo;
+    }
+    public void setAtivo(boolean ativo) {
+        this.ativo = ativo;
+    }
+    public LocalDateTime getDataAtualizacao() {
+        return dataAtualizacao;
+    }
+    public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
+        this.dataAtualizacao = dataAtualizacao;
+    }
 }
