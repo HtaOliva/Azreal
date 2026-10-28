@@ -39,7 +39,7 @@ public class Certificado {
 
     public Certificado() {
         this.id = UUID.randomUUID();
-        this.dataUpload = LocalDateTime.now();
+        this.dataUpload = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

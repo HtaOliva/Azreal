@@ -42,7 +42,7 @@ public class SolicitacaoOrientacao {
 
     public SolicitacaoOrientacao() {
         this.id = UUID.randomUUID();
-        this.dataSolicitacao = LocalDateTime.now();
+        this.dataSolicitacao = LocalDateTime.now(java.time.ZoneId.systemDefault());
         this.status = StatusSolicitacao.PENDENTE;
     }
 

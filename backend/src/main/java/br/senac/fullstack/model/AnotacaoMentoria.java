@@ -33,7 +33,7 @@ public class AnotacaoMentoria {
 
     public AnotacaoMentoria() {
         this.id = UUID.randomUUID();
-        this.dataHora = LocalDateTime.now();
+        this.dataHora = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

@@ -79,7 +79,7 @@ public class SolicitacaoService {
         if (!sol.getStatus().equals(StatusSolicitacao.PENDENTE)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Pedido ja respondido ou expirado");
         }
-        if (LocalDateTime.now().isAfter(sol.getDataExpiracao())) {
+        if (LocalDateTime.now(java.time.ZoneId.systemDefault()).isAfter(sol.getDataExpiracao())) {
             sol.setStatus(StatusSolicitacao.EXPIRADO);
             salvar(sol);
             throw new ResponseStatusException(HttpStatus.GONE, "Pedido expirado");
@@ -163,7 +163,7 @@ public class SolicitacaoService {
         int dias = 0;
         while (dias < 5) {
             data = data.plusDays(1);
-            if (data.getDayOfWeek() != DayOfWeek.SATURDAY && data.getDayOfWeek() != DayOfWeek.SUNDAY) {
+            if (!data.getDayOfWeek().equals(DayOfWeek.SATURDAY) && !data.getDayOfWeek().equals(DayOfWeek.SUNDAY)) {
                 dias++;
             }
         }

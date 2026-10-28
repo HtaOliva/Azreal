@@ -69,7 +69,7 @@ public class Mentor {
 
     public Mentor() {
         this.id = UUID.randomUUID();
-        this.dataCadastro = LocalDateTime.now();
+        this.dataCadastro = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

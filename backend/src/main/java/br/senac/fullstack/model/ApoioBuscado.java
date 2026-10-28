@@ -30,7 +30,7 @@ public class ApoioBuscado {
 
     public ApoioBuscado() {
         this.id = UUID.randomUUID();
-        this.dataRegistro = LocalDateTime.now();
+        this.dataRegistro = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

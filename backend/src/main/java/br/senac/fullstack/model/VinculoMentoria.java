@@ -39,7 +39,7 @@ public class VinculoMentoria {
 
     public VinculoMentoria() {
         this.id = UUID.randomUUID();
-        this.dataInicio = LocalDateTime.now();
+        this.dataInicio = LocalDateTime.now(java.time.ZoneId.systemDefault());
         this.status = StatusVinculo.ATIVO;
     }
 

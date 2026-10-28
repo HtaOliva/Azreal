@@ -31,7 +31,7 @@ public class RegraPlataformaService {
         RegraPlataforma r = new RegraPlataforma();
         r.setTexto(request.texto());
         if (request.ativo() != null) r.setAtivo(request.ativo());
-        r.setDataAtualizacao(java.time.LocalDateTime.now());
+        r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
 
         RegraPlataformaRepository repo = repository();
         if (repo != null) {
@@ -53,7 +53,7 @@ public class RegraPlataformaService {
         }
         if (request.texto() != null) r.setTexto(request.texto());
         if (request.ativo() != null) r.setAtivo(request.ativo());
-        r.setDataAtualizacao(java.time.LocalDateTime.now());
+        r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
         if (repo != null) r = repo.save(r); else memory.put(r.getId(), r);
         return toResponse(r);
     }
@@ -68,7 +68,7 @@ public class RegraPlataformaService {
             if (r == null) throw new IllegalArgumentException("Regra nao encontrada");
         }
         r.setAtivo(ativo);
-        r.setDataAtualizacao(java.time.LocalDateTime.now());
+        r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
         if (repo != null) repo.save(r); else memory.put(r.getId(), r);
     }
 

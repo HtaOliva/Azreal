@@ -30,7 +30,7 @@ public class RegraPlataforma {
 
     public RegraPlataforma() {
         this.id = UUID.randomUUID();
-        this.dataAtualizacao = LocalDateTime.now();
+        this.dataAtualizacao = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

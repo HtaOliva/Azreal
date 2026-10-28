@@ -33,7 +33,7 @@ public class Tema {
 
     public Tema() {
         this.id = UUID.randomUUID();
-        this.dataCadastro = LocalDateTime.now();
+        this.dataCadastro = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
     public UUID getId() {

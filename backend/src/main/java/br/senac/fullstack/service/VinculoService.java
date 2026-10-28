@@ -67,7 +67,7 @@ public class VinculoService {
             if (v == null) throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Vinculo nao encontrado");
         }
         v.setStatus(StatusVinculo.ENCERRADO);
-        v.setDataFim(java.time.LocalDateTime.now());
+        v.setDataFim(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
         if (repo != null) repo.save(v); else memory.put(v.getId(), v);
     }
 
