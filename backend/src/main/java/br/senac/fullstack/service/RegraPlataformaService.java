@@ -29,7 +29,7 @@ public class RegraPlataformaService {
     public RegraPlataformaResponseDTO criar(RegraPlataformaRequestDTO request) {
         RegraPlataforma r = new RegraPlataforma();
         r.setTexto(request.texto());
-        if (request.ativo() != null) r.setAtivo(request.ativo());
+        if (request.ativo() != null) { r.setAtivo(request.ativo()); }
         r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
 
         RegraPlataformaRepository repo = repository();
@@ -51,7 +51,7 @@ public class RegraPlataformaService {
             if (r == null) throw new IllegalArgumentException("Regra nao encontrada");
         }
         if (request.texto() != null) r.setTexto(request.texto());
-        if (request.ativo() != null) r.setAtivo(request.ativo());
+        if (request.ativo() != null) { r.setAtivo(request.ativo()); }
         r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
         if (repo != null) r = repo.save(r); else memory.put(r.getId(), r);
         return toResponse(r);

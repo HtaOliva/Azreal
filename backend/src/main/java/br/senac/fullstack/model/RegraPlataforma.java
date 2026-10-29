@@ -1,5 +1,8 @@
 package br.senac.fullstack.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tb_regra_plataforma")
+@Getter
+@Setter
 public class RegraPlataforma {
 
     @Id
@@ -33,27 +38,6 @@ public class RegraPlataforma {
         this.dataAtualizacao = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
-    public UUID getId() {
-        return id;
-    }
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    public String getTexto() {
-        return texto;
-    }
-    public void setTexto(String texto) {
-        this.texto = texto;
-    }
-    public boolean isAtivo() {
-        return ativo;
-    }
-    public void setAtivo(boolean ativo) {
-        this.ativo = ativo;
-    }
-    public LocalDateTime getDataAtualizacao() {
-        return dataAtualizacao;
-    }
     public void setDataAtualizacao(LocalDateTime dataAtualizacao) {
         this.dataAtualizacao = dataAtualizacao;
     }

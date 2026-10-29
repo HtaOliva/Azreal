@@ -1,5 +1,8 @@
 package br.senac.fullstack.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,6 +15,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tb_aceite_termo")
+@Getter
+@Setter
 public class AceiteTermo {
 
     @Id
@@ -36,34 +41,7 @@ public class AceiteTermo {
         this.dataHora = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
-    public UUID getId() {
-        return id;
-    }
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    public UUID getUsuarioId() {
-        return usuarioId;
-    }
-    public void setUsuarioId(UUID usuarioId) {
-        this.usuarioId = usuarioId;
-    }
-    public String getVersaoTermo() {
-        return versaoTermo;
-    }
-    public void setVersaoTermo(String versaoTermo) {
-        this.versaoTermo = versaoTermo;
-    }
-    public LocalDateTime getDataHora() {
-        return dataHora;
-    }
     public void setDataHora(LocalDateTime dataHora) {
         this.dataHora = dataHora;
-    }
-    public String getIp() {
-        return ip;
-    }
-    public void setIp(String ip) {
-        this.ip = ip;
     }
 }

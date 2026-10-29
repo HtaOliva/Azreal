@@ -1,5 +1,8 @@
 package br.senac.fullstack.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -14,6 +17,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tb_vinculo_mentoria")
+@Getter
+@Setter
 public class VinculoMentoria {
 
     @Id
@@ -43,40 +48,7 @@ public class VinculoMentoria {
         this.status = StatusVinculo.ATIVO;
     }
 
-    public UUID getId() {
-        return id;
-    }
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    public UUID getStartupId() {
-        return startupId;
-    }
-    public void setStartupId(UUID startupId) {
-        this.startupId = startupId;
-    }
-    public UUID getMentorId() {
-        return mentorId;
-    }
-    public void setMentorId(UUID mentorId) {
-        this.mentorId = mentorId;
-    }
-    public LocalDateTime getDataInicio() {
-        return dataInicio;
-    }
     public void setDataInicio(LocalDateTime dataInicio) {
         this.dataInicio = dataInicio;
-    }
-    public LocalDateTime getDataFim() {
-        return dataFim;
-    }
-    public void setDataFim(LocalDateTime dataFim) {
-        this.dataFim = dataFim;
-    }
-    public StatusVinculo getStatus() {
-        return status;
-    }
-    public void setStatus(StatusVinculo status) {
-        this.status = status;
     }
 }

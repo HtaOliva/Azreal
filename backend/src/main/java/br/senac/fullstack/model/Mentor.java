@@ -1,5 +1,8 @@
 package br.senac.fullstack.model;
 
+import lombok.Getter;
+import lombok.Setter;
+
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
 import jakarta.persistence.ElementCollection;
@@ -17,6 +20,8 @@ import java.util.UUID;
 
 @Entity
 @Table(name = "tb_mentor")
+@Getter
+@Setter
 public class Mentor {
 
     @Id
@@ -72,91 +77,15 @@ public class Mentor {
         this.dataCadastro = LocalDateTime.now(java.time.ZoneId.systemDefault());
     }
 
-    public UUID getId() {
-        return id;
-    }
-    public void setId(UUID id) {
-        this.id = id;
-    }
-    public String getNome() {
-        return nome;
-    }
-    public void setNome(String nome) {
-        this.nome = nome;
-    }
-    public String getEmail() {
-        return email;
-    }
-    public void setEmail(String email) {
-        this.email = email;
-    }
-    public List<String> getAreasAtuacao() {
-        return areasAtuacao;
-    }
     public void setAreasAtuacao(List<String> areasAtuacao) {
         this.areasAtuacao = areasAtuacao;
-    }
-    public List<String> getTemas() {
-        return temas;
-    }
-    public void setTemas(List<String> temas) {
-        this.temas = temas;
-    }
-    public String getExperiencia() {
-        return experiencia;
-    }
-    public void setExperiencia(String experiencia) {
-        this.experiencia = experiencia;
-    }
-    public String getDisponibilidade() {
-        return disponibilidade;
-    }
-    public void setDisponibilidade(String disponibilidade) {
-        this.disponibilidade = disponibilidade;
-    }
-    public String getLocalidade() {
-        return localidade;
     }
     public void setLocalidade(String localidade) {
         this.localidade = localidade;
     }
-    public String getTelefone() {
-        return telefone;
-    }
-    public void setTelefone(String telefone) {
-        this.telefone = telefone;
-    }
-    public String getLinkedin() {
-        return linkedin;
-    }
-    public void setLinkedin(String linkedin) {
-        this.linkedin = linkedin;
-    }
-    public boolean isAprovado() {
-        return aprovado;
-    }
-    public void setAprovado(boolean aprovado) {
-        this.aprovado = aprovado;
-    }
-    public boolean isAtivo() {
-        return ativo;
-    }
     public void setAtivo(boolean ativo) {
         this.ativo = ativo;
     }
-    public UUID getUsuarioId() {
-        return usuarioId;
-    }
-    public void setUsuarioId(UUID usuarioId) {
-        this.usuarioId = usuarioId;
-    }
-    public LocalDateTime getDataCadastro() {
-        return dataCadastro;
-    }
-    public void setDataCadastro(LocalDateTime dataCadastro) {
-        this.dataCadastro = dataCadastro;
-    }
-
     public boolean isPerfilCompleto() {
         return nome != null && !nome.isBlank()
                 && email != null && !email.isBlank()
