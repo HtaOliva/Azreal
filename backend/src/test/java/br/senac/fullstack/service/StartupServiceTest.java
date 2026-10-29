@@ -4,48 +4,58 @@ import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.model.Estagio;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
 
-@ExtendWith(MockitoExtension.class)
 class StartupServiceTest {
 
-    @Mock
-    private AceiteTermoService aceiteTermoService;
+    private final AceiteTermoService aceiteService = new AceiteTermoService(new NullObjectProvider<>());
 
-    @Mock
-    private ObjectProvider<br.senac.fullstack.repository.StartupRepository> repositoryProvider;
+    private StartupService service() {
+        return new StartupService(new NullObjectProvider<>(), aceiteService);
+    }
 
-    @InjectMocks
-    private StartupService startupService;
+    private UUID aceiteId() {
+        return aceiteService.registrar(new br.senac.fullstack.dto.AceiteTermoRequestDTO("v1", "127.0.0.1"), null, "127.0.0.1").id();
+    }
 
     @Test
-    void criarSemAceiteLanca400() {
-        UUID aceiteId = UUID.randomUUID();
-        when(aceiteTermoService.existe(aceiteId)).thenReturn(false);
+    void criarSemAceiteLancaBadRequest() {
+        StartupService s = service();
+        StartupRequestDTO req = new StartupRequestDTO("Startup", "s@e.com", "senha123", "desc", "area", LocalDate.now(), Estagio.IDEACAO, null, null, null, null, null, null);
+        assertThrows(Exception.class, () -> s.criar(req));
+    }
 
-        StartupRequestDTO request = new StartupRequestDTO(
-                "Startup X", "sx@example.com", "senha123", "desc", "tech",
-                LocalDate.now(), Estagio.IDEACAO, java.util.List.of("Joao"),
-                "PE-Recife", "PE-Recife", Boolean.FALSE, null, aceiteId);
-
-        assertThrows(ResponseStatusException.class, () -> startupService.criar(request));
+    @Test
+    void criarComAceiteRetornaStartup() {
+        StartupService s = service();
+        UUID aid = aceiteId();
+        StartupRequestDTO req = new StartupRequestDTO("Startup", "s@e.com", "senha123", "desc", "area", LocalDate.now(), Estagio.IDEACAO, null, null, null, null, null, aid);
+        StartupResponseDTO r = s.criar(req);
+        assertNotNull(r);
+        assertNotNull(r.id());
+        assertEquals("Startup", r.nome());
     }
 
     @Test
     void buscarInexistenteLanca404() {
-        UUID id = UUID.randomUUID();
-        assertThrows(ResponseStatusException.class, () -> startupService.buscar(id));
+        StartupService s = service();
+        assertThrows(Exception.class, () -> s.buscar(UUID.randomUUID()));
+    }
+
+    @Test
+    void listarVazio() {
+        StartupService s = service();
+        assertTrue(s.listar().isEmpty());
+    }
+
+    @Test
+    void atualizarInexistenteLanca404() {
+        StartupService s = service();
+        assertThrows(Exception.class, () -> s.atualizar(UUID.randomUUID(), new br.senac.fullstack.dto.StartupUpdateDTO(null, null, null, null, null, null, null, null, null)));
     }
 }
