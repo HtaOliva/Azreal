@@ -29,13 +29,8 @@ public class AceiteTermoController {
     @PostMapping("/aceite")
     public ResponseEntity<AceiteTermoResponseDTO> registrar(@Valid @RequestBody AceiteTermoRequestDTO request,
                                                           HttpServletRequest httpRequest) {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        // LLDAP principal name is not a UUID; keep null for anonymous/public cadastro
         UUID usuarioId = null;
-        if (authentication != null && authentication.isAuthenticated()
-                && !"anonymousUser".equals(authentication.getPrincipal())) {
-            // LLDAP principal name is not a UUID; keep null for anonymous/public cadastro
-            // noop
-        }
         String ip = httpRequest.getRemoteAddr();
         if (request.ip() != null && !request.ip().isBlank()) {
             ip = request.ip();

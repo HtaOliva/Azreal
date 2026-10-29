@@ -69,7 +69,11 @@ public class VinculoService {
         }
         v.setStatus(StatusVinculo.ENCERRADO);
         v.setDataFim(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
-        if (repo != null) repo.save(v); else memory.put(v.getId(), v);
+        if (repo != null) {
+            repo.save(v);
+        } else {
+            memory.put(v.getId(), v);
+        }
     }
 
     public VinculoResponseDTO buscarPorStartup(UUID startupId) {
