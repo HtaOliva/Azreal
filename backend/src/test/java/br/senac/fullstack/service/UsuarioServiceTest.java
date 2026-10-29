@@ -6,7 +6,6 @@ import br.senac.fullstack.dto.UsuarioUpdateDTO;
 import br.senac.fullstack.model.Usuario;
 import br.senac.fullstack.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.util.Optional;

@@ -1,7 +1,6 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.SolicitacaoRequestDTO;
-import br.senac.fullstack.dto.SolicitacaoResponseDTO;
 import org.junit.jupiter.api.Test;
 
 import java.util.UUID;
