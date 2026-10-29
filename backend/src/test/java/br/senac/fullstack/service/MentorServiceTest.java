@@ -5,7 +5,6 @@ import br.senac.fullstack.dto.MentorRequestDTO;
 import br.senac.fullstack.dto.MentorResponseDTO;
 import br.senac.fullstack.dto.MentorUpdateDTO;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
 
 import java.util.List;
 import java.util.UUID;

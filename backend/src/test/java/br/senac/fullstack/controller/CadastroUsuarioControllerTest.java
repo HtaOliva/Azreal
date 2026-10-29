@@ -3,7 +3,6 @@ package br.senac.fullstack.controller;
 import br.senac.fullstack.service.UsuarioService;
 import br.senac.fullstack.service.NullObjectProvider;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import static org.junit.jupiter.api.Assertions.*;

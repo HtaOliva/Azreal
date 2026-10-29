@@ -43,6 +43,6 @@ class RegraPlataformaServiceTest {
     @Test
     void buscarAtivaSemDadosLanca() {
         RegraPlataformaService s = service();
-        assertThrows(Exception.class, () -> s.buscarAtiva());
+        assertThrows(Exception.class, s::buscarAtiva);
     }
 }

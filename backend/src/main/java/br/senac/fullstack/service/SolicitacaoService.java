@@ -174,9 +174,9 @@ public class SolicitacaoService {
             items = repo.findByStartupId(startupId);
         } else {
             items = memory.values().stream()
-                    .filter(s -> s.getStartupId().equals(startupId)).collect(java.util.stream.Collectors.toList());
+                    .filter(s -> s.getStartupId().equals(startupId)).toList();
         }
-        return items.stream().map(this::toResponse).collect(java.util.stream.Collectors.toList());
+        return items.stream().map(this::toResponse).toList();
     }
 
     private SolicitacaoResponseDTO toResponse(SolicitacaoOrientacao s) {
