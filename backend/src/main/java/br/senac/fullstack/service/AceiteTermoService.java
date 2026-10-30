@@ -42,7 +42,9 @@ public class AceiteTermoService {
     }
 
     public boolean existe(UUID id) {
-        if (id == null) { return false; }
+        if (id == null) {
+            return false;
+        }
         AceiteTermoRepository repo = repository();
         if (repo != null) {
             return repo.existsById(id);

@@ -42,12 +42,20 @@ public class MentorService {
         mentor.setNome(request.nome());
         mentor.setEmail(request.email());
         mentor.setAreasAtuacao(request.areasAtuacao());
-        if (request.temas() != null) mentor.setTemas(request.temas());
+        if (request.temas() != null) {
+            mentor.setTemas(request.temas());
+        }
         mentor.setExperiencia(request.experiencia());
         mentor.setDisponibilidade(request.disponibilidade());
-        if (request.localidade() != null) mentor.setLocalidade(request.localidade());
-        if (request.telefone() != null) mentor.setTelefone(request.telefone());
-        if (request.linkedin() != null) mentor.setLinkedin(request.linkedin());
+        if (request.localidade() != null) {
+            mentor.setLocalidade(request.localidade());
+        }
+        if (request.telefone() != null) {
+            mentor.setTelefone(request.telefone());
+        }
+        if (request.linkedin() != null) {
+            mentor.setLinkedin(request.linkedin());
+        }
         mentor.setAprovado(mentor.isPerfilCompleto());
 
         MentorRepository repo = repository();
@@ -116,14 +124,30 @@ public class MentorService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, MENTOR_NAO_ENCONTRADO);
             }
         }
-        if (request.nome() != null) mentor.setNome(request.nome());
-        if (request.areasAtuacao() != null) mentor.setAreasAtuacao(request.areasAtuacao());
-        if (request.temas() != null) mentor.setTemas(request.temas());
-        if (request.experiencia() != null) mentor.setExperiencia(request.experiencia());
-        if (request.disponibilidade() != null) mentor.setDisponibilidade(request.disponibilidade());
-        if (request.localidade() != null) mentor.setLocalidade(request.localidade());
-        if (request.telefone() != null) mentor.setTelefone(request.telefone());
-        if (request.linkedin() != null) mentor.setLinkedin(request.linkedin());
+        if (request.nome() != null) {
+            mentor.setNome(request.nome());
+        }
+        if (request.areasAtuacao() != null) {
+            mentor.setAreasAtuacao(request.areasAtuacao());
+        }
+        if (request.temas() != null) {
+            mentor.setTemas(request.temas());
+        }
+        if (request.experiencia() != null) {
+            mentor.setExperiencia(request.experiencia());
+        }
+        if (request.disponibilidade() != null) {
+            mentor.setDisponibilidade(request.disponibilidade());
+        }
+        if (request.localidade() != null) {
+            mentor.setLocalidade(request.localidade());
+        }
+        if (request.telefone() != null) {
+            mentor.setTelefone(request.telefone());
+        }
+        if (request.linkedin() != null) {
+            mentor.setLinkedin(request.linkedin());
+        }
         mentor.setAprovado(mentor.isAprovado() || mentor.isPerfilCompleto());
 
         if (repo != null) {

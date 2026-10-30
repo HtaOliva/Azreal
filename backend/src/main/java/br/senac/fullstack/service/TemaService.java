@@ -30,7 +30,9 @@ public class TemaService {
         Tema t = new Tema();
         t.setNome(request.nome());
         t.setDescricao(request.descricao());
-        if (request.ativo() != null) t.setAtivo(request.ativo());
+        if (request.ativo() != null) {
+            t.setAtivo(request.ativo());
+        }
 
         TemaRepository repo = repository();
         if (repo != null) {
@@ -48,12 +50,24 @@ public class TemaService {
             t = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Tema nao encontrado"));
         } else {
             t = memory.get(id);
-            if (t == null) throw new IllegalArgumentException("Tema nao encontrado");
+            if (t == null) {
+                throw new IllegalArgumentException("Tema nao encontrado");
+            }
         }
-        if (request.nome() != null) t.setNome(request.nome());
-        if (request.descricao() != null) t.setDescricao(request.descricao());
-        if (request.ativo() != null) t.setAtivo(request.ativo());
-        if (repo != null) t = repo.save(t); else memory.put(t.getId(), t);
+        if (request.nome() != null) {
+            t.setNome(request.nome());
+        }
+        if (request.descricao() != null) {
+            t.setDescricao(request.descricao());
+        }
+        if (request.ativo() != null) {
+            t.setAtivo(request.ativo());
+        }
+        if (repo != null) {
+            t = repo.save(t);
+        } else {
+            memory.put(t.getId(), t);
+        }
         return toResponse(t);
     }
 
@@ -64,10 +78,16 @@ public class TemaService {
             t = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Tema nao encontrado"));
         } else {
             t = memory.get(id);
-            if (t == null) throw new IllegalArgumentException("Tema nao encontrado");
+            if (t == null) {
+                throw new IllegalArgumentException("Tema nao encontrado");
+            }
         }
         t.setAtivo(ativo);
-        if (repo != null) repo.save(t); else memory.put(t.getId(), t);
+        if (repo != null) {
+            repo.save(t);
+        } else {
+            memory.put(t.getId(), t);
+        }
     }
 
     public List<TemaResponseDTO> listarAtivos() {

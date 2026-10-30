@@ -28,7 +28,9 @@ public class HistoricoService {
     }
 
     public void verificarAcesso(UUID startupId, String principal, boolean isAdmin) {
-        if (isAdmin) return;
+        if (isAdmin) {
+            return;
+        }
         try {
             var startup = startupService.buscar(startupId);
             if (startup.email() != null && startup.email().equals(principal)) {

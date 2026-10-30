@@ -32,11 +32,15 @@ public class IncubadoraService {
         i.setFoco(request.foco());
         i.setCriteriosEntrada(request.criteriosEntrada());
         i.setLocalidade(request.localidade());
-        if (request.abrangencia() != null) i.setAbrangencia(request.abrangencia());
+        if (request.abrangencia() != null) {
+            i.setAbrangencia(request.abrangencia());
+        }
         i.setModalidade(request.modalidade());
         i.setDescricao(request.descricao());
         i.setLink(request.link());
-        if (request.ativo() != null) i.setAtivo(request.ativo());
+        if (request.ativo() != null) {
+            i.setAtivo(request.ativo());
+        }
 
         IncubadoraRepository repo = repository();
         if (repo != null) {
@@ -54,18 +58,42 @@ public class IncubadoraService {
             i = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Incubadora nao encontrada"));
         } else {
             i = memory.get(id);
-            if (i == null) throw new IllegalArgumentException("Incubadora nao encontrada");
+            if (i == null) {
+                throw new IllegalArgumentException("Incubadora nao encontrada");
+            }
         }
-        if (request.nome() != null) i.setNome(request.nome());
-        if (request.foco() != null) i.setFoco(request.foco());
-        if (request.criteriosEntrada() != null) i.setCriteriosEntrada(request.criteriosEntrada());
-        if (request.localidade() != null) i.setLocalidade(request.localidade());
-        if (request.abrangencia() != null) i.setAbrangencia(request.abrangencia());
-        if (request.modalidade() != null) i.setModalidade(request.modalidade());
-        if (request.descricao() != null) i.setDescricao(request.descricao());
-        if (request.link() != null) i.setLink(request.link());
-        if (request.ativo() != null) i.setAtivo(request.ativo());
-        if (repo != null) i = repo.save(i); else memory.put(i.getId(), i);
+        if (request.nome() != null) {
+            i.setNome(request.nome());
+        }
+        if (request.foco() != null) {
+            i.setFoco(request.foco());
+        }
+        if (request.criteriosEntrada() != null) {
+            i.setCriteriosEntrada(request.criteriosEntrada());
+        }
+        if (request.localidade() != null) {
+            i.setLocalidade(request.localidade());
+        }
+        if (request.abrangencia() != null) {
+            i.setAbrangencia(request.abrangencia());
+        }
+        if (request.modalidade() != null) {
+            i.setModalidade(request.modalidade());
+        }
+        if (request.descricao() != null) {
+            i.setDescricao(request.descricao());
+        }
+        if (request.link() != null) {
+            i.setLink(request.link());
+        }
+        if (request.ativo() != null) {
+            i.setAtivo(request.ativo());
+        }
+        if (repo != null) {
+            i = repo.save(i);
+        } else {
+            memory.put(i.getId(), i);
+        }
         return toResponse(i);
     }
 
@@ -76,10 +104,16 @@ public class IncubadoraService {
             i = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Incubadora nao encontrada"));
         } else {
             i = memory.get(id);
-            if (i == null) throw new IllegalArgumentException("Incubadora nao encontrada");
+            if (i == null) {
+                throw new IllegalArgumentException("Incubadora nao encontrada");
+            }
         }
         i.setAtivo(ativo);
-        if (repo != null) repo.save(i); else memory.put(i.getId(), i);
+        if (repo != null) {
+            repo.save(i);
+        } else {
+            memory.put(i.getId(), i);
+        }
     }
 
     public List<IncubadoraResponseDTO> listarAtivas() {

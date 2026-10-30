@@ -42,11 +42,21 @@ public class StartupService {
         startup.setAreaAtuacao(request.areaAtuacao());
         startup.setDataFundacao(request.dataFundacao());
         startup.setEstagioAtual(request.estagioAtual());
-        if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
-        if (request.localidadeSede() != null) startup.setLocalidadeSede(request.localidadeSede());
-        if (request.localidadeAtuacao() != null) startup.setLocalidadeAtuacao(request.localidadeAtuacao());
-        if (request.ligadaIncubadora() != null) startup.setLigadaIncubadora(request.ligadaIncubadora());
-        if (request.incubadoraLigada() != null) startup.setIncubadoraLigada(request.incubadoraLigada());
+        if (request.integrantes() != null) {
+            startup.setIntegrantes(request.integrantes());
+        }
+        if (request.localidadeSede() != null) {
+            startup.setLocalidadeSede(request.localidadeSede());
+        }
+        if (request.localidadeAtuacao() != null) {
+            startup.setLocalidadeAtuacao(request.localidadeAtuacao());
+        }
+        if (request.ligadaIncubadora() != null) {
+            startup.setLigadaIncubadora(request.ligadaIncubadora());
+        }
+        if (request.incubadoraLigada() != null) {
+            startup.setIncubadoraLigada(request.incubadoraLigada());
+        }
 
         StartupRepository repo = repository();
         if (repo != null) {
@@ -95,15 +105,33 @@ public class StartupService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
             }
         }
-        if (request.nome() != null) startup.setNome(request.nome());
-        if (request.descricao() != null) startup.setDescricao(request.descricao());
-        if (request.areaAtuacao() != null) startup.setAreaAtuacao(request.areaAtuacao());
-        if (request.estagioAtual() != null) startup.setEstagioAtual(request.estagioAtual());
-        if (request.integrantes() != null) startup.setIntegrantes(request.integrantes());
-        if (request.localidadeSede() != null) startup.setLocalidadeSede(request.localidadeSede());
-        if (request.localidadeAtuacao() != null) startup.setLocalidadeAtuacao(request.localidadeAtuacao());
-        if (request.ligadaIncubadora() != null) startup.setLigadaIncubadora(request.ligadaIncubadora());
-        if (request.incubadoraLigada() != null) startup.setIncubadoraLigada(request.incubadoraLigada());
+        if (request.nome() != null) {
+            startup.setNome(request.nome());
+        }
+        if (request.descricao() != null) {
+            startup.setDescricao(request.descricao());
+        }
+        if (request.areaAtuacao() != null) {
+            startup.setAreaAtuacao(request.areaAtuacao());
+        }
+        if (request.estagioAtual() != null) {
+            startup.setEstagioAtual(request.estagioAtual());
+        }
+        if (request.integrantes() != null) {
+            startup.setIntegrantes(request.integrantes());
+        }
+        if (request.localidadeSede() != null) {
+            startup.setLocalidadeSede(request.localidadeSede());
+        }
+        if (request.localidadeAtuacao() != null) {
+            startup.setLocalidadeAtuacao(request.localidadeAtuacao());
+        }
+        if (request.ligadaIncubadora() != null) {
+            startup.setLigadaIncubadora(request.ligadaIncubadora());
+        }
+        if (request.incubadoraLigada() != null) {
+            startup.setIncubadoraLigada(request.incubadoraLigada());
+        }
 
         if (repo != null) {
             startup = repo.save(startup);

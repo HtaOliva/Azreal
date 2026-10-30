@@ -29,7 +29,9 @@ public class RegraPlataformaService {
     public RegraPlataformaResponseDTO criar(RegraPlataformaRequestDTO request) {
         RegraPlataforma r = new RegraPlataforma();
         r.setTexto(request.texto());
-        if (request.ativo() != null) { r.setAtivo(request.ativo()); }
+        if (request.ativo() != null) {
+            r.setAtivo(request.ativo());
+        }
         r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
 
         RegraPlataformaRepository repo = repository();
@@ -48,12 +50,22 @@ public class RegraPlataformaService {
             r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Regra nao encontrada"));
         } else {
             r = memory.get(id);
-            if (r == null) throw new IllegalArgumentException("Regra nao encontrada");
+            if (r == null) {
+                throw new IllegalArgumentException("Regra nao encontrada");
+            }
         }
-        if (request.texto() != null) r.setTexto(request.texto());
-        if (request.ativo() != null) { r.setAtivo(request.ativo()); }
+        if (request.texto() != null) {
+            r.setTexto(request.texto());
+        }
+        if (request.ativo() != null) {
+            r.setAtivo(request.ativo());
+        }
         r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
-        if (repo != null) r = repo.save(r); else memory.put(r.getId(), r);
+        if (repo != null) {
+            r = repo.save(r);
+        } else {
+            memory.put(r.getId(), r);
+        }
         return toResponse(r);
     }
 
@@ -64,11 +76,17 @@ public class RegraPlataformaService {
             r = repo.findById(id).orElseThrow(() -> new IllegalArgumentException("Regra nao encontrada"));
         } else {
             r = memory.get(id);
-            if (r == null) throw new IllegalArgumentException("Regra nao encontrada");
+            if (r == null) {
+                throw new IllegalArgumentException("Regra nao encontrada");
+            }
         }
         r.setAtivo(ativo);
         r.setDataAtualizacao(java.time.LocalDateTime.now(java.time.ZoneId.systemDefault()));
-        if (repo != null) repo.save(r); else memory.put(r.getId(), r);
+        if (repo != null) {
+            repo.save(r);
+        } else {
+            memory.put(r.getId(), r);
+        }
     }
 
     public List<RegraPlataformaResponseDTO> listar() {
@@ -90,7 +108,9 @@ public class RegraPlataformaService {
         } else {
             items = memory.values().stream().filter(RegraPlataforma::isAtivo).toList();
         }
-        if (items.isEmpty()) throw new IllegalArgumentException("Regra nao encontrada");
+        if (items.isEmpty()) {
+            throw new IllegalArgumentException("Regra nao encontrada");
+        }
         return toResponse(items.get(0));
     }
 
