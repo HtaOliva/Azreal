@@ -2,7 +2,6 @@ package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.UsuarioRequestDTO;
 import br.senac.fullstack.dto.UsuarioResponseDTO;
-import br.senac.fullstack.dto.UsuarioUpdateDTO;
 import br.senac.fullstack.model.Usuario;
 import br.senac.fullstack.repository.UsuarioRepository;
 import org.junit.jupiter.api.Test;

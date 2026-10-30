@@ -8,7 +8,6 @@ import br.senac.fullstack.repository.SolicitacaoOrientacaoRepository;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;

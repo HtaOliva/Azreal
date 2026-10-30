@@ -6,7 +6,7 @@ public class FixedObjectProvider<T> implements ObjectProvider<T> {
     private final T value;
     public FixedObjectProvider(T value) { this.value = value; }
     @Override public T getObject() { return value; }
-    @Override public T getObject(Object... args) { return null; }
+    @Override public T getObject(Object... args) { throw new UnsupportedOperationException("not implemented"); }
     @Override public T getIfAvailable() { return value; }
     @Override public T getIfUnique() { return value; }
     @Override public java.util.Iterator<T> iterator() { return java.util.Collections.singleton(value).iterator(); }
