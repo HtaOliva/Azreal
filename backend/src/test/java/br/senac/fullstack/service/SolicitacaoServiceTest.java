@@ -40,8 +40,9 @@ class SolicitacaoServiceTest {
     @Test
     void criarSemStartupExistenteLanca() {
         Contexto ctx = criarContexto();
+        SolicitacaoService service = ctx.solicitacaoService();
         SolicitacaoRequestDTO req = new SolicitacaoRequestDTO(UUID.randomUUID(), UUID.randomUUID(), "assunto");
-        assertThrows(Exception.class, () -> ctx.solicitacaoService().criar(req));
+        assertThrows(Exception.class, () -> service.criar(req));
     }
 
     @Test
@@ -66,17 +67,23 @@ class SolicitacaoServiceTest {
                 "Mentor 1", "m1@senac.br", "senha123", List.of("Tech"), List.of("IA"),
                 "5 anos", "Semanal", "SP", "11999", "link", ctx.aceiteId()));
 
-        ctx.solicitacaoService().criar(new SolicitacaoRequestDTO(s1.id(), m1.id(), "Pedido 1"));
-        ctx.solicitacaoService().criar(new SolicitacaoRequestDTO(s1.id(), m1.id(), "Pedido 2"));
+        SolicitacaoService service = ctx.solicitacaoService();
+        UUID startupId = s1.id();
+        UUID mentorId = m1.id();
 
-        assertThrows(ResponseStatusException.class, () ->
-                ctx.solicitacaoService().criar(new SolicitacaoRequestDTO(s1.id(), m1.id(), "Pedido 3")));
+        service.criar(new SolicitacaoRequestDTO(startupId, mentorId, "Pedido 1"));
+        service.criar(new SolicitacaoRequestDTO(startupId, mentorId, "Pedido 2"));
 
-        var lista = ctx.solicitacaoService().listarPorStartup(s1.id());
+        SolicitacaoRequestDTO pedido3 = new SolicitacaoRequestDTO(startupId, mentorId, "Pedido 3");
+        assertThrows(ResponseStatusException.class, () -> service.criar(pedido3));
+
+        var lista = service.listarPorStartup(startupId);
         assertEquals(2, lista.size());
-        assertFalse(ctx.solicitacaoService().filaDoMentor(m1.id()).isEmpty());
+        assertFalse(service.filaDoMentor(mentorId).isEmpty());
 
+        UUID idInexistente = UUID.randomUUID();
+        RespostaPedidoRequestDTO respostaOk = new RespostaPedidoRequestDTO(true, "ok");
         assertThrows(ResponseStatusException.class, () ->
-                ctx.solicitacaoService().responder(UUID.randomUUID(), m1.id(), new RespostaPedidoRequestDTO(true, "ok")));
+                service.responder(idInexistente, mentorId, respostaOk));
     }
 }

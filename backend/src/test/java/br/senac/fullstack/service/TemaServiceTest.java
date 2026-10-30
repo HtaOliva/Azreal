@@ -45,13 +45,16 @@ class TemaServiceTest {
     @Test
     void atualizarInexistenteLanca() {
         TemaService s = service();
-        assertThrows(Exception.class, () -> s.atualizar(UUID.randomUUID(), new TemaRequestDTO("Tema", "desc", true)));
+        UUID id = UUID.randomUUID();
+        TemaRequestDTO req = new TemaRequestDTO("Tema", "desc", true);
+        assertThrows(Exception.class, () -> s.atualizar(id, req));
     }
 
     @Test
     void definirAtivoInexistenteLanca() {
         TemaService s = service();
-        assertThrows(Exception.class, () -> s.definirAtivo(UUID.randomUUID(), true));
+        UUID id = UUID.randomUUID();
+        assertThrows(Exception.class, () -> s.definirAtivo(id, true));
     }
 
     @Test
@@ -79,8 +82,8 @@ class TemaServiceTest {
 
         UUID inexistente = UUID.randomUUID();
         when(repo.findById(inexistente)).thenReturn(Optional.empty());
-        assertThrows(IllegalArgumentException.class, () ->
-                s.atualizar(inexistente, new TemaRequestDTO("X", null, null)));
+        TemaRequestDTO reqInexistente = new TemaRequestDTO("X", null, null);
+        assertThrows(IllegalArgumentException.class, () -> s.atualizar(inexistente, reqInexistente));
         assertThrows(IllegalArgumentException.class, () -> s.definirAtivo(inexistente, false));
     }
 }

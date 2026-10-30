@@ -48,14 +48,16 @@ class IncubadoraServiceTest {
     @Test
     void atualizarInexistenteLanca() {
         IncubadoraService s = service();
-        assertThrows(Exception.class, () -> s.atualizar(UUID.randomUUID(),
-                new IncubadoraRequestDTO("Inc", "foco", "criterios", "local", null, "modal", "desc", "link", true)));
+        UUID id = UUID.randomUUID();
+        IncubadoraRequestDTO req = new IncubadoraRequestDTO("Inc", "foco", "criterios", "local", null, "modal", "desc", "link", true);
+        assertThrows(Exception.class, () -> s.atualizar(id, req));
     }
 
     @Test
     void definirAtivoInexistenteLanca() {
         IncubadoraService s = service();
-        assertThrows(Exception.class, () -> s.definirAtivo(UUID.randomUUID(), true));
+        UUID id = UUID.randomUUID();
+        assertThrows(Exception.class, () -> s.definirAtivo(id, true));
     }
 
     @Test
@@ -85,8 +87,8 @@ class IncubadoraServiceTest {
 
         UUID inexistente = UUID.randomUUID();
         when(repo.findById(inexistente)).thenReturn(Optional.empty());
-        assertThrows(IllegalArgumentException.class, () -> s.atualizar(inexistente,
-                new IncubadoraRequestDTO("X", null, null, null, null, null, null, null, null)));
+        IncubadoraRequestDTO reqInexistente = new IncubadoraRequestDTO("X", null, null, null, null, null, null, null, null);
+        assertThrows(IllegalArgumentException.class, () -> s.atualizar(inexistente, reqInexistente));
         assertThrows(IllegalArgumentException.class, () -> s.definirAtivo(inexistente, false));
     }
 }

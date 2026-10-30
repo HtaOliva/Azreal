@@ -66,8 +66,8 @@ class SolicitacaoServiceRepoTest {
         SolicitacaoService s = new SolicitacaoService(
                 new FixedObjectProvider<>(repo), startupService, mentorService, vinculoService);
 
-        assertThrows(ResponseStatusException.class, () ->
-                s.criar(new SolicitacaoRequestDTO(startupId, UUID.randomUUID(), "assunto")));
+        SolicitacaoRequestDTO req = new SolicitacaoRequestDTO(startupId, UUID.randomUUID(), "assunto");
+        assertThrows(ResponseStatusException.class, () -> s.criar(req));
     }
 
     @Test
@@ -96,36 +96,40 @@ class SolicitacaoServiceRepoTest {
 
         UUID mentorId = UUID.randomUUID();
         UUID startupId = UUID.randomUUID();
+        RespostaPedidoRequestDTO respostaOk = new RespostaPedidoRequestDTO(true, "ok");
 
         // 1. Não encontrado -> 404
         UUID idInexistente = UUID.randomUUID();
         when(repo.findById(idInexistente)).thenReturn(Optional.empty());
         assertThrows(ResponseStatusException.class, () ->
-                s.responder(idInexistente, mentorId, new RespostaPedidoRequestDTO(true, "ok")));
+                s.responder(idInexistente, mentorId, respostaOk));
 
         // 2. Outro mentor -> 403
         SolicitacaoOrientacao solOutro = new SolicitacaoOrientacao();
         solOutro.setMentorId(UUID.randomUUID());
-        when(repo.findById(solOutro.getId())).thenReturn(Optional.of(solOutro));
+        UUID idOutro = solOutro.getId();
+        when(repo.findById(idOutro)).thenReturn(Optional.of(solOutro));
         assertThrows(ResponseStatusException.class, () ->
-                s.responder(solOutro.getId(), mentorId, new RespostaPedidoRequestDTO(true, "ok")));
+                s.responder(idOutro, mentorId, respostaOk));
 
         // 3. Status não pendente -> 409
         SolicitacaoOrientacao solRespondida = new SolicitacaoOrientacao();
         solRespondida.setMentorId(mentorId);
         solRespondida.setStatus(StatusSolicitacao.ACEITO);
-        when(repo.findById(solRespondida.getId())).thenReturn(Optional.of(solRespondida));
+        UUID idRespondida = solRespondida.getId();
+        when(repo.findById(idRespondida)).thenReturn(Optional.of(solRespondida));
         assertThrows(ResponseStatusException.class, () ->
-                s.responder(solRespondida.getId(), mentorId, new RespostaPedidoRequestDTO(true, "ok")));
+                s.responder(idRespondida, mentorId, respostaOk));
 
         // 4. Expirado -> 410
         SolicitacaoOrientacao solExpirada = new SolicitacaoOrientacao();
         solExpirada.setMentorId(mentorId);
         solExpirada.setStatus(StatusSolicitacao.PENDENTE);
         solExpirada.setDataExpiracao(LocalDateTime.now().minusDays(1));
-        when(repo.findById(solExpirada.getId())).thenReturn(Optional.of(solExpirada));
+        UUID idExpirada = solExpirada.getId();
+        when(repo.findById(idExpirada)).thenReturn(Optional.of(solExpirada));
         assertThrows(ResponseStatusException.class, () ->
-                s.responder(solExpirada.getId(), mentorId, new RespostaPedidoRequestDTO(true, "ok")));
+                s.responder(idExpirada, mentorId, respostaOk));
         assertEquals(StatusSolicitacao.EXPIRADO, solExpirada.getStatus());
 
         // 5. Recusar -> RECUSADO

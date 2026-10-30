@@ -4,6 +4,8 @@ import br.senac.fullstack.dto.LoginRequestDTO;
 import br.senac.fullstack.dto.LoginResponseDTO;
 import br.senac.fullstack.dto.MeResponseDTO;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,55 +53,22 @@ class AuthControllerTest {
         assertNull(response.getBody());
     }
 
-    @Test
-    void meComRoleAdminRetornaPerfilAdmin() {
+    @ParameterizedTest
+    @CsvSource({
+            "admin@senac.br, ROLE_ADMIN, ADMIN",
+            "mentor@senac.br, ROLE_MENTOR, MENTOR",
+            "startup@senac.br, ROLE_STARTUP, STARTUP",
+            "visitante@senac.br, ROLE_GUEST, NONE"
+    })
+    void meComAutenticacaoRetornaPerfilEsperado(String email, String role, String perfilEsperado) {
         AuthController controller = createController();
         Authentication auth = new UsernamePasswordAuthenticationToken(
-                "admin@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+                email, "pass", List.of(new SimpleGrantedAuthority(role)));
 
         ResponseEntity<MeResponseDTO> response = controller.me(auth);
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
-        assertEquals("ADMIN", response.getBody().perfil());
-    }
-
-    @Test
-    void meComRoleMentorRetornaPerfilMentor() {
-        AuthController controller = createController();
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                "mentor@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_MENTOR")));
-
-        ResponseEntity<MeResponseDTO> response = controller.me(auth);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("MENTOR", response.getBody().perfil());
-    }
-
-    @Test
-    void meComRoleStartupRetornaPerfilStartup() {
-        AuthController controller = createController();
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                "startup@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
-
-        ResponseEntity<MeResponseDTO> response = controller.me(auth);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("STARTUP", response.getBody().perfil());
-    }
-
-    @Test
-    void meSemRoleConhecidaRetornaPerfilNone() {
-        AuthController controller = createController();
-        Authentication auth = new UsernamePasswordAuthenticationToken(
-                "visitante@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_GUEST")));
-
-        ResponseEntity<MeResponseDTO> response = controller.me(auth);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals("NONE", response.getBody().perfil());
+        assertEquals(perfilEsperado, response.getBody().perfil());
     }
 }
