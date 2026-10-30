@@ -59,9 +59,12 @@
       </div>
       <div class="card-body">
         <div class="form-row">
-          <input type="text" placeholder="Nome" [value]="nome()" (input)="nome.set($any($event.target).value)" />
-          <input type="email" placeholder="Email" [value]="email()" (input)="email.set($any($event.target).value)" />
-          <input type="password" placeholder="Senha" [value]="senha()" (input)="senha.set($any($event.target).value)" />
+          <label for="usuario-nome">Nome</label>
+          <input id="usuario-nome" type="text" placeholder="Nome" [value]="nome()" (input)="nome.set($any($event.target).value)" />
+          <label for="usuario-email">Email</label>
+          <input id="usuario-email" type="email" placeholder="Email" [value]="email()" (input)="email.set($any($event.target).value)" />
+          <label for="usuario-senha">Senha</label>
+          <input id="usuario-senha" type="password" placeholder="Senha" [value]="senha()" (input)="senha.set($any($event.target).value)" />
           <button type="button" (click)="salvarUsuario()" [disabled]="saving()">Salvar</button>
         </div>
         <ul class="user-list">

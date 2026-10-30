@@ -12,9 +12,9 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
     catchError((error: HttpErrorResponse) => {
       if (error.status === 401) {
         authService.clearToken();
-        router.navigate(['/login']);
+        void router.navigate(['/login']);
       } else if (error.status === 403) {
-        router.navigate(['/acesso-negado']);
+        void router.navigate(['/acesso-negado']);
       }
 
       const message =
