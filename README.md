@@ -2,9 +2,9 @@
 
 # 🪽 Azreal
 
-### Sua trajetória com orientação
+### Da hipótese ao teste real: matchmaking de validação e POC
 
-Plataforma de orientação para startups em fase inicial, centrada em mentoria.
+Plataforma de matchmaking que conecta startups *early stage* a ambientes de validação (empresas, instituições e órgãos parceiros) com demandas operacionais reais para realizar Provas de Conceito (POCs) estruturadas e gerar evidências de tração.
 
 Projeto da **Unidade de Extensão Fullstack** — SENAC 2026.2
 Docente: **Prof. Fábio Chicout**
@@ -47,105 +47,161 @@ Docente: **Prof. Fábio Chicout**
 
 ## 🧭 Sobre o projeto
 
-O **Azreal** ajuda startups em fase inicial a registrar sua situação, conhecer os tipos de apoio disponíveis, pedir orientação a mentores e manter o histórico das orientações e dos apoios buscados.
+O **Azreal** é uma plataforma de matchmaking de validação que conecta startups *early stage* a empresas, instituições e órgãos com demandas operacionais reais para realizar **Provas de Conceito (POCs)** estruturadas e gerar evidências verificáveis de tração.
 
 ### Contexto e problema
 
-Startups *early stage* em incubação tomam várias decisões ao longo da trajetória, como validar a ideia, desenvolver o produto, buscar mentoria e participar de editais.
+Startups *early stage* enfrentam um gargalo crítico na transição entre protótipo e mercado: conseguir validar a solução em um ambiente real para conquistar os primeiros clientes e comprovar tração em editais de fomento.
 
-**O que foi observado:** as duas startups entrevistadas esperavam um cronograma ou acompanhamento estruturado durante a incubação. Como não o receberam da forma esperada, buscaram direcionamento por conta própria e recorreram a mentores para dúvidas pontuais.
+**O que foi observado nas entrevistas:**
+- **Validação e POC como maior dor:** as duas startups *early stage* entrevistadas apontaram diretamente a **validação** — e especificamente a **Prova de Conceito (POC)** aplicada em ambiente real — como sua principal dificuldade para detectar e conquistar clientes, definindo a POC como um documento essencial que atesta a validação e serve como tracionamento para editais e programas.
+- **Prospecção improvisada e fria:** sem um canal estruturado, as equipes tentam validar suas ideias por conta própria enviando mensagens frias (*direct* no Instagram, e-mails, formulários) ou abordando pessoas em eventos e grupos de WhatsApp.
+- **Convergência com mentores e articuladores:** nas entrevistas complementares, o *matching comercial* foi apontado como o mais necessitado pelas startups, destacando-se que a validação funciona melhor no modelo de inovação aberta — quando a startup testa sua solução resolvendo uma **demanda real e prioritária** de um **ambiente de validação** (empresa, instituição ou secretaria de governo), em vez de tentar impor uma hipótese isolada.
 
-**Oportunidade:** oferecer orientação e acompanhamento mais estruturados a startups *early stage*, reunindo a trajetória da startup, os apoios disponíveis e as recomendações de mentores.
+**Oportunidade:** substituir a busca informal e fria por um matchmaking estruturado entre **Desafios de Validação** (dores operacionais publicadas de forma anônima por organizações parceiras) e **Soluções de Startups**, formalizando o combinado em um **Termo de Piloto** e gerando, após o teste prático, um **Registro Oficial de POC** confirmado pelo parceiro.
 
 <details>
-<summary><b>Possíveis causas e consequências</b></summary>
+<summary><b>Evidências, interpretações e hipóteses</b></summary>
 
-**Possíveis causas (ainda sem confirmação):**
+**Evidências explícitas (relatadas nas entrevistas e dados públicos):**
 
-- Ausência de cronograma ou de canal estruturado de acompanhamento.
-- Desalinhamento entre o que as startups esperavam e o que a incubação oferece.
-- Dificuldade das startups em identificar o próprio estágio ou os tipos de apoio.
+- Validação e realização da POC em ambiente real relatadas como principal dificuldade para conseguir clientes pelas startups entrevistadas (*Nook* e *Rede Leito*).
+- POC descrita pelas startups como documento essencial de tracionamento para editais e programas.
+- Busca atual de validação feita manualmente por redes sociais, e-mails, formulários, eventos e grupos de WhatsApp.
+- Priorização, pelas startups entrevistadas, de visibilidade, conexão com o ecossistema e editais acima de investimento-anjo.
+- Baixíssima conexão de empresas jovens de TI/Software do Recife (abertas entre 2022 e 2025) com contratos públicos municipais (0,24%), segundo cruzamento de dados públicos.
 
-> Ainda não se sabe qual dessas causas pesa mais.
+**Interpretações plausíveis (derivadas das fontes):**
 
-**Consequências observadas:** frustração relatada e necessidade de buscar direcionamento por conta própria.
+- O principal gargalo das startups *early stage* está em destravar o primeiro teste prático (POC) sobre uma demanda real, e não na busca imediata por investidor-anjo.
+- A publicação anônima de desafios com liberação progressiva de dados (após aceite do Termo de Piloto e sigilo) reduz a exposição das organizações parceiras e evita abordagens fora da plataforma.
 
-**Consequências sem evidência:** perda financeira, perda de oportunidades, atraso no desenvolvimento, abandono de startups, dificuldade de investimento, redução de faturamento e desperdício de recursos **não foram demonstrados**.
+**Hipóteses a validar:**
+
+- Organizações locais (empresas, instituições de ensino/saúde e órgãos públicos) estão dispostas a cadastrar dores operacionais reais e ceder ambiente para testar soluções de startups *early stage* sem custo inicial de aquisição.
+- Startups *early stage* preferem submeter propostas enxutas de POC a demandas reais de parceiros em vez de prospectar clientes apenas de forma fria.
 
 </details>
 
 ### Público-alvo
 
-| | Descrição |
+| Lado | Descrição |
 | --- | --- |
-| **Segmento** | Startups *early stage*, sem receita recorrente relevante, que citam prova de conceito como elemento importante, especialmente no contexto de incubação. |
-| **Usuário principal** | Fundadores ou integrantes dessas startups, com necessidade relatada diretamente. |
-| **Público relacionado** | Mentores, usados pelas startups para dúvidas pontuais. A disposição, a disponibilidade e as necessidades dos mentores ainda não foram investigadas. |
-
-**Características identificadas:** autodescrição como *early stage*; prova de conceito como elemento relevante; participação em incubação, editais, mentoria e eventos.
+| **Lado A — Startups (*Usuário principal*)** | Startups *early stage* de base tecnológica e economia criativa (inicialmente em Recife/PE), sem receita recorrente relevante, que já possuem protótipo ou MVP inicial e precisam testá-lo em ambiente real para validar o produto, conquistar clientes ou comprovar tração em editais. |
+| **Lado B — Ambientes de Validação (*Parceiro demandante*)** | Pequenas e médias empresas, instituições de ensino/saúde, comunidades e órgãos públicos locais que possuem dores operacionais reais e abrem espaço controlado para testar soluções inovadoras em formato de piloto. |
+| **Administrador** | Equipe responsável por manter o vocabulário de setores/temas, os termos da plataforma e a moderação de contas. |
 
 ### Necessidades e comportamento atual
 
-| Dores | Necessidades | Comportamento atual |
+| Dores observadas | Necessidades | Comportamento atual |
 | --- | --- | --- |
-| Expectativa de acompanhamento estruturado não atendida, com frustração *(relatado)* | Acompanhamento ou cronograma estruturado durante a incubação *(relatada diretamente)* | Buscam informações e direcionamento por conta própria |
-| Necessidade de buscar informações e direcionamento por conta própria *(relatado)* | Direcionamento no momento em que o apoio é necessário *(inferida)* | Participam de incubação, editais, mentoria e eventos |
-| Uso de mentores para dúvidas específicas *(relatado)* | Registro da trajetória, acesso a mentores e organização dos apoios buscados *(propostas do grupo, não relatadas pelas startups)* | Recorrem a mentores para dúvidas pontuais |
-
-**Possíveis dificuldades (hipóteses):** falta de sequência clara, busca descentralizada, orientações pontuais sem histórico e dificuldade de relacionar estágio e apoio.
-
-**Resultado desejado, compatível com a proposta:** maior visibilidade da startup sobre a própria trajetória, menor dependência de buscar informações dispersas e orientações e apoios buscados reunidos em um histórico.
+| Dificuldade para validar o produto em ambiente real e gerar a POC *(relatado)* | Canal estruturado para encontrar organizações dispostas a rodar um teste piloto *(inferida)* | Mandam mensagens frias no Instagram/e-mail, aplicam formulários e vão a eventos |
+| Falta de acompanhamento estruturado sobre os próximos passos práticos *(relatado)* | Escopo, duração, responsabilidades e métrica de validação claros antes de iniciar o teste *(proposta)* | Buscam direcionamento por conta própria e tiram dúvidas pontuais com mentores |
+| Dificuldade de comprovar tração para editais e primeiros clientes *(relatado)* | Registro verificável de POC confirmada por um ambiente real *(proposta)* | Tentam explicar o projeto sem histórico formalizado de validação externa |
 
 ### Evidências e validação
 
-Hipóteses investigadas nas entrevistas:
+Síntese do status das hipóteses e evidências do projeto:
 
-| Hipótese | Situação |
+| Ponto analisado | Situação nas fontes |
 | --- | --- |
-| As startups têm dificuldade para identificar o próximo apoio | Evidência parcial |
-| A origem do problema está na falta de acompanhamento, na falta de informação ou na falta de clareza sobre o próprio estágio | Não distinguido |
-| Existe um modelo de estágios, com um apoio para cada estágio | Perspectiva de um mentor |
-| Cerca de 90% das startups têm desalinhamento entre estágio e apoio | Percepção de um mentor |
-| O investidor anjo tem papel residual e o edital o substituiria nas fases iniciais | Percepção de um mentor |
-| Startups buscam investimento antes da hora | Percepção de um participante |
+| Startups *early stage* têm na validação/POC sua maior barreira para conseguir clientes | **Evidência direta** (relato convergente das startups entrevistadas) |
+| A POC funciona como atestado de validação e requisito de tração para editais | **Evidência direta** (relato das startups entrevistadas) |
+| Matching comercial e conexão com ambientes de validação têm alto valor no estágio inicial | **Perspectiva convergente** (empreendedor/comunidade e mentor entrevistados) |
+| Empresas de TI recém-abertas no Recife têm conexão quase nula (0,24%) com compras públicas | **Evidência quantitativa** (cruzamento de bases públicas 2022–2025) |
+| Organizações parceiras publicarão desafios reais e confirmarão o Registro de POC na plataforma | **Hipótese principal a validar** no MVP |
 
-### Direção da solução
+### Direção da solução e Fluxo Principal do MVP
 
-**Ideia inicial:** plataforma de orientação para startups em fase inicial, centrada em mentoria.
+**Proposta de valor:** para **startups *early stage***, o Azreal oferece matchmaking com demandas reais de organizações parceiras, transformando tentativas informais de prospecção em **Provas de Conceito (POCs) estruturadas e atestadas**. Para **ambientes de validação**, permite experimentar soluções tecnológicas sob medida para suas dores prioritárias, com identidade protegida até o aceite do piloto.
 
-**Valor que pretende gerar:**
+#### Passo a passo do MVP (7 etapas)
 
-- Histórico da trajetória da startup
-- Solicitação de orientação
-- Registro de recomendações
-- Encaminhamento para mentor
-
-**Funcionalidades principais:**
-
-- Organizar a trajetória da startup e registrar o momento em que ela está
-- Apresentar e consultar os tipos de apoio disponíveis
-- Marcar os apoios já buscados
-- Possibilitar pedidos de orientação a mentores
-- Manter o histórico de orientações e de apoios buscados
+1. **Cadastro e Perfil de Capacidade / Ambiente (com consentimento LGPD):**
+   - A **Startup** cadastra sua solução, setor/temas de atuação, estágio do protótipo e o que precisa validar em ambiente real.
+   - O **Ambiente de Validação (Organização Parceira)** cadastra seu perfil e publica **Desafios de Validação** descrevendo a dor operacional, a prioridade, o ambiente disponível para teste (ex.: nº de usuários/setor), a modalidade (presencial ou remota) e a duração máxima do piloto.
+2. **Publicação anônima do desafio:**
+   - O desafio é exibido às startups apenas como problema — com setor, público de teste e restrições —, **sem o nome da organização**. A identidade do Ambiente de Validação só é revelada após a formalização do Termo de Piloto pelos dois lados (Passo 5).
+3. **Matchmaking de Demanda ↔ Solução (Apoiado por IA + Regras de Restrição e Fallback):**
+   - O sistema primeiro filtra critérios objetivos (localidade, modalidade presencial ou remota, requisitos de privacidade/LGPD).
+   - Em seguida, a IA compara o texto de cada desafio com o perfil da startup, ordena os desafios do mais ao menos compatível (sem pontuação percentual) e **explica em uma frase curta o motivo de cada sugestão**.
+   - *Contingência (Fallback):* caso a API externa de IA esteja indisponível, o sistema ordena automaticamente por regras objetivas (setor, temas e modalidade) e exibe uma justificativa padronizada por template.
+4. **Proposta de POC (Solicitação Estruturada com Aceite Prévio):**
+   - A startup visualiza os desafios recomendados e envia uma **Proposta Enxuta de POC** contendo: objetivo do teste, o que será entregue no piloto, responsabilidades sugeridas, duração e **métrica de validação** (critério de sucesso), assinando preventivamente o aceite do Termo de Piloto e Cláusula de Sigilo. O limite é de até **3 propostas simultâneas em aberto** por startup.
+5. **Aceite e Termo de Piloto (`Status: EM TESTE`):**
+   - O Ambiente de Validação analisa a proposta na sua fila (prazo de resposta de até 5 dias úteis).
+   - **Se aceitar:** como a startup já deu o aceite prévio ao submeter a proposta, o aceite do Ambiente congela imediatamente os campos combinados e firma o **Termo de Piloto** (escopo, duração, responsabilidades de cada lado, métrica de validação e cláusula de sigilo). Só então a identidade do ambiente é revelada e os canais de contato são liberados.
+   - **Se recusar:** o ambiente informa um motivo curto (ex.: fora de prioridade, prazo incompatível), a proposta é encerrada e a vaga no limite de 3 propostas da startup é liberada para uma nova submissão.
+6. **Execução do piloto em ambiente real:**
+   - A startup executa o teste de verdade no ambiente do parceiro, dentro do escopo e da duração definidos no Termo de Piloto, e registra a entrega ao final do prazo.
+7. **Conclusão e Registro de POC (`Status: POC CONCLUÍDA`):**
+   - Ao fim do piloto, o Ambiente de Validação confirma se o teste ocorreu:
+     - **Se o teste ocorreu:** o parceiro avalia o resultado com base na métrica de validação definida no Termo (*Atendeu totalmente*, *Atendeu parcialmente* ou *Não atingiu a métrica*) e registra seu parecer. A plataforma emite no histórico/portfólio da startup o **Registro Oficial de POC**, que pode exibir o nome da organização ou manter formato anônimo qualificado (apenas setor e porte), conforme autorização do ambiente.
+     - **Se o teste não ocorreu / foi abandonado:** o piloto é encerrado como *POC não confirmada*, sem emissão de atestado.
 
 ```mermaid
-flowchart LR
-    A([Startup registra<br/>o momento da trajetória]) --> B[Consulta os<br/>tipos de apoio]
-    B --> C[Marca os apoios<br/>já buscados]
-    B --> D[Pede orientação<br/>a um mentor]
-    D --> E[Mentor registra<br/>recomendações]
-    C --> F[(Histórico de orientações<br/>e apoios buscados)]
-    E --> F
+flowchart TD
+    subgraph S1["1. Antes da proposta: Matchmaking"]
+        A1["Ambiente de Validação cadastra<br/>dor/demanda real e o que oferece<br/>(Publicado de forma ANÔNIMA)"]
+        A2["Startup cadastra sua solução,<br/>setor, protótipo e o que precisa validar"]
+        A3["Plataforma faz o matchmaking:<br/>Regras (local/modalidade/LGPD) + IA<br/>cruzam dor com solução e geram 1 frase de motivo<br/>(com fallback por regras)"]
+        A4["Plataforma mostra os melhores pares<br/>(Desafios compatíveis)"]
+        A1 --> A3
+        A2 --> A3
+        A3 --> A4
+    end
+
+    subgraph S2["2. Proposta de Piloto (Máx. 3 em aberto)"]
+        B1["Startup preenche Proposta Enxuta de POC:<br/>• Escopo: o que vai ser testado<br/>• Duração (ex.: 15 ou 30 dias)<br/>• Responsabilidades (startup vs. ambiente)<br/>• Métrica de validação (critério de sucesso)<br/>• Aceite prévio do Termo e Sigilo"]
+    end
+
+    A4 -->|Deu match| B1
+    B1 --> C0{"Ambiente aceita?<br/>(Prazo: 5 dias úteis)"}
+    C0 -->|Não| C_NO["Ambiente informa motivo curto;<br/>proposta encerrada e vaga liberada"]
+    C_NO --> A4
+
+    subgraph S3["3. Termo de Piloto — Status: EM TESTE"]
+        C1["Plataforma congela os campos combinados<br/>e gera o Termo de Piloto assinado<br/>(escopo + métrica + sigilo/LGPD)"]
+        C2["Identidade do Ambiente revelada e<br/>contatos das duas partes liberados"]
+        C1 --> C2
+    end
+
+    C0 -->|Sim| C1
+
+    subgraph S4["4. Execução no ambiente real"]
+        D1["Startup roda o teste de verdade<br/>na organização parceira durante<br/>o período combinado"]
+    end
+
+    C2 --> D1
+
+    subgraph S5["5. Resultado — Status: POC CONCLUÍDA"]
+        E1["Startup registra o que foi entregue"]
+        E2{"Ambiente confirma que<br/>o piloto foi executado?"}
+        E3["Ambiente avalia a métrica de validação<br/>e dá parecer sobre a solução"]
+        E4(["Plataforma emite o Registro Oficial da POC<br/>no histórico/portfólio da startup<br/>(com nome da organização ou anônimo por setor/porte)"])
+        E_NO["POC não confirmada:<br/>nenhum registro emitido"]
+        E1 --> E2
+        E2 -->|Sim| E3
+        E3 --> E4
+        E2 -->|Não| E_NO
+    end
+
+    D1 -->|Fim do prazo| E1
 ```
+
+**Fora do escopo do MVP:**
+- Matchmaking com investidores-anjo, cálculo de *valuation* ou captação financeira.
+- Matchmaking centrado em mentoria contínua e registro de atas de encontros.
+- Sistemas de pontuação ponderada com soma 100% ou *scorecards* numéricos.
+- Assinatura jurídica avançada de contratos/NDAs complexos ou intermediação financeira.
+- Cursos, trilhas de conteúdo ou certificados de capacitação.
 
 ### Próximos passos
 
-1. Validar com mais startups se o problema se repete.
-2. Investigar se a principal dificuldade está na ausência de acompanhamento estruturado.
-3. Ouvir incubadoras e instituições.
-4. Validar com outros mentores.
-5. Testar se a orientação resolve uma necessidade percebida.
-6. Validar as regras de correspondência entre estágio e apoio antes de tratá-las como regra do produto.
+1. Validar a hipótese principal com 2 a 3 potenciais Ambientes de Validação locais (empresas, coordenações acadêmicas ou órgãos parceiros), coletando desafios reais para o catálogo inicial.
+2. Testar a submissão de Proposta Enxuta de POC com as startups entrevistadas (*Nook* e *Rede Leito*) e outras startups incubadas.
+3. Ajustar as entidades do back-end e componentes do front-end da Sprint 1 para o fluxo **Desafio → Matchmaking → Proposta de POC → Termo de Piloto → Registro de POC**.
+4. Validar em prova técnica a latência e o *fallback* por regras na ordenação por IA (`RF24` / `RNF10`).
 
 ### Equipe
 
