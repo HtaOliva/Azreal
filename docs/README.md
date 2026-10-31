@@ -15,6 +15,9 @@ Esta pasta `docs/` reúne os templates padronizados para guiar as equipes da dis
 7. 📄 [`06-ui-ux-screen-descriptions.md`](06-ui-ux-screen-descriptions.md) — **A Interface:** Wireframes estruturais, mapa de telas e acessibilidade WCAG.
 8. 📄 [`07-ui-ux-walkthrough-roadmap.md`](07-ui-ux-walkthrough-roadmap.md) — **A Validação:** Checklist de aprovação de telas com a ONG parceira.
 9. 📄 [`08-bootstrap-plan.md`](08-bootstrap-plan.md) — **O Setup:** Estrutura de pastas do repositório monorepo (`backend/`, `frontend/`, `docs/`).
+10. 📄 [`09-sprints-backend-novembro.md`](09-sprints-backend-novembro.md) — **O Planejamento de Sprints (Novembro/2026):** Cronograma de 4 Sprints do Backend alinhado ao escopo oficial POC-Match (`RF01`–`RF21`, `RNF01`–`RNF08`).
+11. 📄 [`endpoints-map.md`](endpoints-map.md) — **Mapa de Endpoints:** Índice de rotas REST por Sprint, regras de RBAC e diagrama de sequência POC-Match.
+12. 📄 [`openapi.yaml`](openapi.yaml) — **Contrato OpenAPI 3.0.3 (v2.0.0):** Especificação completa de rotas e schemas do Azreal POC-Match.
 
 ---
 
