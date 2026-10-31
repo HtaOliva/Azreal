@@ -69,6 +69,9 @@ public class AmbienteValidacaoController {
         if (authentication == null) {
             return false;
         }
+        if (atual == null) {
+            return false;
+        }
         boolean isAdmin = authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
         if (isAdmin) {
