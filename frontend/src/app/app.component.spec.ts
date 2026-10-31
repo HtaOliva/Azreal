@@ -72,14 +72,14 @@ describe('AppComponent', () => {
 
     expect(comp.healthStatus()?.status).toContain('UP');
     expect(comp.helloMessage()).toContain('Ola, Mundo!');
-    expect(comp.usuarios().length).toBe(1);
+    expect(comp.usuarios()).toHaveLength(1);
 
     comp['nome'].set('Novo Usuario');
     comp['email'].set('novo@example.com');
     comp['senha'].set('123456');
     comp.salvarUsuario();
 
-    expect(comp.usuarios().length).toBe(2);
+    expect(comp.usuarios()).toHaveLength(2);
     expect(comp['nome']()).toBe('');
     expect(comp['email']()).toBe('');
     expect(comp['senha']()).toBe('');
@@ -112,10 +112,10 @@ describe('AppComponent', () => {
 
   it('should export appConfig and landing content constants', () => {
     expect(appConfig.providers.length).toBeGreaterThan(0);
-    expect(STEPS.length).toBe(4);
-    expect(BENEFITS.startup.length).toBe(3);
-    expect(BENEFITS.investidor.length).toBe(3);
-    expect(EXAMPLES.length).toBe(3);
+    expect(STEPS).toHaveLength(4);
+    expect(BENEFITS.startup).toHaveLength(3);
+    expect(BENEFITS.investidor).toHaveLength(3);
+    expect(EXAMPLES).toHaveLength(3);
   });
 });
 

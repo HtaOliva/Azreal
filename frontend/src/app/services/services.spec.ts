@@ -105,7 +105,7 @@ describe('Frontend Services', () => {
       expect(health.status).toBe('UP');
 
       const lista = await firstValueFrom(usuarioService.listar());
-      expect(lista.length).toBe(1);
+      expect(lista).toHaveLength(1);
 
       const criado = await firstValueFrom(
         usuarioService.criar({ nome: 'New', email: 'new@test.com', senha: '123' })
