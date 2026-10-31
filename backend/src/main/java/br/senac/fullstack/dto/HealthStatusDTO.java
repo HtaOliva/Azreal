@@ -8,4 +8,4 @@ public record HealthStatusDTO(
     String environment,
     Instant timestamp,
     long uptimeMillis
-) {}
+) { /* empty */ }

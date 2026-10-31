@@ -7,4 +7,4 @@ public record HelloWorldDTO(
     String application,
     String environment,
     Instant timestamp
-) {}
+) { /* empty */ }
