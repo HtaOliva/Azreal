@@ -7,7 +7,7 @@
     <parent>
         <groupId>br.senac.fullstack</groupId>
         <artifactId>fullstack-starter</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>0.1.0-alpha</version>
     </parent>
 
     <properties>
@@ -19,7 +19,7 @@
     <artifactId>backend</artifactId>
     <packaging>jar</packaging>
     <name>backend</name>
-    <description>API REST Backend Spring Boot 3.3</description>
+    <description>API REST Backend Spring Boot 3.3 — Azreal POC-Match</description>
 
     <dependencyManagement>
         <dependencies>
@@ -52,6 +52,10 @@
             <artifactId>spring-boot-starter-security</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-ldap</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
         </dependency>
@@ -76,6 +80,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-test</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>1.3.0</version>
@@ -85,6 +94,24 @@
 
     <build>
         <plugins>
+            <!-- Maven Compiler Plugin (Lombok annotation processing) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+                <configuration>
+                    <source>21</source>
+                    <target>21</target>
+                    <parameters>true</parameters>
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>1.18.46</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <!-- Spring Boot Maven Plugin -->
             <plugin>
                 <groupId>org.springframework.boot</groupId>
@@ -105,17 +132,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-
-            <!-- Maven Compiler Plugin -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
-                <configuration>
-                    <source>21</source>
-                    <target>21</target>
-                </configuration>
             </plugin>
 
             <!-- Checkstyle Plugin for Java Linting -->
@@ -144,6 +160,9 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <argLine>@{argLine} -Dnet.bytebuddy.experimental=true -XX:+EnableDynamicAgentLoading</argLine>
+                </configuration>
                 <version>3.3.1</version>
             </plugin>
 
@@ -151,10 +170,15 @@
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.12</version>
+                <version>0.8.13</version>
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
+                        <configuration>
+                            <includes>
+                                <include>br/senac/fullstack/**</include>
+                            </includes>
+                        </configuration>
                         <goals>
                             <goal>prepare-agent</goal>
                         </goals>
