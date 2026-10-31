@@ -5,7 +5,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
 import org.springframework.ldap.core.support.BaseLdapPathContextSource;
-
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -27,13 +26,13 @@ import java.util.List;
 @Profile("ldap")
 public class LdapSecurityConfig {
 
-    @Value("${spring.ldap.urls:ldap://localhost:389}")
+    @Value("${spring.ldap.urls:ldap://lldap.fchicout.dev:3890}")
     private String ldapUrls;
 
-    @Value("${spring.ldap.base:dc=example,dc=com}")
+    @Value("${spring.ldap.base:dc=fchicout,dc=dev}")
     private String ldapBase;
 
-    @Value("${spring.ldap.username:}")
+    @Value("${spring.ldap.username:uid=azrael_app,ou=people,dc=fchicout,dc=dev}")
     private String ldapBindDn;
 
     @Value("${spring.ldap.password:}")
@@ -62,8 +61,7 @@ public class LdapSecurityConfig {
         authoritiesPopulator.setGroupSearchFilter("(member={0})");
         authoritiesPopulator.setSearchSubtree(true);
 
-        LdapAuthenticationProvider provider = new LdapAuthenticationProvider(authenticator, authoritiesPopulator);
-        return provider;
+        return new LdapAuthenticationProvider(authenticator, authoritiesPopulator);
     }
 
     @Bean
@@ -73,11 +71,20 @@ public class LdapSecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/api/v1/health",
+                                "/api/v1/hello",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/usuarios")).permitAll()
                         .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
                                 || request.getRequestURI().startsWith("/startups")
-                                || request.getRequestURI().startsWith("/mentors")
+                                || request.getRequestURI().startsWith("/ambientes-validacao")
                                 || request.getRequestURI().startsWith("/termos")
+                                || request.getRequestURI().startsWith("/temas")
+                                || request.getRequestURI().startsWith("/regras")
                                 || request.getRequestURI().startsWith("/incubadoras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());

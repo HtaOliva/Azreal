@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.AceiteTermoRequestDTO;
 import br.senac.fullstack.model.AceiteTermo;
 import br.senac.fullstack.repository.AceiteTermoRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -29,6 +30,14 @@ class AceiteTermoServiceTest {
         var r = s.registrar(new AceiteTermoRequestDTO("v1", "127.0.0.1"), null, "127.0.0.1");
         assertNotNull(r);
         assertNotNull(r.id());
+        assertTrue(r.consentimentoIaAnonimizado());
+    }
+
+    @Test
+    void registrarSemConsentimentoIaLancaBadRequest() {
+        AceiteTermoService s = service();
+        AceiteTermoRequestDTO request = new AceiteTermoRequestDTO("v1", "127.0.0.1", Boolean.FALSE);
+        assertThrows(ResponseStatusException.class, () -> s.registrar(request, null, "127.0.0.1"));
     }
 
     @Test

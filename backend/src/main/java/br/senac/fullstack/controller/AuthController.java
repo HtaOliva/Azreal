@@ -8,6 +8,7 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -45,14 +46,23 @@ public class AuthController {
         List<String> roles = authentication.getAuthorities().stream()
                 .map(a -> a.getAuthority()).toList();
         String perfil = "NONE";
-        if (roles.contains("ROLE_ADMIN")) {
+        if (roles.contains("ROLE_ADMIN") || roles.contains("ROLE_AZRAEL_ADMIN")) {
             perfil = "ADMIN";
-        } else if (roles.contains("ROLE_MENTOR")) {
-            perfil = "MENTOR";
+        } else if (roles.contains("ROLE_AMBIENTE_VALIDACAO")) {
+            perfil = "AMBIENTE_VALIDACAO";
         } else if (roles.contains("ROLE_STARTUP")) {
             perfil = "STARTUP";
         }
         return ResponseEntity.ok(new MeResponseDTO(
                 UUID.randomUUID(), authentication.getName(), authentication.getName(), roles, perfil));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> excluirPropriaConta(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(401).build();
+        }
+        SecurityContextHolder.clearContext();
+        return ResponseEntity.noContent().build();
     }
 }

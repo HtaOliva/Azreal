@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.UUID;
 
 @RestController
-@RequestMapping("/regras")
+@RequestMapping({"/regras", "/termos/modelo-piloto"})
 public class RegraPlataformaController {
 
     private final RegraPlataformaService regraService;
@@ -49,7 +49,7 @@ public class RegraPlataformaController {
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<RegraPlataformaResponseDTO> atualizar(@PathVariable("id") UUID id,
-                                                               @Valid @RequestBody RegraPlataformaRequestDTO request) {
+                                                                @Valid @RequestBody RegraPlataformaRequestDTO request) {
         return ResponseEntity.ok(regraService.atualizar(id, request));
     }
 

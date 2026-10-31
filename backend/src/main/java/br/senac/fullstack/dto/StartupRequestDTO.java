@@ -1,6 +1,7 @@
 package br.senac.fullstack.dto;
 
 import br.senac.fullstack.model.Estagio;
+import br.senac.fullstack.model.ModalidadeTeste;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
@@ -23,5 +24,29 @@ public record StartupRequestDTO(
         String localidadeAtuacao,
         Boolean ligadaIncubadora,
         String incubadoraLigada,
-        @NotNull UUID aceiteTermoId
-) { /* empty */ }
+        @NotNull UUID aceiteTermoId,
+        String ufIbge,
+        String municipioIbge,
+        String oQuePrecisaValidar,
+        List<UUID> temasIds,
+        List<ModalidadeTeste> modalidadesSuportadas
+) {
+    public StartupRequestDTO(
+            String nome,
+            String email,
+            String senha,
+            String descricao,
+            String areaAtuacao,
+            LocalDate dataFundacao,
+            Estagio estagioAtual,
+            List<String> integrantes,
+            String localidadeSede,
+            String localidadeAtuacao,
+            Boolean ligadaIncubadora,
+            String incubadoraLigada,
+            UUID aceiteTermoId) {
+        this(nome, email, senha, descricao, areaAtuacao, dataFundacao, estagioAtual,
+                integrantes, localidadeSede, localidadeAtuacao, ligadaIncubadora,
+                incubadoraLigada, aceiteTermoId, null, null, null, null, null);
+    }
+}

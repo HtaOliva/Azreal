@@ -27,10 +27,15 @@ public class AceiteTermoService {
         return repositoryProvider.getIfAvailable();
     }
 
-    public AceiteTermoResponseDTO registrar(AceiteTermoRequestDTO request, java.util.UUID usuarioId, String ip) {
+    public AceiteTermoResponseDTO registrar(AceiteTermoRequestDTO request, UUID usuarioId, String ip) {
+        if (Boolean.FALSE.equals(request.consentimentoIaAnonimizado())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Consentimento para processamento anonimizado pela IA e obrigatorio (RNF05)");
+        }
         AceiteTermo aceite = new AceiteTermo();
         aceite.setUsuarioId(usuarioId);
         aceite.setVersaoTermo(request.versaoTermo());
+        aceite.setConsentimentoIaAnonimizado(true);
         aceite.setIp(ip != null ? ip : request.ip());
         AceiteTermoRepository repo = repository();
         if (repo != null) {
@@ -38,7 +43,8 @@ public class AceiteTermoService {
         } else {
             memory.put(aceite.getId(), aceite);
         }
-        return new AceiteTermoResponseDTO(aceite.getId(), aceite.getVersaoTermo(), aceite.getDataHora());
+        return new AceiteTermoResponseDTO(
+                aceite.getId(), aceite.getVersaoTermo(), aceite.getDataHora(), aceite.isConsentimentoIaAnonimizado());
     }
 
     public boolean existe(UUID id) {
@@ -56,7 +62,8 @@ public class AceiteTermoService {
         AceiteTermoRepository repo = repository();
         if (repo != null) {
             return repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Aceite de termos nao encontrado"));
+                    .orElseThrow(() -> new ResponseStatusException(
+                            HttpStatus.NOT_FOUND, "Aceite de termos nao encontrado"));
         }
         AceiteTermo aceite = memory.get(id);
         if (aceite == null) {

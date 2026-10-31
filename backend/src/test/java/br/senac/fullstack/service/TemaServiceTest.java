@@ -3,6 +3,7 @@ package br.senac.fullstack.service;
 import br.senac.fullstack.dto.TemaRequestDTO;
 import br.senac.fullstack.dto.TemaResponseDTO;
 import br.senac.fullstack.model.Tema;
+import br.senac.fullstack.model.TipoVocabulario;
 import br.senac.fullstack.repository.TemaRepository;
 import org.junit.jupiter.api.Test;
 
@@ -26,14 +27,16 @@ class TemaServiceTest {
     }
 
     @Test
-    void criarRetornaTema() {
+    void criarRetornaTemaESetor() {
         TemaService s = service();
-        TemaResponseDTO r = s.criar(new TemaRequestDTO("Tema", "desc", null));
+        TemaResponseDTO r = s.criar(new TemaRequestDTO("Saude Digital", "desc", null, TipoVocabulario.SETOR));
         assertNotNull(r);
         assertNotNull(r.id());
+        assertEquals(TipoVocabulario.SETOR, r.tipo());
 
-        TemaResponseDTO mantido = s.atualizar(r.id(), new TemaRequestDTO(null, null, null));
-        assertEquals("Tema", mantido.nome());
+        TemaResponseDTO mantido = s.atualizar(r.id(), new TemaRequestDTO(null, null, null, TipoVocabulario.TEMA));
+        assertEquals("Saude Digital", mantido.nome());
+        assertEquals(TipoVocabulario.TEMA, mantido.tipo());
     }
 
     @Test

@@ -2,6 +2,7 @@ package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.dto.StartupUpdateDTO;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.repository.StartupRepository;
 import org.springframework.beans.factory.ObjectProvider;
@@ -57,6 +58,21 @@ public class StartupService {
         if (request.incubadoraLigada() != null) {
             startup.setIncubadoraLigada(request.incubadoraLigada());
         }
+        if (request.ufIbge() != null) {
+            startup.setUfIbge(request.ufIbge());
+        }
+        if (request.municipioIbge() != null) {
+            startup.setMunicipioIbge(request.municipioIbge());
+        }
+        if (request.oQuePrecisaValidar() != null) {
+            startup.setOQuePrecisaValidar(request.oQuePrecisaValidar());
+        }
+        if (request.temasIds() != null) {
+            startup.setTemasIds(request.temasIds());
+        }
+        if (request.modalidadesSuportadas() != null) {
+            startup.setModalidadesSuportadas(request.modalidadesSuportadas());
+        }
 
         StartupRepository repo = repository();
         if (repo != null) {
@@ -93,7 +109,7 @@ public class StartupService {
         return items.stream().map(this::toResponse).toList();
     }
 
-    public StartupResponseDTO atualizar(UUID id, br.senac.fullstack.dto.StartupUpdateDTO request) {
+    public StartupResponseDTO atualizar(UUID id, StartupUpdateDTO request) {
         StartupRepository repo = repository();
         Startup startup;
         if (repo != null) {
@@ -105,6 +121,16 @@ public class StartupService {
                 throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
             }
         }
+        aplicarAtualizacoesBasicas(startup, request);
+        aplicarAtualizacoesPocMatch(startup, request);
+
+        if (repo != null) {
+            startup = repo.save(startup);
+        }
+        return toResponse(startup);
+    }
+
+    private void aplicarAtualizacoesBasicas(Startup startup, StartupUpdateDTO request) {
         if (request.nome() != null) {
             startup.setNome(request.nome());
         }
@@ -132,11 +158,24 @@ public class StartupService {
         if (request.incubadoraLigada() != null) {
             startup.setIncubadoraLigada(request.incubadoraLigada());
         }
+    }
 
-        if (repo != null) {
-            startup = repo.save(startup);
+    private void aplicarAtualizacoesPocMatch(Startup startup, StartupUpdateDTO request) {
+        if (request.ufIbge() != null) {
+            startup.setUfIbge(request.ufIbge());
         }
-        return toResponse(startup);
+        if (request.municipioIbge() != null) {
+            startup.setMunicipioIbge(request.municipioIbge());
+        }
+        if (request.oQuePrecisaValidar() != null) {
+            startup.setOQuePrecisaValidar(request.oQuePrecisaValidar());
+        }
+        if (request.temasIds() != null) {
+            startup.setTemasIds(request.temasIds());
+        }
+        if (request.modalidadesSuportadas() != null) {
+            startup.setModalidadesSuportadas(request.modalidadesSuportadas());
+        }
     }
 
     private StartupResponseDTO toResponse(Startup s) {
@@ -144,6 +183,7 @@ public class StartupService {
                 s.getId(), s.getNome(), s.getEmail(), s.getDescricao(), s.getAreaAtuacao(),
                 s.getDataFundacao(), s.getEstagioAtual(), s.getIntegrantes(),
                 s.getLocalidadeSede(), s.getLocalidadeAtuacao(), s.isLigadaIncubadora(),
-                s.getIncubadoraLigada(), s.getDataCadastro());
+                s.getIncubadoraLigada(), s.getDataCadastro(), s.getUfIbge(), s.getMunicipioIbge(),
+                s.getOQuePrecisaValidar(), s.getTemasIds(), s.getModalidadesSuportadas());
     }
 }

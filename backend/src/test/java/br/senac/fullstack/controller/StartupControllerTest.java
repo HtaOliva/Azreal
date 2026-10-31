@@ -5,6 +5,7 @@ import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
 import br.senac.fullstack.model.Estagio;
+import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.repository.StartupRepository;
 import br.senac.fullstack.service.AceiteTermoService;
@@ -48,8 +49,8 @@ class StartupControllerTest {
     private StartupService startupService;
 
     @Test
-    @WithMockUser(roles = "MENTOR")
-    void mentorRecebe403AoAtualizarStartup() throws Exception {
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO")
+    void ambienteValidacaoRecebe403AoAtualizarStartup() throws Exception {
         UUID id = UUID.randomUUID();
         when(startupService.atualizar(any(), any())).thenReturn(null);
 
@@ -77,9 +78,11 @@ class StartupControllerTest {
         StartupController controller = new StartupController(serviceReal);
 
         StartupRequestDTO req = new StartupRequestDTO(
-                "Startup Alpha", "alpha@senac.br", "senha123", "Descricao",
-                "Fintech", LocalDate.now(), Estagio.IDEACAO, List.of("Ana"),
-                "SP", "BR", true, "Incubadora X", aceite.id());
+                "Startup Nook", "nook@senac.br", "senha123", "Plataforma de validacao",
+                "Healthtech", LocalDate.now(), Estagio.MVP_FUNCIONAL, List.of("Ana"),
+                "Recife", "PE", true, "Incubadora Senac", aceite.id(),
+                "PE", "Recife", "Validar triagem hospitalar em ambiente real",
+                List.of(UUID.randomUUID()), List.of(ModalidadeTeste.PRESENCIAL, ModalidadeTeste.HIBRIDO));
         ResponseEntity<StartupResponseDTO> criada = controller.criar(req);
         return new Contexto(controller, criada.getBody());
     }
@@ -91,7 +94,9 @@ class StartupControllerTest {
 
         ResponseEntity<StartupResponseDTO> buscada = ctx.controller().buscar(ctx.startup().id());
         assertEquals(HttpStatus.OK, buscada.getStatusCode());
-        assertEquals("Startup Alpha", buscada.getBody().nome());
+        assertEquals("Startup Nook", buscada.getBody().nome());
+        assertEquals("PE", buscada.getBody().ufIbge());
+        assertEquals("Recife", buscada.getBody().municipioIbge());
 
         ResponseEntity<List<StartupResponseDTO>> lista = ctx.controller().listar();
         assertEquals(HttpStatus.OK, lista.getStatusCode());
@@ -104,25 +109,27 @@ class StartupControllerTest {
         Authentication auth = new UsernamePasswordAuthenticationToken(
                 "admin@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
         StartupUpdateDTO update = new StartupUpdateDTO(
-                "Startup Alpha Admin", "Nova Desc", "AI", Estagio.IDEACAO,
-                List.of("Ana", "Bia"), "RJ", "Global", false, null);
+                "Startup Nook Admin", "Nova Desc", "AI", Estagio.EM_TESTE,
+                List.of("Ana", "Bia"), "Recife", "Nordeste", false, null,
+                "PE", "Olinda", "Validar integracao", List.of(), List.of(ModalidadeTeste.REMOTO));
 
         ResponseEntity<StartupResponseDTO> resp = ctx.controller().atualizar(ctx.startup().id(), update, auth);
         assertEquals(HttpStatus.OK, resp.getStatusCode());
-        assertEquals("Startup Alpha Admin", resp.getBody().nome());
+        assertEquals("Startup Nook Admin", resp.getBody().nome());
+        assertEquals("Olinda", resp.getBody().municipioIbge());
     }
 
     @Test
     void atualizarComMesmoEmailDaStartupRetornaOk() {
         Contexto ctx = criarContexto();
         Authentication auth = new UsernamePasswordAuthenticationToken(
-                "alpha@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+                "nook@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
         StartupUpdateDTO update = new StartupUpdateDTO(
-                "Startup Alpha Propria", null, null, null, null, null, null, null, null);
+                "Startup Nook Propria", null, null, null, null, null, null, null, null);
 
         ResponseEntity<StartupResponseDTO> resp = ctx.controller().atualizar(ctx.startup().id(), update, auth);
         assertEquals(HttpStatus.OK, resp.getStatusCode());
-        assertEquals("Startup Alpha Propria", resp.getBody().nome());
+        assertEquals("Startup Nook Propria", resp.getBody().nome());
     }
 
     @Test
@@ -151,7 +158,7 @@ class StartupControllerTest {
         StartupController controller = new StartupController(serviceReal);
 
         Authentication auth = new UsernamePasswordAuthenticationToken(
-                "alpha@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+                "qualquer@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
         StartupUpdateDTO update = new StartupUpdateDTO(
                 "Tentativa", null, null, null, null, null, null, null, null);
 

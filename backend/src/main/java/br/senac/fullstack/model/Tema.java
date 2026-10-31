@@ -1,16 +1,18 @@
 package br.senac.fullstack.model;
 
-import lombok.Getter;
-import lombok.Setter;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import lombok.Getter;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.UUID;
 
 @Entity
@@ -27,6 +29,10 @@ public class Tema {
     @Column(name = "nome", length = 120, nullable = false, unique = true)
     private String nome;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo", length = 20, nullable = false)
+    private TipoVocabulario tipo = TipoVocabulario.TEMA;
+
     @Column(name = "descricao", columnDefinition = "text")
     private String descricao;
 
@@ -38,7 +44,7 @@ public class Tema {
 
     public Tema() {
         this.id = UUID.randomUUID();
-        this.dataCadastro = LocalDateTime.now(java.time.ZoneId.systemDefault());
+        this.dataCadastro = LocalDateTime.now(ZoneId.systemDefault());
     }
 
     public void setAtivo(boolean ativo) {
