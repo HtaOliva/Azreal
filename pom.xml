@@ -6,7 +6,7 @@
 
     <groupId>br.senac.fullstack</groupId>
     <artifactId>fullstack-starter</artifactId>
-    <version>1.0.0-SNAPSHOT</version>
+    <version>0.1.0-alpha</version>
     <packaging>pom</packaging>
     <name>Fullstack Starter Project</name>
     <description>Projeto Base Spring Boot 3.3 + Angular com Quality Gates no SonarQube e CI/CD</description>
