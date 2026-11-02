@@ -35,24 +35,13 @@ public class MatchmakingService {
             return false;
         }
 
-        // 1. Restrição Rígida: Status Ativo do Desafio e da Organização
-        if (!desafio.isAtivo()) {
-            return false;
-        }
-        if (desafio.getStatus() != null && desafio.getStatus() != StatusDesafio.ABERTO) {
-            return false;
-        }
-        if (desafio.getAmbienteValidacao() != null && !desafio.getAmbienteValidacao().isAtivo()) {
-            return false;
-        }
+        boolean ativo = desafio.isAtivo()
+                && (desafio.getStatus() == null || desafio.getStatus() == StatusDesafio.ABERTO)
+                && (desafio.getAmbienteValidacao() == null || desafio.getAmbienteValidacao().isAtivo());
 
-        // 2. Restrição Rígida: Modalidade de Execução do Piloto
-        if (!compativelModalidade(startup, desafio)) {
-            return false;
-        }
-
-        // 3. Restrição Rígida: Localidade Alvo (UF / Município IBGE)
-        return compativelLocalidade(startup, desafio);
+        return ativo
+                && compativelModalidade(startup, desafio)
+                && compativelLocalidade(startup, desafio);
     }
 
     private boolean compativelModalidade(Startup startup, DesafioValidacao desafio) {
@@ -66,20 +55,20 @@ public class MatchmakingService {
             return false;
         }
 
-        if (modalidadeDesafio == ModalidadeTeste.REMOTO) {
-            return modalidadesStartup.contains(ModalidadeTeste.REMOTO)
-                    || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO);
-        }
-        if (modalidadeDesafio == ModalidadeTeste.PRESENCIAL) {
-            return modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
-                    || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO);
-        }
-        if (modalidadeDesafio == ModalidadeTeste.HIBRIDO) {
-            return modalidadesStartup.contains(ModalidadeTeste.HIBRIDO)
-                    || (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
-                    && modalidadesStartup.contains(ModalidadeTeste.REMOTO));
-        }
-        return false;
+        boolean remoto = modalidadeDesafio == ModalidadeTeste.REMOTO
+                && (modalidadesStartup.contains(ModalidadeTeste.REMOTO)
+                || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO));
+
+        boolean presencial = modalidadeDesafio == ModalidadeTeste.PRESENCIAL
+                && (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
+                || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO));
+
+        boolean hibrido = modalidadeDesafio == ModalidadeTeste.HIBRIDO
+                && (modalidadesStartup.contains(ModalidadeTeste.HIBRIDO)
+                || (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
+                && modalidadesStartup.contains(ModalidadeTeste.REMOTO)));
+
+        return remoto || presencial || hibrido;
     }
 
     private boolean compativelLocalidade(Startup startup, DesafioValidacao desafio) {
@@ -95,21 +84,15 @@ public class MatchmakingService {
         String ufStartup = obterUfStartup(startup);
         String municipioStartup = obterMunicipioStartup(startup);
 
-        // Se o desafio presencial ou híbrido possui UF alvo definida
-        if (ufDesafio != null && !ufDesafio.isBlank()
-                && (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim()))) {
-            return false;
-        }
+        boolean ufInvalida = ufDesafio != null && !ufDesafio.isBlank()
+                && (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim()));
 
-        // Se o desafio presencial possui município definido
-        if (modalidadeDesafio == ModalidadeTeste.PRESENCIAL
+        boolean municipioInvalido = modalidadeDesafio == ModalidadeTeste.PRESENCIAL
                 && municipioDesafio != null && !municipioDesafio.isBlank()
                 && municipioStartup != null && !municipioStartup.isBlank()
-                && !municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim())) {
-            return false;
-        }
+                && !municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim());
 
-        return true;
+        return !ufInvalida && !municipioInvalido;
     }
 
     private String obterUfStartup(Startup startup) {
