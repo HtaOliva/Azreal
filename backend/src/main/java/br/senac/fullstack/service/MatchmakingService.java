@@ -1,11 +1,11 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
+import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.model.StatusDesafio;
-import br.senac.fullstack.repository.DesafioValidacaoRepository;
 import br.senac.fullstack.repository.StartupRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
@@ -22,15 +22,12 @@ public class MatchmakingService {
 
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<StartupRepository> startupRepositoryProvider;
-    private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
 
     public MatchmakingService(
             ObjectProvider<StartupService> startupServiceProvider,
-            ObjectProvider<StartupRepository> startupRepositoryProvider,
-            ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider) {
+            ObjectProvider<StartupRepository> startupRepositoryProvider) {
         this.startupServiceProvider = startupServiceProvider;
         this.startupRepositoryProvider = startupRepositoryProvider;
-        this.desafioRepositoryProvider = desafioRepositoryProvider;
     }
 
     public boolean atendeCriteriosObjetivos(Startup startup, DesafioValidacao desafio) {
@@ -99,20 +96,17 @@ public class MatchmakingService {
         String municipioStartup = obterMunicipioStartup(startup);
 
         // Se o desafio presencial ou híbrido possui UF alvo definida
-        if (ufDesafio != null && !ufDesafio.isBlank()) {
-            if (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim())) {
-                return false;
-            }
+        if (ufDesafio != null && !ufDesafio.isBlank()
+                && (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim()))) {
+            return false;
         }
 
         // Se o desafio presencial possui município definido
         if (modalidadeDesafio == ModalidadeTeste.PRESENCIAL
-                && municipioDesafio != null && !municipioDesafio.isBlank()) {
-            if (municipioStartup != null && !municipioStartup.isBlank()) {
-                if (!municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim())) {
-                    return false;
-                }
-            }
+                && municipioDesafio != null && !municipioDesafio.isBlank()
+                && municipioStartup != null && !municipioStartup.isBlank()
+                && !municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim())) {
+            return false;
         }
 
         return true;
@@ -161,20 +155,24 @@ public class MatchmakingService {
         StartupService service = startupServiceProvider.getIfAvailable();
         if (service != null) {
             var dto = service.buscar(startupId);
-            Startup startup = new Startup();
-            startup.setId(dto.id());
-            startup.setNome(dto.nome());
-            startup.setEmail(dto.email());
-            startup.setUfIbge(dto.ufIbge());
-            startup.setMunicipioIbge(dto.municipioIbge());
-            startup.setLocalidadeSede(dto.localidadeSede());
-            startup.setLocalidadeAtuacao(dto.localidadeAtuacao());
-            startup.setModalidadesSuportadas(dto.modalidadesSuportadas());
-            startup.setTemasIds(dto.temasIds());
-            return startup;
+            return converterDtoParaStartup(dto);
         }
 
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+    }
+
+    private Startup converterDtoParaStartup(StartupResponseDTO dto) {
+        Startup startup = new Startup();
+        startup.setId(dto.id());
+        startup.setNome(dto.nome());
+        startup.setEmail(dto.email());
+        startup.setUfIbge(dto.ufIbge());
+        startup.setMunicipioIbge(dto.municipioIbge());
+        startup.setLocalidadeSede(dto.localidadeSede());
+        startup.setLocalidadeAtuacao(dto.localidadeAtuacao());
+        startup.setModalidadesSuportadas(dto.modalidadesSuportadas());
+        startup.setTemasIds(dto.temasIds());
+        return startup;
     }
 
     public List<DesafioAnonimoResponseDTO> preFiltrarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {

@@ -36,7 +36,6 @@ class MatchmakingServiceTest {
     void setUp() {
         matchmakingService = new MatchmakingService(
                 new NullObjectProvider<>(),
-                new NullObjectProvider<>(),
                 new NullObjectProvider<>()
         );
     }
@@ -230,8 +229,7 @@ class MatchmakingServiceTest {
 
         MatchmakingService service = new MatchmakingService(
                 new NullObjectProvider<>(),
-                new FixedObjectProvider<>(repo),
-                new NullObjectProvider<>()
+                new FixedObjectProvider<>(repo)
         );
 
         Startup encontrada = service.obterStartup(startupId);
@@ -252,7 +250,6 @@ class MatchmakingServiceTest {
 
         MatchmakingService service = new MatchmakingService(
                 new FixedObjectProvider<>(startupService),
-                new NullObjectProvider<>(),
                 new NullObjectProvider<>()
         );
 
@@ -281,6 +278,7 @@ class MatchmakingServiceTest {
 
     @Test
     void obterStartupInexistenteLanca404() {
-        assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(UUID.randomUUID()));
+        UUID idInexistente = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(idInexistente));
     }
 }
