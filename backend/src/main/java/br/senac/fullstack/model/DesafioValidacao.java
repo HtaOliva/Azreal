@@ -66,4 +66,12 @@ public class DesafioValidacao {
         this.id = UUID.randomUUID();
         this.dataCriacao = LocalDateTime.now(ZoneId.systemDefault());
     }
+
+    public String getUfIbge() {
+        return ambienteValidacao != null ? ambienteValidacao.getUfIbge() : null;
+    }
+
+    public String getMunicipioIbge() {
+        return ambienteValidacao != null ? ambienteValidacao.getMunicipioIbge() : null;
+    }
 }
