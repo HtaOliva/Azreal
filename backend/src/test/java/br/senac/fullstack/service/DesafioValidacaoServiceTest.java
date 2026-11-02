@@ -32,6 +32,9 @@ import static org.mockito.Mockito.when;
 
 class DesafioValidacaoServiceTest {
 
+    private static final String DESCRICAO_PROBLEMA_PADRAO = "Descrição detalhada do problema de validação operacional";
+    private static final String DESAFIO_REPO_TITULO = "Desafio Repo";
+
     private DesafioValidacaoService service() {
         return new DesafioValidacaoService(
                 new NullObjectProvider<>(),
@@ -44,7 +47,7 @@ class DesafioValidacaoServiceTest {
         return new DesafioValidacaoRequestDTO(
                 ambienteId,
                 titulo,
-                "Descrição detalhada do problema de validação operacional",
+                DESCRICAO_PROBLEMA_PADRAO,
                 "Usuários do sistema interno",
                 100,
                 ModalidadeTeste.PRESENCIAL,
@@ -198,7 +201,7 @@ class DesafioValidacaoServiceTest {
         DesafioAnonimoResponseDTO anonimo = anonimos.get(0);
         assertEquals(d1.id(), anonimo.id());
         assertEquals("Desafio Ativo 1", anonimo.titulo());
-        assertEquals("Descrição detalhada do problema de validação operacional", anonimo.descricaoProblema());
+        assertEquals(DESCRICAO_PROBLEMA_PADRAO, anonimo.descricaoProblema());
         assertNotNull(anonimo.setor());
         assertNotNull(anonimo.porte());
         assertNotNull(anonimo.ufIbge());
@@ -241,7 +244,7 @@ class DesafioValidacaoServiceTest {
                 new NullObjectProvider<>()
         );
 
-        DesafioValidacaoResponseDTO dto = s.criar(novoRequest(ambId, "Desafio Repo"));
+        DesafioValidacaoResponseDTO dto = s.criar(novoRequest(ambId, DESAFIO_REPO_TITULO));
         assertNotNull(dto);
         assertEquals("Logistica", dto.setor());
         verify(ambRepo).findById(ambId);
@@ -260,7 +263,8 @@ class DesafioValidacaoServiceTest {
                 new NullObjectProvider<>()
         );
 
-        assertThrows(ResponseStatusException.class, () -> s.criar(novoRequest(ambId, "Desafio Repo")));
+        DesafioValidacaoRequestDTO req = novoRequest(ambId, DESAFIO_REPO_TITULO);
+        assertThrows(ResponseStatusException.class, () -> s.criar(req));
     }
 
     @Test

@@ -377,6 +377,7 @@ class MatchmakingServiceTest {
 
     @Test
     void obterStartupInexistenteLanca404() {
-        assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(UUID.randomUUID()));
+        UUID idInexistente = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(idInexistente));
     }
 }

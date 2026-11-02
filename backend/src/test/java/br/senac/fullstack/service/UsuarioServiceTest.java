@@ -5,6 +5,7 @@ import br.senac.fullstack.dto.UsuarioResponseDTO;
 import br.senac.fullstack.dto.UsuarioUpdateDTO;
 import br.senac.fullstack.model.Usuario;
 import br.senac.fullstack.repository.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,52 +24,59 @@ import static org.mockito.Mockito.when;
 
 class UsuarioServiceTest {
 
-    private PasswordEncoder encoder() {
-        PasswordEncoder e = mock(PasswordEncoder.class);
-        when(e.encode(any())).thenReturn("hash");
-        return e;
-    }
+    private static final String EMAIL_PADRAO = "e@e.com";
+    private static final String NOVO_EMAIL = "novo@test.com";
+    private static final String NOME_NOVO = "Novo";
 
-    private UsuarioService serviceWithNullRepo() {
-        return new UsuarioService(new NullObjectProvider<>(), encoder());
+    private PasswordEncoder encoder;
+    private UsuarioService serviceNullRepo;
+
+    @BeforeEach
+    void setUp() {
+        encoder = mock(PasswordEncoder.class);
+        when(encoder.encode(any())).thenReturn("hash");
+        serviceNullRepo = new UsuarioService(new NullObjectProvider<>(), encoder);
     }
 
     @Test
     void listarSemRepoRetornaVazio() {
-        assertTrue(serviceWithNullRepo().listar().isEmpty());
+        assertTrue(serviceNullRepo.listar().isEmpty());
     }
 
     @Test
     void buscarSemRepoLanca503() {
-        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().buscarPorId(1L));
+        assertThrows(ResponseStatusException.class, () -> serviceNullRepo.buscarPorId(1L));
     }
 
     @Test
     void salvarSemRepoLanca503() {
-        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
+        UsuarioRequestDTO dto = new UsuarioRequestDTO("n", EMAIL_PADRAO, "s");
+        assertThrows(ResponseStatusException.class, () -> serviceNullRepo.salvar(dto));
     }
 
     @Test
     void atualizarSemRepoLanca503() {
-        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().atualizar(1L, new UsuarioUpdateDTO("n", "e@e.com", "s")));
+        UsuarioUpdateDTO dto = new UsuarioUpdateDTO("n", EMAIL_PADRAO, "s");
+        assertThrows(ResponseStatusException.class, () -> serviceNullRepo.atualizar(1L, dto));
     }
 
     @Test
     void definirAtivoSemRepoLanca503() {
-        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().definirAtivo(1L, true));
+        assertThrows(ResponseStatusException.class, () -> serviceNullRepo.definirAtivo(1L, true));
     }
 
     @Test
     void deletarSemRepoLanca503() {
-        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().deletar(1L));
+        assertThrows(ResponseStatusException.class, () -> serviceNullRepo.deletar(1L));
     }
 
     @Test
     void salvarComRepoDuplicadoLancaConflict() {
         UsuarioRepository repo = mock(UsuarioRepository.class);
-        when(repo.existsByEmail("e@e.com")).thenReturn(true);
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
-        assertThrows(ResponseStatusException.class, () -> s.salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
+        when(repo.existsByEmail(EMAIL_PADRAO)).thenReturn(true);
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
+        UsuarioRequestDTO dto = new UsuarioRequestDTO("n", EMAIL_PADRAO, "s");
+        assertThrows(ResponseStatusException.class, () -> s.salvar(dto));
     }
 
     @Test
@@ -81,12 +89,12 @@ class UsuarioServiceTest {
             return u;
         });
 
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
-        UsuarioResponseDTO resp = s.salvar(new UsuarioRequestDTO("Novo", "novo@e.com", "senha123"));
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
+        UsuarioResponseDTO resp = s.salvar(new UsuarioRequestDTO(NOME_NOVO, "novo@e.com", "senha123"));
 
         assertNotNull(resp);
         assertEquals(10L, resp.id());
-        assertEquals("Novo", resp.nome());
+        assertEquals(NOME_NOVO, resp.nome());
         assertEquals("novo@e.com", resp.email());
     }
 
@@ -96,9 +104,10 @@ class UsuarioServiceTest {
         Usuario u = new Usuario();
         u.setId(1L);
         u.setNome("n");
-        u.setEmail("e@e.com");
+        u.setEmail(EMAIL_PADRAO);
         when(repo.findById(1L)).thenReturn(Optional.of(u));
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
         UsuarioResponseDTO r = s.buscarPorId(1L);
         assertNotNull(r);
         assertEquals("n", r.nome());
@@ -108,7 +117,7 @@ class UsuarioServiceTest {
     void buscarComRepoInexistenteLanca404() {
         UsuarioRepository repo = mock(UsuarioRepository.class);
         when(repo.findById(99L)).thenReturn(Optional.empty());
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
         assertThrows(ResponseStatusException.class, () -> s.buscarPorId(99L));
     }
 
@@ -121,14 +130,28 @@ class UsuarioServiceTest {
         u.setEmail("u1@test.com");
         when(repo.findAll()).thenReturn(List.of(u));
 
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
         List<UsuarioResponseDTO> lista = s.listar();
         assertEquals(1, lista.size());
         assertEquals("User 1", lista.get(0).nome());
     }
 
     @Test
-    void atualizarComSucessoEConflito() {
+    void atualizarComConflitoLanca409() {
+        UsuarioRepository repo = mock(UsuarioRepository.class);
+        Usuario u = new Usuario();
+        u.setId(1L);
+        when(repo.findById(1L)).thenReturn(Optional.of(u));
+        when(repo.existsByEmail("duplicado@test.com")).thenReturn(true);
+
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
+        UsuarioUpdateDTO dto = new UsuarioUpdateDTO(NOME_NOVO, "duplicado@test.com", "pass");
+
+        assertThrows(ResponseStatusException.class, () -> s.atualizar(1L, dto));
+    }
+
+    @Test
+    void atualizarComSucesso() {
         UsuarioRepository repo = mock(UsuarioRepository.class);
         Usuario u = new Usuario();
         u.setId(1L);
@@ -137,18 +160,14 @@ class UsuarioServiceTest {
 
         when(repo.findById(1L)).thenReturn(Optional.of(u));
         when(repo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
-        when(repo.existsByEmail("duplicado@test.com")).thenReturn(true);
-        when(repo.existsByEmail("novo@test.com")).thenReturn(false);
+        when(repo.existsByEmail(NOVO_EMAIL)).thenReturn(false);
 
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
-
-        assertThrows(ResponseStatusException.class,
-                () -> s.atualizar(1L, new UsuarioUpdateDTO("Novo", "duplicado@test.com", "pass")));
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
 
         UsuarioResponseDTO atualizado = s.atualizar(
-                1L, new UsuarioUpdateDTO("Novo Nome", "novo@test.com", "novaSenha"));
+                1L, new UsuarioUpdateDTO("Novo Nome", NOVO_EMAIL, "novaSenha"));
         assertEquals("Novo Nome", atualizado.nome());
-        assertEquals("novo@test.com", atualizado.email());
+        assertEquals(NOVO_EMAIL, atualizado.email());
     }
 
     @Test
@@ -160,16 +179,21 @@ class UsuarioServiceTest {
         when(repo.findById(1L)).thenReturn(Optional.of(u));
         when(repo.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(repo.existsById(1L)).thenReturn(true);
-        when(repo.existsById(2L)).thenReturn(false);
 
-        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
 
         UsuarioResponseDTO inativo = s.definirAtivo(1L, false);
         assertNotNull(inativo);
 
         s.deletar(1L);
         verify(repo).deleteById(1L);
+    }
 
+    @Test
+    void deletarInexistenteLanca404() {
+        UsuarioRepository repo = mock(UsuarioRepository.class);
+        when(repo.existsById(2L)).thenReturn(false);
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder);
         assertThrows(ResponseStatusException.class, () -> s.deletar(2L));
     }
 }

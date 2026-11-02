@@ -3,6 +3,7 @@ package br.senac.fullstack.service;
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
 import br.senac.fullstack.dto.DesafioRecomendadoDTO;
 import br.senac.fullstack.dto.RankedDesafioAiResult;
+import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.exception.AiMatchmakingException;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.ModalidadeTeste;
@@ -111,20 +112,17 @@ public class MatchmakingService {
         String municipioStartup = obterMunicipioStartup(startup);
 
         // Se o desafio presencial ou híbrido possui UF alvo definida
-        if (ufDesafio != null && !ufDesafio.isBlank()) {
-            if (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim())) {
-                return false;
-            }
+        if (ufDesafio != null && !ufDesafio.isBlank()
+                && (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim()))) {
+            return false;
         }
 
         // Se o desafio presencial possui município definido
         if (modalidadeDesafio == ModalidadeTeste.PRESENCIAL
-                && municipioDesafio != null && !municipioDesafio.isBlank()) {
-            if (municipioStartup != null && !municipioStartup.isBlank()) {
-                if (!municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim())) {
-                    return false;
-                }
-            }
+                && municipioDesafio != null && !municipioDesafio.isBlank()
+                && municipioStartup != null && !municipioStartup.isBlank()
+                && !municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim())) {
+            return false;
         }
 
         return true;
@@ -262,20 +260,7 @@ public class MatchmakingService {
         StartupService service = startupServiceProvider.getIfAvailable();
         if (service != null) {
             var dto = service.buscar(startupId);
-            Startup startup = new Startup();
-            startup.setId(dto.id());
-            startup.setNome(dto.nome());
-            startup.setEmail(dto.email());
-            startup.setAreaAtuacao(dto.areaAtuacao());
-            startup.setDescricao(dto.descricao());
-            startup.setOQuePrecisaValidar(dto.oQuePrecisaValidar());
-            startup.setUfIbge(dto.ufIbge());
-            startup.setMunicipioIbge(dto.municipioIbge());
-            startup.setLocalidadeSede(dto.localidadeSede());
-            startup.setLocalidadeAtuacao(dto.localidadeAtuacao());
-            startup.setModalidadesSuportadas(dto.modalidadesSuportadas());
-            startup.setTemasIds(dto.temasIds());
-            return startup;
+            return converterDtoParaStartup(dto);
         }
 
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
@@ -301,9 +286,31 @@ public class MatchmakingService {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
     }
 
+    private Startup converterDtoParaStartup(StartupResponseDTO dto) {
+        Startup startup = new Startup();
+        startup.setId(dto.id());
+        startup.setNome(dto.nome());
+        startup.setEmail(dto.email());
+        startup.setAreaAtuacao(dto.areaAtuacao());
+        startup.setDescricao(dto.descricao());
+        startup.setOQuePrecisaValidar(dto.oQuePrecisaValidar());
+        startup.setUfIbge(dto.ufIbge());
+        startup.setMunicipioIbge(dto.municipioIbge());
+        startup.setLocalidadeSede(dto.localidadeSede());
+        startup.setLocalidadeAtuacao(dto.localidadeAtuacao());
+        startup.setModalidadesSuportadas(dto.modalidadesSuportadas());
+        startup.setTemasIds(dto.temasIds());
+        return startup;
+    }
+
     public List<DesafioRecomendadoDTO> recomendarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
         Startup startup = obterStartup(startupId);
         List<DesafioValidacao> pool = (desafios != null && !desafios.isEmpty()) ? desafios : obterDesafiosAtivos();
         return recomendarDesafios(startup, pool);
+    }
+
+    public List<DesafioAnonimoResponseDTO> preFiltrarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
+        Startup startup = obterStartup(startupId);
+        return filtrarDesafiosAnonimos(startup, desafios);
     }
 }
