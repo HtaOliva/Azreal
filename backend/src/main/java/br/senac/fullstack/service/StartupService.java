@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class StartupService {
 
+    private static final String STARTUP_NAO_ENCONTRADA = "Startup nao encontrada";
+
     private final ObjectProvider<StartupRepository> repositoryProvider;
     private final AceiteTermoService aceiteTermoService;
     private final Map<UUID, Startup> memory = new ConcurrentHashMap<>();
@@ -83,19 +85,21 @@ public class StartupService {
         return toResponse(startup);
     }
 
-    public StartupResponseDTO buscar(UUID id) {
+    private Startup obterPorId(UUID id) {
         StartupRepository repo = repository();
-        Startup startup;
         if (repo != null) {
-            startup = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
-        } else {
-            startup = memory.get(id);
-            if (startup == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
-            }
+            return repo.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
         }
-        return toResponse(startup);
+        Startup startup = memory.get(id);
+        if (startup == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+        }
+        return startup;
+    }
+
+    public StartupResponseDTO buscar(UUID id) {
+        return toResponse(obterPorId(id));
     }
 
     public List<StartupResponseDTO> listar() {
@@ -111,16 +115,7 @@ public class StartupService {
 
     public StartupResponseDTO atualizar(UUID id, StartupUpdateDTO request) {
         StartupRepository repo = repository();
-        Startup startup;
-        if (repo != null) {
-            startup = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
-        } else {
-            startup = memory.get(id);
-            if (startup == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
-            }
-        }
+        Startup startup = obterPorId(id);
         aplicarAtualizacoesBasicas(startup, request);
         aplicarAtualizacoesPocMatch(startup, request);
 
