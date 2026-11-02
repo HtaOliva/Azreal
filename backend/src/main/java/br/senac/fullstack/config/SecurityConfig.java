@@ -2,8 +2,11 @@ package br.senac.fullstack.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.HttpMethod;
+import org.springframework.context.annotation.Profile;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.Customizer;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -18,8 +21,10 @@ import java.util.List;
 
 @Configuration
 @EnableWebSecurity
-
+@EnableMethodSecurity
+@Profile("!ldap")
 public class SecurityConfig {
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
@@ -28,8 +33,22 @@ public class SecurityConfig {
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/actuator/health", "/api/v1/health", "/api/v1/hello", "/api/v1/CAMINHO_DO_401").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/usuarios").permitAll()
+                        .requestMatchers(
+                                "/actuator/health",
+                                "/api/v1/health",
+                                "/api/v1/hello",
+                                "/api/v1/CAMINHO_DO_401",
+                                "/v3/api-docs/**",
+                                "/swagger-ui/**",
+                                "/swagger-ui.html").permitAll()
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/usuarios")).permitAll()
+                        .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
+                                || request.getRequestURI().startsWith("/startups")
+                                || request.getRequestURI().startsWith("/ambientes-validacao")
+                                || request.getRequestURI().startsWith("/termos")
+                                || request.getRequestURI().startsWith("/temas")
+                                || request.getRequestURI().startsWith("/regras")
+                                || request.getRequestURI().startsWith("/incubadoras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return http.build();
@@ -50,5 +69,10 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration configuration) throws Exception {
+        return configuration.getAuthenticationManager();
     }
 }

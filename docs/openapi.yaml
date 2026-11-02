@@ -1,0 +1,1330 @@
+openapi: 3.0.3
+info:
+  title: Azreal POC-Match API
+  version: 2.0.0
+  description: |
+    Contrato API-first oficial da plataforma **Azreal (POC-Match)**: matchmaking de validação entre **Startups early stage (Lado A)** e **Ambientes de Validação (Lado B)** para realização de Provas de Conceito (POCs) estruturadas, formalização de Termo de Piloto com anonimato em camadas e emissão de Registro Oficial de POC verificável.
+    Autenticação JWT Bearer / LLDAP (`RF04`). Perfis: `STARTUP`, `AMBIENTE_VALIDACAO`, `ADMIN`.
+servers:
+  - url: http://localhost:8080
+    description: Ambiente Local
+  - url: https://api.azreal.example.com
+    description: Ambiente de Produção
+
+security:
+  - bearerAuth: []
+
+paths:
+  /auth/login:
+    post:
+      tags: [Sprint 1 - Auth & LGPD]
+      summary: Login na plataforma (RF04)
+      description: Autentica credenciais e retorna token JWT e roles (`STARTUP`, `AMBIENTE_VALIDACAO`, `ADMIN`).
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Autenticado com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          description: Credenciais inválidas
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /me:
+    get:
+      tags: [Sprint 1 - Auth & LGPD]
+      summary: Perfil do usuário autenticado (RF04)
+      responses:
+        '200':
+          description: Dados do usuário autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MeResponse'
+    delete:
+      tags: [Sprint 1 - Auth & LGPD]
+      summary: Exclusão da própria conta pelo titular (RNF05 - LGPD)
+      responses:
+        '204':
+          description: Conta excluída/anonimizada com sucesso
+
+  /termos/aceite:
+    post:
+      tags: [Sprint 1 - Auth & LGPD]
+      summary: Registrar consentimento dos termos de uso e LGPD (RF01, RF03, RNF05)
+      description: Registra aceite com data/hora imutável e cláusula explícita sobre envio de textos descritivos (sem dados pessoais) para a API de IA.
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AceiteTermoRequest'
+      responses:
+        '201':
+          description: Consentimento registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AceiteTermoResponse'
+
+  /termos/modelo-piloto:
+    get:
+      tags: [Sprint 1 - Administração]
+      summary: Obter modelo base ativo do Termo de Piloto e Cláusula de Sigilo (RF09, RF12)
+      security: []
+      responses:
+        '200':
+          description: Modelo base ativo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModeloTermoPilotoResponse'
+    post:
+      tags: [Sprint 1 - Administração]
+      summary: Cadastrar novo modelo base do Termo de Piloto e Cláusula de Sigilo (RF09 - Admin)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ModeloTermoPilotoRequest'
+      responses:
+        '201':
+          description: Modelo criado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ModeloTermoPilotoResponse'
+
+  /startups:
+    post:
+      tags: [Sprint 1 - Startups (Lado A)]
+      summary: Cadastro de Startup com perfil de capacidade e validação (RF01, RF02)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupRequest'
+      responses:
+        '201':
+          description: Startup cadastrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+        '400':
+          description: Erro de validação ou ausência de consentimento LGPD
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /startups/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 1 - Startups (Lado A)]
+      summary: Consultar perfil de Startup por ID (RF01)
+      responses:
+        '200':
+          description: Perfil da Startup
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+    put:
+      tags: [Sprint 1 - Startups (Lado A)]
+      summary: Atualizar perfil, temas e modalidades da Startup (RF01, RF02)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartupUpdateRequest'
+      responses:
+        '200':
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StartupResponse'
+
+  /ambientes-validacao:
+    post:
+      tags: [Sprint 1 - Ambientes de Validação (Lado B)]
+      summary: Cadastro de Ambiente de Validação (Organização Parceira - RF03)
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmbienteValidacaoRequest'
+      responses:
+        '201':
+          description: Ambiente de Validação cadastrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmbienteValidacaoResponse'
+
+  /ambientes-validacao/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 1 - Ambientes de Validação (Lado B)]
+      summary: Consultar dados do próprio Ambiente de Validação (RF03, RNF04)
+      description: Restrito ao próprio Ambiente de Validação ou ADMIN para impedir exposição da identidade antes do Termo de Piloto.
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Perfil organizacional completo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmbienteValidacaoResponse'
+    put:
+      tags: [Sprint 1 - Ambientes de Validação (Lado B)]
+      summary: Atualizar perfil do Ambiente de Validação (RF03)
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AmbienteValidacaoUpdateRequest'
+      responses:
+        '200':
+          description: Perfil atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AmbienteValidacaoResponse'
+
+  /temas:
+    get:
+      tags: [Sprint 1 - Administração]
+      summary: Listar temas e setores ativos do vocabulário padronizado (RF02, RF05, RF08)
+      security: []
+      responses:
+        '200':
+          description: Lista do vocabulário ativo
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TemaVocabularioResponse'
+    post:
+      tags: [Sprint 1 - Administração]
+      summary: Criar tema ou setor no vocabulário padronizado (RF08 - Admin)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TemaVocabularioRequest'
+      responses:
+        '201':
+          description: Item criado no vocabulário
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TemaVocabularioResponse'
+
+  /incubadoras:
+    get:
+      tags: [Sprint 1 - Administração]
+      summary: Listar catálogo complementar de incubadoras/programas ativos (RF07)
+      security: []
+      responses:
+        '200':
+          description: Lista de incubadoras ativas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IncubadoraResponse'
+    post:
+      tags: [Sprint 1 - Administração]
+      summary: Cadastrar incubadora/programa no catálogo consultivo (RF07 - Admin)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IncubadoraRequest'
+      responses:
+        '201':
+          description: Incubadora cadastrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IncubadoraResponse'
+
+  /usuarios/{id}/ativo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      tags: [Sprint 1 - Administração]
+      summary: Ativar ou desativar conta de usuário (RF07 - Admin)
+      security:
+        - bearerAuth: [ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ativo]
+              properties:
+                ativo:
+                  type: boolean
+      responses:
+        '200':
+          description: Status da conta atualizado
+
+  /desafios:
+    get:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Listar Desafios de Validação ativos de forma ANÔNIMA (RF06, RNF01, RNF04)
+      description: Exibe apenas o problema, setor, porte da organização, localidade, modalidade, ambiente de teste e restrições, ocultando razão social, CNPJ e contatos até o aceite do Termo de Piloto.
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Lista anônima de desafios ativos
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DesafioAnonimoResponse'
+    post:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Publicar novo Desafio de Validação (RF05)
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesafioValidacaoRequest'
+      responses:
+        '201':
+          description: Desafio publicado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesafioValidacaoGestaoResponse'
+
+  /desafios/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Obter detalhe anônimo de um Desafio de Validação (RF06, RNF04)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Desafio anônimo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesafioAnonimoResponse'
+    put:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Editar Desafio de Validação pelo Ambiente responsável (RF05)
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DesafioValidacaoRequest'
+      responses:
+        '200':
+          description: Desafio atualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DesafioValidacaoGestaoResponse'
+
+  /desafios/{id}/ativo:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Ativar ou inativar Desafio de Validação (RF05)
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [ativo]
+              properties:
+                ativo:
+                  type: boolean
+      responses:
+        '204':
+          description: Status do desafio atualizado
+
+  /startups/{id}/desafios-recomendados:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 2 - Desafios & Matchmaking]
+      summary: Matchmaking de Desafios compatíveis com IA + Fallback por Regras (RF10, RF11, RNF03, RNF06)
+      description: Filtra desafios ativos por critérios objetivos (modalidade, localidade, LGPD) e ordena do mais ao menos compatível com 1 frase curta de justificativa (sem pontuação percentual). Aciona fallback automático por regras em caso de indisponibilidade da IA.
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Lista ordenada de desafios recomendados (anônimos)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DesafioRecomendadoResponse'
+
+  /propostas-poc:
+    post:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Enviar Proposta Enxuta de POC com aceite prévio do Termo e Sigilo (RF12, RF13, RNF02)
+      description: Limite máximo de 3 propostas pendentes simultâneas por startup para desafios diferentes.
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PropostaPocRequest'
+      responses:
+        '201':
+          description: Proposta enviada com sucesso
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropostaPocResponse'
+        '422':
+          description: Limite de 3 propostas pendentes atingido ou proposta duplicada para o mesmo desafio
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetail'
+
+  /startups/{id}/propostas-poc:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Acompanhar propostas e pilotos da Startup (RF17)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Lista de propostas e pilotos da startup
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PropostaPocResponse'
+
+  /ambientes-validacao/{id}/fila-propostas:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Consultar fila de propostas de POC pendentes do Ambiente (RF14, RNF01)
+      description: Exibe propostas pendentes recebidas nos desafios do Ambiente, com prazo de resposta de 5 dias úteis pelo calendário de Pernambuco.
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Fila de propostas pendentes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/PropostaPocResponse'
+
+  /propostas-poc/{id}/cancelar:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Cancelar proposta pendente antes do aceite (RF13, RF14)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Proposta cancelada e vaga liberada no limite de 3
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropostaPocResponse'
+
+  /propostas-poc/{id}/responder:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    put:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Aceitar ou recusar Proposta de POC (RF15, RF16, RNF02, RNF08)
+      description: Se aceitar (`aceitar=true`), congela os campos combinados, gera o Termo de Piloto assinado (`Status: EM_TESTE`) e revela a identidade/contatos da organização parceira. Se recusar (`aceitar=false`), exige motivo curto, encerra como `RECUSADA` e libera a vaga da startup.
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RespostaPropostaPocRequest'
+      responses:
+        '200':
+          description: Resposta processada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropostaPocResponse'
+
+  /termos-piloto/{propostaId}:
+    parameters:
+      - name: propostaId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      tags: [Sprint 3 - Proposta de POC & Termo de Piloto]
+      summary: Consultar Termo de Piloto assinado e contatos liberados (RF15, RNF04)
+      description: Disponível apenas após o aceite (`EM_TESTE` ou posterior). Revela a identidade completa do Ambiente de Validação e os canais de contato mútuos.
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      responses:
+        '200':
+          description: Termo de Piloto congelado com identidade e contatos revelados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TermoPilotoResponse'
+
+  /propostas-poc/{id}/entrega:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Sprint 4 - Execução, Registro de POC & Auditoria]
+      summary: Registrar resumo do que foi entregue ao fim do piloto (RF18)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/EntregaPilotoRequest'
+      responses:
+        '200':
+          description: Entrega registrada e Ambiente notificado para confirmação
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropostaPocResponse'
+
+  /propostas-poc/{id}/confirmacao-resultado:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Sprint 4 - Execução, Registro de POC & Auditoria]
+      summary: Confirmar execução do piloto, avaliar métrica e emitir Registro Oficial de POC (RF19, RF20, RNF02, RNF08)
+      security:
+        - bearerAuth: [ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConfirmacaoResultadoPocRequest'
+      responses:
+        '200':
+          description: Resultado confirmado (gera Registro Oficial de POC se `pilotoExecutado=true`, ou marca `POC_NAO_CONFIRMADA` se `false`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PropostaPocResponse'
+
+  /startups/{id}/registros-poc:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 4 - Execução, Registro de POC & Auditoria]
+      summary: Listar portfólio/histórico de Registros Oficiais de POC da Startup (RF20, RNF01)
+      security: []
+      responses:
+        '200':
+          description: Portfólio verificável de POCs concluídas e atestadas
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/RegistroOficialPocResponse'
+
+  /registros-poc/{id}:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    get:
+      tags: [Sprint 4 - Execução, Registro de POC & Auditoria]
+      summary: Verificar Registro Oficial de POC por ID (RF20)
+      security: []
+      responses:
+        '200':
+          description: Registro Oficial de POC verificável
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RegistroOficialPocResponse'
+
+  /propostas-poc/{id}/avaliacao-match:
+    parameters:
+      - $ref: '#/components/parameters/IdParam'
+    post:
+      tags: [Sprint 4 - Execução, Registro de POC & Auditoria]
+      summary: Avaliar qualidade do matchmaking após conclusão (RF21)
+      security:
+        - bearerAuth: [ROLE_STARTUP, ROLE_AMBIENTE_VALIDACAO]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AvaliacaoMatchRequest'
+      responses:
+        '201':
+          description: Avaliação registrada
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    IdParam:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+
+    LoginResponse:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresIn:
+          type: integer
+        roles:
+          type: array
+          items:
+            type: string
+
+    MeResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        perfil:
+          type: string
+          enum: [STARTUP, AMBIENTE_VALIDACAO, ADMIN]
+
+    AceiteTermoRequest:
+      type: object
+      required: [versaoTermo, consentimentoIaAnonimizado]
+      properties:
+        versaoTermo:
+          type: string
+        consentimentoIaAnonimizado:
+          type: boolean
+          description: Consentimento explícito para envio de textos descritivos (sem dados pessoais) à API de IA (RNF05)
+        ip:
+          type: string
+
+    AceiteTermoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        versaoTermo:
+          type: string
+        consentimentoIaAnonimizado:
+          type: boolean
+        dataHora:
+          type: string
+          format: date-time
+
+    EstagioPrototipo:
+      type: string
+      enum: [PROTOTIPO_INICIAL, MVP_FUNCIONAL, EM_TESTE]
+
+    ModalidadeTeste:
+      type: string
+      enum: [PRESENCIAL, REMOTO, HIBRIDO]
+
+    PorteOrganizacao:
+      type: string
+      enum: [PEQUENO, MEDIO, GRANDE, ORGAO_PUBLICO, INSTITUICAO_ENSINO_SAUDE, COMUNIDADE]
+
+    StartupRequest:
+      type: object
+      required: [nome, email, senha, descricaoSolucao, setorAtuacao, estagioPrototipo, ufIbge, municipioIbge, oQuePrecisaValidar, temasIds, modalidadesSuportadas, aceiteTermoId]
+      properties:
+        nome:
+          type: string
+          maxLength: 120
+        email:
+          type: string
+          format: email
+        senha:
+          type: string
+          minLength: 8
+        descricaoSolucao:
+          type: string
+        setorAtuacao:
+          type: string
+        dataFundacao:
+          type: string
+          format: date
+        estagioPrototipo:
+          $ref: '#/components/schemas/EstagioPrototipo'
+        integrantes:
+          type: array
+          items:
+            type: string
+        ufIbge:
+          type: string
+          example: PE
+        municipioIbge:
+          type: string
+          example: Recife
+        oQuePrecisaValidar:
+          type: string
+        temasIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        modalidadesSuportadas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModalidadeTeste'
+        aceiteTermoId:
+          type: string
+          format: uuid
+
+    StartupUpdateRequest:
+      type: object
+      properties:
+        nome:
+          type: string
+        descricaoSolucao:
+          type: string
+        setorAtuacao:
+          type: string
+        estagioPrototipo:
+          $ref: '#/components/schemas/EstagioPrototipo'
+        integrantes:
+          type: array
+          items:
+            type: string
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        oQuePrecisaValidar:
+          type: string
+        temasIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        modalidadesSuportadas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModalidadeTeste'
+
+    StartupResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        email:
+          type: string
+        descricaoSolucao:
+          type: string
+        setorAtuacao:
+          type: string
+        dataFundacao:
+          type: string
+          format: date
+        estagioPrototipo:
+          $ref: '#/components/schemas/EstagioPrototipo'
+        integrantes:
+          type: array
+          items:
+            type: string
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        oQuePrecisaValidar:
+          type: string
+        temasIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        modalidadesSuportadas:
+          type: array
+          items:
+            $ref: '#/components/schemas/ModalidadeTeste'
+        dataCadastro:
+          type: string
+          format: date-time
+
+    AmbienteValidacaoRequest:
+      type: object
+      required: [razaoSocial, nomeFantasia, setor, porte, ufIbge, municipioIbge, emailContato, senha, aceiteTermoId]
+      properties:
+        razaoSocial:
+          type: string
+        nomeFantasia:
+          type: string
+        setor:
+          type: string
+        porte:
+          $ref: '#/components/schemas/PorteOrganizacao'
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        emailContato:
+          type: string
+          format: email
+        telefoneContato:
+          type: string
+        linkedinUrl:
+          type: string
+        senha:
+          type: string
+          minLength: 8
+        aceiteTermoId:
+          type: string
+          format: uuid
+
+    AmbienteValidacaoUpdateRequest:
+      type: object
+      properties:
+        nomeFantasia:
+          type: string
+        setor:
+          type: string
+        porte:
+          $ref: '#/components/schemas/PorteOrganizacao'
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        emailContato:
+          type: string
+          format: email
+        telefoneContato:
+          type: string
+        linkedinUrl:
+          type: string
+
+    AmbienteValidacaoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        razaoSocial:
+          type: string
+        nomeFantasia:
+          type: string
+        setor:
+          type: string
+        porte:
+          $ref: '#/components/schemas/PorteOrganizacao'
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        emailContato:
+          type: string
+        telefoneContato:
+          type: string
+        linkedinUrl:
+          type: string
+        dataCadastro:
+          type: string
+          format: date-time
+
+    DesafioValidacaoRequest:
+      type: object
+      required: [ambienteValidacaoId, tituloProblema, descricaoDorOperacional, prioridade, setor, temasIds, ambienteDisponivelTeste, modalidade, duracaoMaximaDias, restricoesDadosLgpd]
+      properties:
+        ambienteValidacaoId:
+          type: string
+          format: uuid
+        tituloProblema:
+          type: string
+          maxLength: 160
+        descricaoDorOperacional:
+          type: string
+        prioridade:
+          type: string
+          enum: [BAIXA, MEDIA, ALTA, CRITICA]
+        setor:
+          type: string
+        temasIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        ambienteDisponivelTeste:
+          type: string
+          description: Ex.: 30 usuários do setor de triagem / ambiente de homologação
+        modalidade:
+          $ref: '#/components/schemas/ModalidadeTeste'
+        duracaoMaximaDias:
+          type: integer
+          example: 30
+        restricoesDadosLgpd:
+          type: string
+
+    DesafioValidacaoGestaoResponse:
+      allOf:
+        - $ref: '#/components/schemas/DesafioAnonimoResponse'
+        - type: object
+          properties:
+            ambienteValidacaoId:
+              type: string
+              format: uuid
+            ativo:
+              type: boolean
+
+    DesafioAnonimoResponse:
+      type: object
+      description: Representação estritamente anônima exibida às Startups antes do aceite do Termo de Piloto (RF06, RNF04). Não contém razão social, nome fantasia nem contatos.
+      properties:
+        id:
+          type: string
+          format: uuid
+        tituloProblema:
+          type: string
+        descricaoDorOperacional:
+          type: string
+        prioridade:
+          type: string
+          enum: [BAIXA, MEDIA, ALTA, CRITICA]
+        setor:
+          type: string
+        porteOrganizacao:
+          $ref: '#/components/schemas/PorteOrganizacao'
+        ufIbge:
+          type: string
+        municipioIbge:
+          type: string
+        temasIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        ambienteDisponivelTeste:
+          type: string
+        modalidade:
+          $ref: '#/components/schemas/ModalidadeTeste'
+        duracaoMaximaDias:
+          type: integer
+        restricoesDadosLgpd:
+          type: string
+        dataPublicacao:
+          type: string
+          format: date-time
+
+    DesafioRecomendadoResponse:
+      type: object
+      description: Item retornado pelo matchmaking (RF10/RF11), sem pontuação percentual (0-100%), com 1 frase curta explicando o motivo da sugestão.
+      properties:
+        posicaoRanking:
+          type: integer
+        motivoSugestao:
+          type: string
+          description: Frase curta gerada pela IA ou pelo template de fallback por regras
+        origemOrdenacao:
+          type: string
+          enum: [IA, FALLBACK_REGRAS]
+        desafio:
+          $ref: '#/components/schemas/DesafioAnonimoResponse'
+
+    StatusPropostaPoc:
+      type: string
+      enum: [PENDENTE, EM_TESTE, RECUSADA, CANCELADA, EXPIRADA, POC_CONCLUIDA, POC_NAO_CONFIRMADA]
+
+    PropostaPocRequest:
+      type: object
+      required: [startupId, desafioId, objetivoEscopoTeste, entregasPrevistas, responsabilidadesStartup, responsabilidadesAmbiente, duracaoSugeridaDias, metricaValidacao, aceitePrevioTermoSigilo]
+      properties:
+        startupId:
+          type: string
+          format: uuid
+        desafioId:
+          type: string
+          format: uuid
+        objetivoEscopoTeste:
+          type: string
+        entregasPrevistas:
+          type: string
+        responsabilidadesStartup:
+          type: string
+        responsabilidadesAmbiente:
+          type: string
+        duracaoSugeridaDias:
+          type: integer
+          example: 30
+        metricaValidacao:
+          type: string
+          description: Indicador objetivo que será avaliado ao final do piloto
+        aceitePrevioTermoSigilo:
+          type: boolean
+          description: Deve ser true no ato do envio (RF12)
+
+    PropostaPocResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        desafioId:
+          type: string
+          format: uuid
+        objetivoEscopoTeste:
+          type: string
+        entregasPrevistas:
+          type: string
+        responsabilidadesStartup:
+          type: string
+        responsabilidadesAmbiente:
+          type: string
+        duracaoSugeridaDias:
+          type: integer
+        metricaValidacao:
+          type: string
+        status:
+          $ref: '#/components/schemas/StatusPropostaPoc'
+        motivoRecusa:
+          type: string
+        resumoEntregaStartup:
+          type: string
+        dataSubmissao:
+          type: string
+          format: date-time
+        prazoRespostaAmbiente:
+          type: string
+          format: date-time
+          description: Calculado em 5 dias úteis pelo calendário estadual de Pernambuco (RF14)
+
+    RespostaPropostaPocRequest:
+      type: object
+      required: [aceitar]
+      properties:
+        aceitar:
+          type: boolean
+        motivoRecusa:
+          type: string
+          description: Obrigatório quando `aceitar=false` (RF16)
+
+    TermoPilotoResponse:
+      type: object
+      description: Termo de Piloto congelado após aceite de ambas as partes, revelando a identidade do Ambiente de Validação e os canais de contato (RF15).
+      properties:
+        id:
+          type: string
+          format: uuid
+        propostaPocId:
+          type: string
+          format: uuid
+        startupId:
+          type: string
+          format: uuid
+        ambienteValidacaoId:
+          type: string
+          format: uuid
+        objetivoEscopoCongelado:
+          type: string
+        entregasCongeladas:
+          type: string
+        responsabilidadesStartupCongeladas:
+          type: string
+        responsabilidadesAmbienteCongeladas:
+          type: string
+        duracaoDiasCongelada:
+          type: integer
+        metricaValidacaoCongelada:
+          type: string
+        clausulaSigiloLgpd:
+          type: string
+        dataAssinaturaStartup:
+          type: string
+          format: date-time
+        dataAssinaturaAmbiente:
+          type: string
+          format: date-time
+        identidadeAmbienteRevelada:
+          $ref: '#/components/schemas/AmbienteValidacaoResponse'
+
+    EntregaPilotoRequest:
+      type: object
+      required: [resumoEntrega]
+      properties:
+        resumoEntrega:
+          type: string
+          description: Resumo do que foi efetivamente entregue e testado no piloto (RF18)
+
+    ResultadoMetricaPoc:
+      type: string
+      enum: [ATENDEU_TOTALMENTE, ATENDEU_PARCIALMENTE, NAO_ATINGIU_METRICA]
+
+    TipoExibicaoRegistroPoc:
+      type: string
+      enum: [NOMINAL_ORGANIZACAO, ANONIMA_QUALIFICADA_SETOR_PORTE]
+
+    ConfirmacaoResultadoPocRequest:
+      type: object
+      required: [pilotoExecutado]
+      properties:
+        pilotoExecutado:
+          type: boolean
+        resultadoMetrica:
+          $ref: '#/components/schemas/ResultadoMetricaPoc'
+        parecerAmbiente:
+          type: string
+        exibicaoAutorizada:
+          $ref: '#/components/schemas/TipoExibicaoRegistroPoc'
+
+    RegistroOficialPocResponse:
+      type: object
+      description: Evidência verificável de tração emitida no portfólio da startup após confirmação pelo Ambiente de Validação (RF20).
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigoVerificacao:
+          type: string
+        startupId:
+          type: string
+          format: uuid
+        startupNome:
+          type: string
+        escopoTestado:
+          type: string
+        duracaoRealizadaDias:
+          type: integer
+        metricaAvaliada:
+          type: string
+        resultadoMetrica:
+          $ref: '#/components/schemas/ResultadoMetricaPoc'
+        parecerAmbiente:
+          type: string
+        exibicaoAutorizada:
+          $ref: '#/components/schemas/TipoExibicaoRegistroPoc'
+        identificacaoAmbienteExibida:
+          type: string
+          description: Nome da organização parceira (se NOMINAL_ORGANIZACAO) ou descrição anônima qualificada por setor e porte (se ANONIMA_QUALIFICADA_SETOR_PORTE)
+        dataEmissao:
+          type: string
+          format: date-time
+
+    AvaliacaoMatchRequest:
+      type: object
+      required: [encaixeFezSentido, notaQualidade]
+      properties:
+        encaixeFezSentido:
+          type: boolean
+        notaQualidade:
+          type: integer
+          minimum: 1
+          maximum: 5
+        comentario:
+          type: string
+
+    TemaVocabularioRequest:
+      type: object
+      required: [nome, tipo]
+      properties:
+        nome:
+          type: string
+        tipo:
+          type: string
+          enum: [SETOR, TEMA]
+        descricao:
+          type: string
+
+    TemaVocabularioResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        tipo:
+          type: string
+          enum: [SETOR, TEMA]
+        descricao:
+          type: string
+        ativo:
+          type: boolean
+
+    ModeloTermoPilotoRequest:
+      type: object
+      required: [versao, titulo, conteudoClausulasSigiloLgpd]
+      properties:
+        versao:
+          type: string
+        titulo:
+          type: string
+        conteudoClausulasSigiloLgpd:
+          type: string
+
+    ModeloTermoPilotoResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        versao:
+          type: string
+        titulo:
+          type: string
+        conteudoClausulasSigiloLgpd:
+          type: string
+        ativo:
+          type: boolean
+        dataCriacao:
+          type: string
+          format: date-time
+
+    IncubadoraRequest:
+      type: object
+      required: [nome, foco, criteriosEntrada, modalidade, linkExterno]
+      properties:
+        nome:
+          type: string
+        foco:
+          type: string
+        criteriosEntrada:
+          type: string
+        modalidade:
+          $ref: '#/components/schemas/ModalidadeTeste'
+        linkExterno:
+          type: string
+
+    IncubadoraResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nome:
+          type: string
+        foco:
+          type: string
+        criteriosEntrada:
+          type: string
+        modalidade:
+          $ref: '#/components/schemas/ModalidadeTeste'
+        linkExterno:
+          type: string
+        ativo:
+          type: boolean
+
+    ProblemDetail:
+      type: object
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+        detail:
+          type: string
+        instance:
+          type: string

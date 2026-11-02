@@ -1,93 +1,46 @@
-# 05 — DevOps, Pipeline CI/CD & Gestão de Qualidade
+# 05 — DevOps, Pipeline CI/CD, GitFlow & Gestão de Qualidade — Azreal (POC-Match)
 
-**Padrão:** Estrutura de automação de engenharia e esteira de entrega contínua (**GitHub Actions + SonarQube + SemVer**).  
+**Padrão:** Governança de Engenharia de Software da Unidade de Extensão Full Stack (**GitHub Actions + SonarQube + SemVer 2.0.0 + Conventional Commits**).  
+**Responsável DevOps / Scrum Master:** Arthur Cézar Félix da Cunha (`@arthur-cunha`)  
+**Responsável QA / Database (Flyway & SonarQube):** Giselly Luiza Rocha de Lima (`@gixweb`)
 
 ---
 
-## 1. Estratégia de Ramificação (Git Flow Adaptado)
+## 1. Estratégia de Ramificação (GitFlow Institucional)
 
 ```
-main (Produção - Apenas Releases estáveis taggeadas v1.0.0)
+main (Produção Estável — Releases taggeadas: v0.1.0-alpha, v0.5.0-beta, v1.0.0)
   ▲
-  │ (Pull Request com Quality Gate Verde)
-develop (Ambiente de Integração & Staging)
+  │ (Pull Request aprovado + Quality Gate SonarQube Verde + OWASP ZAP DAST)
+development (Integração Contínua & Homologação Staging + Nuclei DAST)
   ▲
-  ├── feature/US-01-login-lldap
-  ├── feature/US-02-rbac-guards
-  └── feature/US-03-cadastro-beneficiario
+  ├── feature/sprint1-fundacao-poc-match
+  ├── feature/sprint2-desafios-matchmaking-ia
+  ├── feature/sprint3-propostas-termo-piloto
+  └── feature/sprint4-registro-poc-auditoria
 ```
 
-* **Regras de Proteção de Branch:**
-  - Proibido commit direto na `main` e na `develop`.
-  - Todo merge exige Pull Request com pelo menos 1 aprovação (Peer Review).
-  - O pipeline de CI/CD deve executar e passar 100% dos testes e Quality Gate antes do merge.
+* **Normas de Governança de Código e Pull Requests:**
+  1. **Proibido "Big Bang Pull Request":** Cada branch `feature/*` ou `bugfix/*` deve focar em um incremento coeso de Sprint/Issue, mantendo Pull Requests enxutos e revisáveis.
+  2. **Conventional Commits Obrigatórios:** Todo commit deve ser atômico e seguir o padrão `feat(escopo): ...`, `fix(escopo): ...`, `refactor(escopo): ...`, `docs(escopo): ...`, `test(escopo): ...` ou `chore(escopo): ...` referenciando a Issue ou Requisito correspondente.
+  3. **Quality Gate Bloqueante:** Nenhum Pull Request pode sofrer merge em `development` ou `main` se qualquer check falhar (Checkstyle, ESLint, JUnit 5/JaCoCo, Vitest, ArchUnit, Semgrep, Gitleaks, Syft/Grype ou SonarQube `azreal-backend` / `azreal-frontend`).
 
 ---
 
-## 2. Pipeline de CI/CD (`.github/workflows/ci-cd.yml`)
+## 2. Matriz Oficial de 23 Labels em 5 Dimensões (`Issue #26`)
 
-O workflow executa automaticamente em cada `push` e `pull_request`:
-
-```yaml
-name: CI/CD Pipeline - Full Stack Extension
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main, develop ]
-
-jobs:
-  backend-build-test:
-    name: Backend Build & Test (Spring Boot)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Java 21
-        uses: actions/setup-java@v4
-        with:
-          java-version: '21'
-          distribution: 'temurin'
-      - name: Build and Run Tests
-        run: |
-          cd backend
-          ./mvnw clean verify
-
-  frontend-build-test:
-    name: Frontend Build & Lint (Angular)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Setup Node.js 20
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-      - name: Install Dependencies & Lint
-        run: |
-          cd frontend
-          npm ci
-          npm run lint --if-present
-          npm run build -- --configuration production
-
-  sonarqube-quality-gate:
-    name: SonarQube Quality Gate Audit
-    needs: [backend-build-test, frontend-build-test]
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: SonarQube Scan
-        uses: SonarSource/sonarqube-scan-action@v2
-        env:
-          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-```
+1. **Tipo (`type:`):** `type:architecture` (`#5319e7`), `type:feature` (`#0e8a16`), `type:bug` (`#d73a4a`), `type:chore` (`#fef2c0`), `type:docs` (`#0075ca`), `type:test` (`#bfdadc`).
+2. **Escopo (`scope:`):** `scope:auth` (`#fbca04`), `scope:catalog` (`#1d76db`), `scope:search` (`#c2e0c6`), `scope:negotiation` (`#d4c5f9`), `scope:rating` (`#bfd4f2`), `scope:dashboard` (`#f9d0c4`), `scope:devops` (`#0052cc`).
+3. **Camada Técnica (`stack:`):** `stack:backend` (`#006b75`), `stack:frontend` (`#e99695`), `stack:database` (`#c5def5`).
+4. **Prioridade (`priority:`):** `priority:critical` (`#b60205`), `priority:high` (`#e11d21`), `priority:medium` (`#fbca04`), `priority:low` (`#d4c5f9`).
+5. **Status do Fluxo (`status:`):** `status:ready` (`#0e8a16`), `status:in-progress` (`#fef2c0`), `status:blocked` (`#d93f0b`).
 
 ---
 
-## 3. Padrão de Versionamento Semântico (SemVer)
+## 3. Padrão de Versionamento Semântico (SemVer 2.0.0 — `Issue #25`)
 
-* **`v0.1.0-alpha` (Meet 06):** Protótipo navegável inicial com tela de login e esqueleto das rotas.
-* **`v0.5.0-beta` (Meet 12):** Versão homologada com dados reais e regras de negócio completas.
-* **`v1.0.0` (Meet 16):** Versão final de produção apresentada na Feira de Extensão Senac.
+Os manifestos [pom.xml](../pom.xml), [backend/pom.xml](../backend/pom.xml) e [frontend/package.json](../frontend/package.json) permanecem sincronizados com as tags Git anotadas:
+
+* **`v0.1.0-alpha` (Sprint 1):** Saneamento de escopo (`#27`), documentação oficial completa sem placeholders (`#28`), migrations Flyway `V1` (`#29`), autenticação LLDAP/RBAC (`#37`), Swagger UI (`#39`) e perfis `Startup` / `AmbienteValidacao` (`RF01`–`RF04`, `RF07`–`RF09`).
+* **`v0.5.0-beta` (Sprints 2 e 3):** Publicação anônima de Desafios de Validação (`RF05`, `RF06`), Matchmaking IA + Fallback por Regras (`RF10`, `RF11`), Proposta Enxuta de POC (limite máx. 3) e geração do Termo de Piloto congelado (`RF12`–`RF17`).
+* **`v1.0.0` (Sprint 4 — Release Final 27/11/2026):** Registro de entrega, confirmação pelo Ambiente, emissão do Registro Oficial de POC verificável, avaliação do matchmaking e trilha imutável de auditoria (`RF18`–`RF21`, `RNF08`).

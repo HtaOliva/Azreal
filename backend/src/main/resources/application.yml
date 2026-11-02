@@ -11,6 +11,11 @@ spring:
       ddl-auto: update
     show-sql: true
     open-in-view: false
+  ldap:
+    urls: ${LLDAP_URL:ldap://localhost:389}
+    base: ${LLDAP_BASE_DN:dc=example,dc=com}
+    username: ${LLDAP_BIND_DN:}
+    password: ${LLDAP_BIND_PASSWORD:}
 logging:
   level:
     root: INFO
@@ -21,6 +26,8 @@ server:
 
 app:
   environment: development
+  ldap:
+    admin-group: ${LLDAP_ADMIN_GROUP:azrael_admin}
 
 management:
   endpoints:

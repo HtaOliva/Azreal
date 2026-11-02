@@ -1,65 +1,84 @@
 # 00 — Architecture Frontier & Decisões Arquiteturais (ADR)
 
-**Projeto:** [Nome do Projeto de Extensão Full Stack]  
-**Equipe:** [Nome da Equipe / Alunos]  
-**Organização Parceira (ONG):** [Nome da Organização Parceira]  
+**Projeto:** Azreal (POC-Match) — Plataforma de Matchmaking de Validação e Provas de Conceito (POC)  
+**Unidade Curricular:** Unidade de Extensão: Full Stack (ADS 5P — 2026.2) — Faculdade Senac Pernambuco  
+**Docente / Avaliador:** Prof. Fábio Chicout  
+**Equipe Grupo 2 (Azreal):**  
+- **Ágata Maria Ferraz de Oliveira** (`agata.oliveira`) — Product Owner & Business Analyst  
+- **Alanna Beatriz Bezerra dos Santos** (`alanna.santos`) — Tech Lead Front-End (Angular 22)  
+- **Arthur Cézar Félix da Cunha** (`arthur.cunha`) — Scrum Master & DevOps Lead (GitFlow & CI/CD)  
+- **Cesar Kauan Barbosa Silva** (`cesar.silva`) — Software Engineer (Back-End REST & LLDAP Security)  
+- **Giselly Luiza Rocha de Lima** (`giselly.lima`) — Database Engineer & QA Lead (Flyway & Testes)  
+
+**Públicos Validados em Campo:** Startups *early stage* de Recife/PE (*Nook*, *Rede Leito*) e Ambientes de Validação parceiros (empresas, instituições de ensino/saúde e órgãos públicos locais).
 
 ---
 
-## 1. Visão Geral da Arquitetura (System Context)
+## 1. Visão Geral da Arquitetura (System Context — C4 Model)
 
-Descreva em alto nível o ecossistema da aplicação, as fronteiras entre os subsistemas e a integração com serviços externos.
+O **Azreal (POC-Match)** conecta **Startups *early stage* (Lado A)** a **Ambientes de Validação (Lado B)** com demandas operacionais reais para realizar **Provas de Conceito (POCs)** estruturadas, protegidas por anonimato em camadas até o aceite do **Termo de Piloto** e culminando na emissão de um **Registro Oficial de POC** verificável.
 
 ```mermaid
 flowchart TD
     subgraph Client ["Frontend: Single Page Application (SPA)"]
-        UI ["Angular v17+ (Standalone Components, RxJS, Tailwind/CSS)"]
+        UI ["Angular 22 (100% Zoneless, Signals, OnPush, Vitest)"]
     end
 
-    subgraph Gateway ["Camada de Borda / Segurança"]
-        AuthGuard ["Auth Interceptor / Route Guards (JWT Bearer Token)"]
+    subgraph Gateway ["Camada de Borda / Segurança RBAC"]
+        AuthGuard ["Auth Interceptor / Route Guards (ROLE_STARTUP, ROLE_AMBIENTE_VALIDACAO, ROLE_ADMIN)"]
     end
 
-    subgraph Backend ["Backend: API REST Enterprise"]
-        Spring ["Spring Boot 3.x (Spring Web, Spring Security, Spring Data JPA)"]
-        LLDAPClient ["Cliente de Autenticação LDAP / LLDAP"]
+    subgraph Backend ["Backend: API REST Enterprise (azreal-backend)"]
+        Spring ["Spring Boot 3.3 (Java 21 LTS, Validation, SpringDoc OpenAPI 3)"]
+        MatchEngine ["Matchmaking Engine (Filtro Determinístico + Cliente IA + Fallback por Regras)"]
+        LLDAPClient ["Spring Security LDAP / JWT Provider"]
     end
 
-    subgraph Persistence ["Camada de Dados & Infraestrutura"]
-        SQLite [("Banco de Dados SQLite3 (extensao.db)")]
-        LLDAPServer [("Servidor LLDAP / Homelab (cn=gestor, cn=operador)")]
+    subgraph External ["Serviços Externos & Infraestrutura Institucional"]
+        Postgres [("PostgreSQL + Flyway Migrations (db/migration/V1..V4)")]
+        LLDAPServer [("Servidor LLDAP Institucional (lldap.fchicout.dev — azrael_admin / azrael_app)")]
+        LLM ["API Externa de IA (Ordenação Semântica Anonimizada c/ Timeout Seguro)"]
     end
 
-    UI -->|HTTP / REST JSON| Gateway
-    Gateway -->|Requisições Autenticadas| Spring
-    Spring -->|Validação de Credenciais| LLDAPClient
-    LLDAPClient <-->|Bind LDAP| LLDAPServer
-    Spring <-->|JPA / Hibernate ORM| SQLite
+    UI -->|HTTPS / REST JSON| Gateway
+    Gateway -->|Bearer JWT / Basic| Spring
+    Spring --> MatchEngine
+    MatchEngine -->|Textos Sanitizados s/ Dados Pessoais| LLM
+    Spring -->|Bind & Group Lookup| LLDAPClient
+    LLDAPClient <-->|LDAP Protocol| LLDAPServer
+    Spring <-->|Spring Data JPA + Flyway| Postgres
 ```
 
 ---
 
 ## 2. Matriz Tecnológica Obrigatória (Tech Stack)
 
-| Camada | Tecnologia Adotada | Justificativa Técnica |
+| Camada | Tecnologia Adotada | Justificativa Técnica no Azreal (POC-Match) |
 | :--- | :--- | :--- |
-| **Front-End** | **Angular 17+ / 18+** | Framework opinado, tipagem estrita com TypeScript, arquitetura de componentes e injeção de dependências nativa. |
-| **Back-End** | **Java SE 21 + Spring Boot 3.x** | Padrão corporativo, robustez em APIs REST, segurança integrada (`Spring Security`) e validações declarativas (`@Valid`). |
-| **Persistência** | **Spring Data JPA + SQLite3** | Facilidade de implantação local/edge sem necessidade de gerenciar daemons de banco pesados, portabilidade e persistência em arquivo único (`extensao.db`). |
-| **Autenticação** | **LLDAP (LDAP Light)** | Gestão centralizada de identidades e RBAC (*Role-Based Access Control*) com grupos institucionais. |
-| **Qualidade & CI/CD** | **GitHub Actions + SonarQube** | Validação automatizada de testes, cobertura de código e aplicação de Quality Gate estrito. |
+| **Front-End** | **Angular 22 (Zoneless + Signals)** | Reatividade moderna sem `zone.js`, componentes standalone, tipagem estrita e testes com Vitest. |
+| **Back-End** | **Java 21 LTS + Spring Boot 3.3** | API REST robusta, validação declarativa (`jakarta.validation`), isolamento arquitetural verificado com **ArchUnit** e estilo validado por **Checkstyle**. |
+| **Persistência & Schema** | **Spring Data JPA + PostgreSQL + Flyway** | Persistência relacional transacional para o ciclo `Desafio -> PropostaPoc -> TermoPiloto -> RegistroOficialPoc`, com versionamento determinístico via **Flyway** (`db/migration`). |
+| **Autenticação & RBAC** | **Spring Security + LLDAP (`lldap.fchicout.dev`)** | Autenticação integrada ao diretório LLDAP institucional (`Service Account: azrael_app`, grupo `azrael_admin` [ID: 12]) e segregação estrita entre `STARTUP`, `AMBIENTE_VALIDACAO` e `ADMIN`. |
+| **Documentação API** | **SpringDoc OpenAPI 3 + Swagger UI** | Geração automática e interativa do contrato OpenAPI 3.0.3 em `/swagger-ui.html` e `/v3/api-docs`. |
+| **Qualidade & DevSecOps** | **GitHub Actions + SonarQube + Semgrep + Gitleaks + Grype** | Pipeline completo com Quality Gate institucional (`sonar.fchicout.dev`), cobertura JaCoCo &ge; 80%, SAST, detecção de segredos e análise de vulnerabilidades (SBOM). |
 
 ---
 
 ## 3. Architecture Decision Records (ADR)
 
-### 📄 ADR-001: Adoção do SQLite3 para o MVP de Extensão Comunitária
+### 📄 ADR-001: Privacidade e Anonimato em Camadas via DTOs Segregados (`RNF04`)
 * **Status:** Aprovado.
-* **Contexto:** A organização parceira possui infraestrutura computacional enxuta e necessita de um sistema de manutenção simplificada e backup por cópia de arquivo.
-* **Decisão:** Utilizar SQLite3 via driver JPA para simplificar a esteira de deploy e eliminar custos de infraestrutura de nuvem na fase de validação.
-* **Consequências:** Deploy em container único; necessidade de controle de concorrência de escrita via WAL mode (`PRAGMA journal_mode=WAL`).
+* **Contexto:** Organizações parceiras (Ambientes de Validação) precisam publicar dores operacionais reais sem expor sua razão social, CNPJ ou contatos antes de aprovarem uma proposta de piloto, evitando abordagens frias fora da plataforma.
+* **Decisão:** Segregar estritamente os contratos de saída no backend: rotas voltadas a `STARTUP` na fase de descoberta (`GET /desafios`, `GET /startups/{id}/desafios-recomendados`) utilizam exclusivamente `DesafioAnonimoResponseDTO` (exibindo apenas problema, setor, porte, localidade IBGE, modalidade, ambiente de teste e restrições LGPD). Os dados nominais e contatos só são trafegados no `TermoPilotoResponseDTO` após a transição da proposta para `Status: EM_TESTE` (`RF15`).
+* **Consequências:** Impede vazamento acidental de identidade no JSON da API; auditado por testes automatizados de serialização.
 
-### 📄 ADR-002: Gestão de Identidades Centralizada via LLDAP
+### 📄 ADR-002: Matchmaking Híbrido com IA Semântica, Sanitização Anti-Prompt Injection e Fallback Determinístico (`RF10`, `RF11`, `RNF03`, `RNF06`)
 * **Status:** Aprovado.
-* **Contexto:** Segregação de papéis entre administradores da ONG, voluntários operadores e beneficiários comunitários.
-* **Decisão:** Autenticação delegada ao servidor LLDAP do homelab com mapeamento de *Roles* para Authorities do Spring Security.
+* **Contexto:** O matchmaking entre soluções de startups e desafios reais deve explicar em uma frase curta o motivo da compatibilidade (sem usar *scorecard* percentual de 0 a 100%, diferenciando-se do projeto *Percentangel*), mas não pode parar de funcionar caso a API externa de IA sofra *timeout* ou indisponibilidade.
+* **Decisão:** Implementar o `MatchmakingService` em duas fases: (1) pré-filtro determinístico por modalidade, localidade e restrições LGPD; (2) ordenação via API de IA com delimitadores estritos de dados de entrada (*anti-prompt injection* `RNF06`) e sem envio de dados pessoais (`RNF05`). Caso ocorra falha ou *timeout*, o sistema aciona automaticamente o ordenador determinístico por regras (setor, temas do vocabulário `RF08` e modalidade/município) com frase justificativa gerada por template.
+* **Consequências:** Alta resiliência operacional (`RNF03`) e rastreabilidade da eficácia da IA frente às regras (`RF21`).
+
+### 📄 ADR-003: Gestão de Identidades via LLDAP Institucional e Versionamento de Banco com Flyway
+* **Status:** Aprovado.
+* **Contexto:** Atender às normas de governança da Unidade de Extensão Full Stack (Issues `#29` e `#37`).
+* **Decisão:** Utilizar o servidor institucional `lldap.fchicout.dev` para bind LDAP e mapeamento do grupo `azrael_admin` para `ROLE_ADMIN`, mantendo suporte de fallback em memória via `ObjectProvider` para execução rápida e isolada da suíte de testes unitários JUnit 5, e versionar o schema relacional PostgreSQL com **Flyway**.
