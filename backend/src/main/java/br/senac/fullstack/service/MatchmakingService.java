@@ -70,15 +70,20 @@ public class MatchmakingService {
             return false;
         }
 
-        return switch (modalidadeDesafio) {
-            case REMOTO -> modalidadesStartup.contains(ModalidadeTeste.REMOTO)
+        if (modalidadeDesafio == ModalidadeTeste.REMOTO) {
+            return modalidadesStartup.contains(ModalidadeTeste.REMOTO)
                     || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO);
-            case PRESENCIAL -> modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
+        }
+        if (modalidadeDesafio == ModalidadeTeste.PRESENCIAL) {
+            return modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
                     || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO);
-            case HIBRIDO -> modalidadesStartup.contains(ModalidadeTeste.HIBRIDO)
+        }
+        if (modalidadeDesafio == ModalidadeTeste.HIBRIDO) {
+            return modalidadesStartup.contains(ModalidadeTeste.HIBRIDO)
                     || (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
                     && modalidadesStartup.contains(ModalidadeTeste.REMOTO));
-        };
+        }
+        return false;
     }
 
     private boolean compativelLocalidade(Startup startup, DesafioValidacao desafio) {

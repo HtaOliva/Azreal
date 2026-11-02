@@ -1,15 +1,23 @@
 package br.senac.fullstack.service;
 
+import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoRequestDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoUpdateDTO;
+import br.senac.fullstack.model.AmbienteValidacao;
+import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.ModalidadeTeste;
+import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
+import br.senac.fullstack.repository.AmbienteValidacaoRepository;
+import br.senac.fullstack.repository.DesafioValidacaoRepository;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -17,6 +25,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class DesafioValidacaoServiceTest {
 
@@ -176,7 +188,6 @@ class DesafioValidacaoServiceTest {
 
         List<DesafioAnonimoResponseDTO> anonimos = s.listarAtivosAnonimos();
 
-        // Retorna apenas os ativos
         assertEquals(1, anonimos.size());
         DesafioAnonimoResponseDTO anonimo = anonimos.get(0);
         assertEquals(d1.id(), anonimo.id());
@@ -190,11 +201,128 @@ class DesafioValidacaoServiceTest {
         assertEquals(100, anonimo.tamanhoAmostra());
         assertEquals(30, anonimo.duracaoMaxima());
 
-        // Assertivas de isolamento estrito de privacidade (RNF04)
         String anonimoPayload = anonimo.toString();
         assertFalse(anonimoPayload.contains("emailContato"));
         assertFalse(anonimoPayload.contains("telefoneContato"));
         assertFalse(anonimoPayload.contains("razaoSocial"));
         assertFalse(anonimoPayload.contains("nomeFantasia"));
+    }
+
+    @Test
+    void criarComAmbienteIdNuloLanca400() {
+        DesafioValidacaoService s = service();
+        DesafioValidacaoRequestDTO req = new DesafioValidacaoRequestDTO(
+                null, "Titulo", "Problema", null, null, ModalidadeTeste.REMOTO, null);
+        assertThrows(ResponseStatusException.class, () -> s.criar(req));
+    }
+
+    @Test
+    void integrarComAmbienteValidacaoRepositoryQuandoDisponivel() {
+        AmbienteValidacaoRepository ambRepo = mock(AmbienteValidacaoRepository.class);
+        UUID ambId = UUID.randomUUID();
+        AmbienteValidacao amb = new AmbienteValidacao();
+        amb.setId(ambId);
+        amb.setSetor("Logistica");
+        amb.setPorte(PorteOrganizacao.PEQUENO);
+        when(ambRepo.findById(ambId)).thenReturn(Optional.of(amb));
+
+        DesafioValidacaoRepository desafioRepo = mock(DesafioValidacaoRepository.class);
+        when(desafioRepo.save(any(DesafioValidacao.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        DesafioValidacaoService s = new DesafioValidacaoService(
+                new FixedObjectProvider<>(desafioRepo),
+                new FixedObjectProvider<>(ambRepo),
+                new NullObjectProvider<>()
+        );
+
+        DesafioValidacaoResponseDTO dto = s.criar(novoRequest(ambId, "Desafio Repo"));
+        assertNotNull(dto);
+        assertEquals("Logistica", dto.setor());
+        verify(ambRepo).findById(ambId);
+        verify(desafioRepo).save(any());
+    }
+
+    @Test
+    void integrarComAmbienteValidacaoRepositoryNaoEncontradoLanca404() {
+        AmbienteValidacaoRepository ambRepo = mock(AmbienteValidacaoRepository.class);
+        UUID ambId = UUID.randomUUID();
+        when(ambRepo.findById(ambId)).thenReturn(Optional.empty());
+
+        DesafioValidacaoService s = new DesafioValidacaoService(
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(ambRepo),
+                new NullObjectProvider<>()
+        );
+
+        assertThrows(ResponseStatusException.class, () -> s.criar(novoRequest(ambId, "Desafio Repo")));
+    }
+
+    @Test
+    void integrarComAmbienteValidacaoServiceQuandoDisponivel() {
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        UUID ambId = UUID.randomUUID();
+        AmbienteValidacaoResponseDTO ambDTO = new AmbienteValidacaoResponseDTO(
+                ambId, "Org S.A.", "Org Fantasia", "Agro", PorteOrganizacao.GRANDE,
+                "PE", "Petrolina", "agro@org.com", "87999990000", "https://linkedin.com",
+                true, LocalDateTime.now());
+        when(ambService.buscar(ambId)).thenReturn(ambDTO);
+
+        DesafioValidacaoService s = new DesafioValidacaoService(
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(ambService)
+        );
+
+        DesafioValidacaoResponseDTO dto = s.criar(novoRequest(ambId, "Desafio com Service"));
+        assertNotNull(dto);
+        assertEquals("Agro", dto.setor());
+        assertEquals("Org Fantasia", dto.ambienteValidacaoNome());
+    }
+
+    @Test
+    void operacoesDelegamParaDesafioValidacaoRepositoryQuandoPresente() {
+        DesafioValidacaoRepository desafioRepo = mock(DesafioValidacaoRepository.class);
+        UUID desafioId = UUID.randomUUID();
+        UUID ambId = UUID.randomUUID();
+
+        AmbienteValidacao amb = new AmbienteValidacao();
+        amb.setId(ambId);
+        amb.setSetor("Fintech");
+        amb.setPorte(PorteOrganizacao.MEDIO);
+
+        DesafioValidacao d = new DesafioValidacao();
+        d.setId(desafioId);
+        d.setAmbienteValidacao(amb);
+        d.setTitulo("Desafio Banco");
+        d.setAtivo(true);
+        d.setStatus(StatusDesafio.ABERTO);
+
+        when(desafioRepo.findById(desafioId)).thenReturn(Optional.of(d));
+        when(desafioRepo.save(any())).thenReturn(d);
+        when(desafioRepo.findByAmbienteValidacaoId(ambId)).thenReturn(List.of(d));
+        when(desafioRepo.findByAtivoTrue()).thenReturn(List.of(d));
+
+        DesafioValidacaoService s = new DesafioValidacaoService(
+                new FixedObjectProvider<>(desafioRepo),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>()
+        );
+
+        DesafioValidacaoResponseDTO buscado = s.buscar(desafioId);
+        assertEquals("Desafio Banco", buscado.titulo());
+
+        DesafioValidacaoUpdateDTO update = new DesafioValidacaoUpdateDTO(
+                "Desafio Banco Atualizado", null, null, null, null, null, null);
+        s.atualizar(desafioId, update);
+        verify(desafioRepo).save(d);
+
+        s.inativar(desafioId);
+        assertFalse(d.isAtivo());
+
+        List<DesafioValidacaoResponseDTO> porAmbiente = s.listarPorAmbiente(ambId);
+        assertEquals(1, porAmbiente.size());
+
+        List<DesafioAnonimoResponseDTO> ativos = s.listarAtivosAnonimos();
+        assertEquals(1, ativos.size());
     }
 }

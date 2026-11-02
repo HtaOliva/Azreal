@@ -1,23 +1,32 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
+import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
+import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.model.StatusDesafio;
+import br.senac.fullstack.repository.StartupRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class MatchmakingServiceTest {
 
@@ -152,6 +161,44 @@ class MatchmakingServiceTest {
     }
 
     @Test
+    void fallbackLocalidadeAtuacaoESedeQuandoUFIbgeNulo() {
+        AmbienteValidacao amb = criarAmbiente("PE", "Recife");
+        DesafioValidacao dPresencial = criarDesafio(amb, ModalidadeTeste.PRESENCIAL);
+
+        Startup startupLegado = new Startup();
+        startupLegado.setId(UUID.randomUUID());
+        startupLegado.setLocalidadeAtuacao("PE");
+        startupLegado.setLocalidadeSede("Recife");
+        startupLegado.setModalidadesSuportadas(List.of(ModalidadeTeste.PRESENCIAL));
+
+        assertTrue(matchmakingService.atendeCriteriosObjetivos(startupLegado, dPresencial));
+
+        Startup startupLegadoOutro = new Startup();
+        startupLegadoOutro.setId(UUID.randomUUID());
+        startupLegadoOutro.setLocalidadeAtuacao("BA");
+        startupLegadoOutro.setLocalidadeSede("Salvador");
+        startupLegadoOutro.setModalidadesSuportadas(List.of(ModalidadeTeste.PRESENCIAL));
+
+        assertFalse(matchmakingService.atendeCriteriosObjetivos(startupLegadoOutro, dPresencial));
+    }
+
+    @Test
+    void desafioSemModalidadeOuStartupSemModalidades() {
+        AmbienteValidacao amb = criarAmbiente("PE", "Recife");
+        DesafioValidacao dSemModalidade = criarDesafio(amb, null);
+        Startup startupComMod = criarStartup("PE", "Recife", List.of(ModalidadeTeste.REMOTO));
+
+        assertTrue(matchmakingService.atendeCriteriosObjetivos(startupComMod, dSemModalidade));
+
+        DesafioValidacao dNormal = criarDesafio(amb, ModalidadeTeste.REMOTO);
+        Startup startupSemModalidade = criarStartup("PE", "Recife", null);
+        assertFalse(matchmakingService.atendeCriteriosObjetivos(startupSemModalidade, dNormal));
+
+        Startup startupModalidadesVazias = criarStartup("PE", "Recife", List.of());
+        assertFalse(matchmakingService.atendeCriteriosObjetivos(startupModalidadesVazias, dNormal));
+    }
+
+    @Test
     void filtrarColecaoEDeferirDTOAnonimo() {
         AmbienteValidacao ambPE = criarAmbiente("PE", "Recife");
         AmbienteValidacao ambSP = criarAmbiente("SP", "São Paulo");
@@ -174,11 +221,61 @@ class MatchmakingServiceTest {
     }
 
     @Test
+    void obterStartupPorRepositoryQuandoDisponivel() {
+        StartupRepository repo = mock(StartupRepository.class);
+        UUID startupId = UUID.randomUUID();
+        Startup s = new Startup();
+        s.setId(startupId);
+        s.setNome("Startup do Repo");
+        when(repo.findById(startupId)).thenReturn(Optional.of(s));
+
+        MatchmakingService service = new MatchmakingService(
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(repo),
+                new NullObjectProvider<>()
+        );
+
+        Startup encontrada = service.obterStartup(startupId);
+        assertNotNull(encontrada);
+        assertEquals("Startup do Repo", encontrada.getNome());
+    }
+
+    @Test
+    void obterStartupPorServiceQuandoDisponivel() {
+        StartupService startupService = mock(StartupService.class);
+        UUID startupId = UUID.randomUUID();
+        StartupResponseDTO dto = new StartupResponseDTO(
+                startupId, "Startup Service", "s@test.com", "Desc", "Tech",
+                LocalDate.now(), Estagio.MVP_FUNCIONAL, List.of(), "Recife", "PE",
+                false, null, LocalDateTime.now(), "PE", "Recife", "Validar",
+                List.of(), List.of(ModalidadeTeste.REMOTO));
+        when(startupService.buscar(startupId)).thenReturn(dto);
+
+        MatchmakingService service = new MatchmakingService(
+                new FixedObjectProvider<>(startupService),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>()
+        );
+
+        Startup encontrada = service.obterStartup(startupId);
+        assertNotNull(encontrada);
+        assertEquals("Startup Service", encontrada.getNome());
+
+        AmbienteValidacao amb = criarAmbiente("PE", "Recife");
+        DesafioValidacao d = criarDesafio(amb, ModalidadeTeste.REMOTO);
+        List<DesafioAnonimoResponseDTO> anonimos = service.preFiltrarDesafiosParaStartup(startupId, List.of(d));
+        assertEquals(1, anonimos.size());
+    }
+
+    @Test
     void entradasNulasTratadasComSeguranca() {
         assertFalse(matchmakingService.atendeCriteriosObjetivos(null, null));
         assertFalse(matchmakingService.atendeCriteriosObjetivos(new Startup(), null));
         assertFalse(matchmakingService.atendeCriteriosObjetivos(null, new DesafioValidacao()));
         assertTrue(matchmakingService.filtrar(null, null).isEmpty());
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(null));
+        assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(UUID.randomUUID()));
     }
 }

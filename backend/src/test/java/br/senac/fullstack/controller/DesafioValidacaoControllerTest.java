@@ -252,4 +252,41 @@ class DesafioValidacaoControllerTest {
                 ctx.controller().inativar(ctx.desafio().id(), authInvalido);
         assertEquals(HttpStatus.FORBIDDEN, inativadoResp.getStatusCode());
     }
+
+    @Test
+    void listarPorAmbienteComPermissoes() {
+        Contexto ctx = criarContexto();
+        UUID ambienteId = ctx.desafio().ambienteValidacaoId();
+
+        Authentication authAdmin = new UsernamePasswordAuthenticationToken(
+                "admin@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        Authentication authInvalido = new UsernamePasswordAuthenticationToken(
+                "estranho@outro.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        ResponseEntity<List<DesafioValidacaoResponseDTO>> respAdmin =
+                ctx.controller().listarPorAmbiente(ambienteId, authAdmin);
+        assertEquals(HttpStatus.OK, respAdmin.getStatusCode());
+        assertEquals(1, respAdmin.getBody().size());
+
+        ResponseEntity<List<DesafioValidacaoResponseDTO>> respInvalido =
+                ctx.controller().listarPorAmbiente(ambienteId, authInvalido);
+        assertEquals(HttpStatus.FORBIDDEN, respInvalido.getStatusCode());
+
+        ResponseEntity<List<DesafioValidacaoResponseDTO>> respVazia =
+                ctx.controller().listarPorAmbiente(UUID.randomUUID(), authInvalido);
+        assertEquals(HttpStatus.OK, respVazia.getStatusCode());
+        assertTrue(respVazia.getBody().isEmpty());
+    }
+
+    @Test
+    void operacoesSemAutenticacaoRetornam403() {
+        Contexto ctx = criarContexto();
+
+        assertEquals(HttpStatus.FORBIDDEN,
+                ctx.controller().buscar(ctx.desafio().id(), null).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN,
+                ctx.controller().atualizar(ctx.desafio().id(), new DesafioValidacaoUpdateDTO(null, null, null, null, null, null, null), null).getStatusCode());
+        assertEquals(HttpStatus.FORBIDDEN,
+                ctx.controller().inativar(ctx.desafio().id(), null).getStatusCode());
+    }
 }
