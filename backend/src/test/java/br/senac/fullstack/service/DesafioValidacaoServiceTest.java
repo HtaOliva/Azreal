@@ -146,13 +146,19 @@ class DesafioValidacaoServiceTest {
     }
 
     @Test
-    void atualizarOuInativarInexistenteLanca404() {
+    void atualizarInexistenteLanca404() {
         DesafioValidacaoService s = service();
         UUID inexistente = UUID.randomUUID();
         DesafioValidacaoUpdateDTO update = new DesafioValidacaoUpdateDTO(
                 "Teste", null, null, null, null, null, null);
 
         assertThrows(ResponseStatusException.class, () -> s.atualizar(inexistente, update));
+    }
+
+    @Test
+    void inativarInexistenteLanca404() {
+        DesafioValidacaoService s = service();
+        UUID inexistente = UUID.randomUUID();
         assertThrows(ResponseStatusException.class, () -> s.inativar(inexistente));
     }
 

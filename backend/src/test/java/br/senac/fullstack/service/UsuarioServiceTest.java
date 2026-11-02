@@ -40,27 +40,27 @@ class UsuarioServiceTest {
 
     @Test
     void buscarSemRepoLanca503() {
-        assertThrows(Exception.class, () -> serviceWithNullRepo().buscarPorId(1L));
+        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().buscarPorId(1L));
     }
 
     @Test
     void salvarSemRepoLanca503() {
-        assertThrows(Exception.class, () -> serviceWithNullRepo().salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
+        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
     }
 
     @Test
     void atualizarSemRepoLanca503() {
-        assertThrows(Exception.class, () -> serviceWithNullRepo().atualizar(1L, new UsuarioUpdateDTO("n", "e@e.com", "s")));
+        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().atualizar(1L, new UsuarioUpdateDTO("n", "e@e.com", "s")));
     }
 
     @Test
     void definirAtivoSemRepoLanca503() {
-        assertThrows(Exception.class, () -> serviceWithNullRepo().definirAtivo(1L, true));
+        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().definirAtivo(1L, true));
     }
 
     @Test
     void deletarSemRepoLanca503() {
-        assertThrows(Exception.class, () -> serviceWithNullRepo().deletar(1L));
+        assertThrows(ResponseStatusException.class, () -> serviceWithNullRepo().deletar(1L));
     }
 
     @Test
@@ -68,7 +68,7 @@ class UsuarioServiceTest {
         UsuarioRepository repo = mock(UsuarioRepository.class);
         when(repo.existsByEmail("e@e.com")).thenReturn(true);
         UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
-        assertThrows(Exception.class, () -> s.salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
+        assertThrows(ResponseStatusException.class, () -> s.salvar(new UsuarioRequestDTO("n", "e@e.com", "s")));
     }
 
     @Test

@@ -42,7 +42,6 @@ class MatchmakingServiceTest {
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
-                new NullObjectProvider<>(),
                 new NullObjectProvider<>()
         );
     }
@@ -245,7 +244,6 @@ class MatchmakingServiceTest {
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
-                new NullObjectProvider<>(),
                 new FixedObjectProvider<>(mockAi)
         );
 
@@ -271,7 +269,6 @@ class MatchmakingServiceTest {
         when(mockAi.rankearComIa(any(), any())).thenThrow(new AiMatchmakingException("Timeout na API de IA"));
 
         MatchmakingService service = new MatchmakingService(
-                new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
@@ -306,7 +303,6 @@ class MatchmakingServiceTest {
 
         MatchmakingService service = new MatchmakingService(
                 new NullObjectProvider<>(),
-                new NullObjectProvider<>(),
                 new FixedObjectProvider<>(repo),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>()
@@ -317,7 +313,17 @@ class MatchmakingServiceTest {
 
         Startup porEmail = service.obterStartupPorEmail("repo@startup.com");
         assertEquals("Startup do Repo", porEmail.getNome());
+    }
 
+    @Test
+    void obterStartupPorEmailInvalidoLanca400() {
+        StartupRepository repo = mock(StartupRepository.class);
+        MatchmakingService service = new MatchmakingService(
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(repo),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>()
+        );
         assertThrows(ResponseStatusException.class, () -> service.obterStartupPorEmail(""));
         assertThrows(ResponseStatusException.class, () -> service.obterStartupPorEmail(null));
     }
@@ -336,7 +342,6 @@ class MatchmakingServiceTest {
 
         MatchmakingService service = new MatchmakingService(
                 new FixedObjectProvider<>(startupService),
-                new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>()
@@ -363,7 +368,15 @@ class MatchmakingServiceTest {
         assertTrue(matchmakingService.filtrar(null, null).isEmpty());
         assertTrue(matchmakingService.recomendarDesafios(null, null).isEmpty());
         assertTrue(matchmakingService.obterDesafiosAtivos().isEmpty());
+    }
+
+    @Test
+    void obterStartupComIdNuloLanca400() {
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(null));
+    }
+
+    @Test
+    void obterStartupInexistenteLanca404() {
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(UUID.randomUUID()));
     }
 }

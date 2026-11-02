@@ -25,20 +25,21 @@ import java.util.stream.Collectors;
 @Service
 public class MatchmakingService {
 
+    private static final String STARTUP_NAO_ENCONTRADA = "Startup nao encontrada";
+    private static final String ORIGEM_REGRAS = "REGRAS";
+    private static final String ORIGEM_IA = "IA";
+
     private final ObjectProvider<StartupService> startupServiceProvider;
-    private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<StartupRepository> startupRepositoryProvider;
     private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
     private final ObjectProvider<MatchmakingAiClient> aiClientProvider;
 
     public MatchmakingService(
             ObjectProvider<StartupService> startupServiceProvider,
-            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
             ObjectProvider<StartupRepository> startupRepositoryProvider,
             ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider,
             ObjectProvider<MatchmakingAiClient> aiClientProvider) {
         this.startupServiceProvider = startupServiceProvider;
-        this.desafioServiceProvider = desafioServiceProvider;
         this.startupRepositoryProvider = startupRepositoryProvider;
         this.desafioRepositoryProvider = desafioRepositoryProvider;
         this.aiClientProvider = aiClientProvider;
@@ -180,7 +181,7 @@ public class MatchmakingService {
                 motivo = "Recomendado por compatibilidade de perfil operacional, setor e modalidade disponivel para validacao.";
             }
 
-            recomendados.add(DesafioRecomendadoDTO.de(d, motivo, "REGRAS"));
+            recomendados.add(DesafioRecomendadoDTO.de(d, motivo, ORIGEM_REGRAS));
         }
 
         recomendados.sort((a, b) -> {
@@ -229,7 +230,7 @@ public class MatchmakingService {
             for (RankedDesafioAiResult res : aiResults) {
                 DesafioValidacao d = map.get(res.desafioId());
                 if (d != null) {
-                    recomendados.add(DesafioRecomendadoDTO.de(d, res.motivo(), "IA"));
+                    recomendados.add(DesafioRecomendadoDTO.de(d, res.motivo(), ORIGEM_IA));
                 }
             }
             return recomendados;
@@ -255,7 +256,7 @@ public class MatchmakingService {
         StartupRepository repo = startupRepositoryProvider.getIfAvailable();
         if (repo != null) {
             return repo.findById(startupId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
         }
 
         StartupService service = startupServiceProvider.getIfAvailable();
@@ -277,7 +278,7 @@ public class MatchmakingService {
             return startup;
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
     }
 
     public Startup obterStartupPorEmail(String email) {
@@ -288,7 +289,7 @@ public class MatchmakingService {
         StartupRepository repo = startupRepositoryProvider.getIfAvailable();
         if (repo != null) {
             return repo.findByEmail(email)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
         }
 
         StartupService service = startupServiceProvider.getIfAvailable();
@@ -297,7 +298,7 @@ public class MatchmakingService {
             return obterStartup(dto.id());
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
     }
 
     public List<DesafioRecomendadoDTO> recomendarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
