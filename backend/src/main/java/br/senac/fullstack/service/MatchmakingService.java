@@ -18,18 +18,17 @@ import java.util.UUID;
 @Service
 public class MatchmakingService {
 
+    private static final String STARTUP_NAO_ENCONTRADA = "Startup nao encontrada";
+
     private final ObjectProvider<StartupService> startupServiceProvider;
-    private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<StartupRepository> startupRepositoryProvider;
     private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
 
     public MatchmakingService(
             ObjectProvider<StartupService> startupServiceProvider,
-            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
             ObjectProvider<StartupRepository> startupRepositoryProvider,
             ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider) {
         this.startupServiceProvider = startupServiceProvider;
-        this.desafioServiceProvider = desafioServiceProvider;
         this.startupRepositoryProvider = startupRepositoryProvider;
         this.desafioRepositoryProvider = desafioRepositoryProvider;
     }
@@ -156,7 +155,7 @@ public class MatchmakingService {
         StartupRepository repo = startupRepositoryProvider.getIfAvailable();
         if (repo != null) {
             return repo.findById(startupId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
         }
 
         StartupService service = startupServiceProvider.getIfAvailable();
@@ -175,7 +174,7 @@ public class MatchmakingService {
             return startup;
         }
 
-        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
     }
 
     public List<DesafioAnonimoResponseDTO> preFiltrarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {

@@ -35,19 +35,19 @@ class RegraPlataformaServiceTest {
     @Test
     void atualizarInexistenteLanca() {
         RegraPlataformaService s = service();
-        assertThrows(Exception.class, () -> s.atualizar(UUID.randomUUID(), new RegraPlataformaRequestDTO("t", true)));
+        assertThrows(IllegalArgumentException.class, () -> s.atualizar(UUID.randomUUID(), new RegraPlataformaRequestDTO("t", true)));
     }
 
     @Test
     void definirAtivoInexistenteLanca() {
         RegraPlataformaService s = service();
-        assertThrows(Exception.class, () -> s.definirAtivo(UUID.randomUUID(), true));
+        assertThrows(IllegalArgumentException.class, () -> s.definirAtivo(UUID.randomUUID(), true));
     }
 
     @Test
     void buscarAtivaSemDadosLanca() {
         RegraPlataformaService s = service();
-        assertThrows(Exception.class, s::buscarAtiva);
+        assertThrows(IllegalArgumentException.class, s::buscarAtiva);
     }
 
     @Test
