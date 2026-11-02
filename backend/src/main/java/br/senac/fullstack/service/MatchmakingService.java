@@ -1,6 +1,9 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
+import br.senac.fullstack.dto.DesafioRecomendadoDTO;
+import br.senac.fullstack.dto.RankedDesafioAiResult;
+import br.senac.fullstack.exception.AiMatchmakingException;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.Startup;
@@ -12,8 +15,12 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class MatchmakingService {
@@ -22,16 +29,19 @@ public class MatchmakingService {
     private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<StartupRepository> startupRepositoryProvider;
     private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
+    private final ObjectProvider<MatchmakingAiClient> aiClientProvider;
 
     public MatchmakingService(
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
             ObjectProvider<StartupRepository> startupRepositoryProvider,
-            ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider) {
+            ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider,
+            ObjectProvider<MatchmakingAiClient> aiClientProvider) {
         this.startupServiceProvider = startupServiceProvider;
         this.desafioServiceProvider = desafioServiceProvider;
         this.startupRepositoryProvider = startupRepositoryProvider;
         this.desafioRepositoryProvider = desafioRepositoryProvider;
+        this.aiClientProvider = aiClientProvider;
     }
 
     public boolean atendeCriteriosObjetivos(Startup startup, DesafioValidacao desafio) {
@@ -148,6 +158,95 @@ public class MatchmakingService {
                 .toList();
     }
 
+    public List<DesafioRecomendadoDTO> rankearPorRegras(Startup startup, List<DesafioValidacao> desafios) {
+        if (desafios == null || desafios.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String areaStartup = startup.getAreaAtuacao() != null ? startup.getAreaAtuacao().toLowerCase() : "";
+
+        List<DesafioRecomendadoDTO> recomendados = new ArrayList<>();
+        for (DesafioValidacao d : desafios) {
+            String setor = d.getAmbienteValidacao() != null ? d.getAmbienteValidacao().getSetor() : "Geral";
+            String setorLower = setor.toLowerCase();
+
+            String motivo;
+            if (!areaStartup.isBlank() && setorLower.contains(areaStartup)) {
+                motivo = "Recomendado por compatibilidade direta no setor " + setor + " e sinergia de atuacao da startup.";
+            } else if (!areaStartup.isBlank() && areaStartup.contains(setorLower)) {
+                motivo = "Recomendado por alinhamento tematico na area de " + startup.getAreaAtuacao()
+                        + " e aderencia a modalidade " + d.getModalidade() + ".";
+            } else {
+                motivo = "Recomendado por compatibilidade de perfil operacional, setor e modalidade disponivel para validacao.";
+            }
+
+            recomendados.add(DesafioRecomendadoDTO.de(d, motivo, "REGRAS"));
+        }
+
+        recomendados.sort((a, b) -> {
+            int scoreA = calcularScoreRegras(areaStartup, a.setor());
+            int scoreB = calcularScoreRegras(areaStartup, b.setor());
+            return Integer.compare(scoreB, scoreA);
+        });
+
+        return recomendados;
+    }
+
+    private int calcularScoreRegras(String areaStartup, String setor) {
+        if (areaStartup == null || areaStartup.isBlank() || setor == null) {
+            return 1;
+        }
+        String setorLower = setor.toLowerCase();
+        if (setorLower.contains(areaStartup)) {
+            return 3;
+        }
+        if (areaStartup.contains(setorLower)) {
+            return 2;
+        }
+        return 1;
+    }
+
+    public List<DesafioRecomendadoDTO> recomendarDesafios(Startup startup, List<DesafioValidacao> desafios) {
+        List<DesafioValidacao> preFiltrados = filtrar(startup, desafios);
+        if (preFiltrados.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            MatchmakingAiClient client = aiClientProvider.getIfAvailable();
+            if (client == null) {
+                throw new AiMatchmakingException("Cliente de IA nao configurado no contexto");
+            }
+            List<RankedDesafioAiResult> aiResults = client.rankearComIa(startup, preFiltrados);
+            if (aiResults == null || aiResults.isEmpty()) {
+                throw new AiMatchmakingException("Resposta vazia da API de IA");
+            }
+
+            Map<UUID, DesafioValidacao> map = preFiltrados.stream()
+                    .collect(Collectors.toMap(DesafioValidacao::getId, d -> d));
+
+            List<DesafioRecomendadoDTO> recomendados = new ArrayList<>();
+            for (RankedDesafioAiResult res : aiResults) {
+                DesafioValidacao d = map.get(res.desafioId());
+                if (d != null) {
+                    recomendados.add(DesafioRecomendadoDTO.de(d, res.motivo(), "IA"));
+                }
+            }
+            return recomendados;
+        } catch (Exception ex) {
+            // Contingência / Fallback por regras simples (RF11, RNF03, RNF10)
+            return rankearPorRegras(startup, preFiltrados);
+        }
+    }
+
+    public List<DesafioValidacao> obterDesafiosAtivos() {
+        DesafioValidacaoRepository repo = desafioRepositoryProvider.getIfAvailable();
+        if (repo != null) {
+            return repo.findByAtivoTrue();
+        }
+        return Collections.emptyList();
+    }
+
     public Startup obterStartup(UUID startupId) {
         if (startupId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da startup e obrigatorio");
@@ -166,6 +265,9 @@ public class MatchmakingService {
             startup.setId(dto.id());
             startup.setNome(dto.nome());
             startup.setEmail(dto.email());
+            startup.setAreaAtuacao(dto.areaAtuacao());
+            startup.setDescricao(dto.descricao());
+            startup.setOQuePrecisaValidar(dto.oQuePrecisaValidar());
             startup.setUfIbge(dto.ufIbge());
             startup.setMunicipioIbge(dto.municipioIbge());
             startup.setLocalidadeSede(dto.localidadeSede());
@@ -178,8 +280,29 @@ public class MatchmakingService {
         throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
     }
 
-    public List<DesafioAnonimoResponseDTO> preFiltrarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
+    public Startup obterStartupPorEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email da startup e obrigatorio");
+        }
+
+        StartupRepository repo = startupRepositoryProvider.getIfAvailable();
+        if (repo != null) {
+            return repo.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
+        }
+
+        StartupService service = startupServiceProvider.getIfAvailable();
+        if (service != null) {
+            var dto = service.buscarPorEmail(email);
+            return obterStartup(dto.id());
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
+    }
+
+    public List<DesafioRecomendadoDTO> recomendarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
         Startup startup = obterStartup(startupId);
-        return filtrarDesafiosAnonimos(startup, desafios);
+        List<DesafioValidacao> pool = (desafios != null && !desafios.isEmpty()) ? desafios : obterDesafiosAtivos();
+        return recomendarDesafios(startup, pool);
     }
 }

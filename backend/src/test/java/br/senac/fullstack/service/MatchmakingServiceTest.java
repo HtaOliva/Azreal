@@ -1,7 +1,10 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
+import br.senac.fullstack.dto.DesafioRecomendadoDTO;
+import br.senac.fullstack.dto.RankedDesafioAiResult;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.exception.AiMatchmakingException;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Estagio;
@@ -25,6 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -38,21 +42,26 @@ class MatchmakingServiceTest {
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
                 new NullObjectProvider<>()
         );
     }
 
-    private AmbienteValidacao criarAmbiente(String uf, String municipio) {
+    private AmbienteValidacao criarAmbiente(String uf, String municipio, String setor) {
         AmbienteValidacao amb = new AmbienteValidacao();
         amb.setId(UUID.randomUUID());
-        amb.setRazaoSocial("Hospital Teste S.A.");
-        amb.setNomeFantasia("Hospital Teste");
-        amb.setSetor("Saude");
+        amb.setRazaoSocial("Empresa Parceira S.A.");
+        amb.setNomeFantasia("Empresa Parceira");
+        amb.setSetor(setor);
         amb.setPorte(PorteOrganizacao.MEDIO);
         amb.setUfIbge(uf);
         amb.setMunicipioIbge(municipio);
         amb.setAtivo(true);
         return amb;
+    }
+
+    private AmbienteValidacao criarAmbiente(String uf, String municipio) {
+        return criarAmbiente(uf, municipio, "Saude");
     }
 
     private DesafioValidacao criarDesafio(AmbienteValidacao amb, ModalidadeTeste modalidade) {
@@ -72,6 +81,7 @@ class MatchmakingServiceTest {
         s.setId(UUID.randomUUID());
         s.setNome("Startup AI Health");
         s.setEmail("contato@aihealth.com");
+        s.setAreaAtuacao("Saude");
         s.setUfIbge(uf);
         s.setMunicipioIbge(municipio);
         s.setModalidadesSuportadas(modalidades);
@@ -221,24 +231,95 @@ class MatchmakingServiceTest {
     }
 
     @Test
-    void obterStartupPorRepositoryQuandoDisponivel() {
+    void recomendacaoPorIaComSucesso() {
+        AmbienteValidacao amb = criarAmbiente("PE", "Recife", "Saude");
+        DesafioValidacao d1 = criarDesafio(amb, ModalidadeTeste.REMOTO);
+        Startup startup = criarStartup("PE", "Recife", List.of(ModalidadeTeste.REMOTO));
+
+        MatchmakingAiClient mockAi = mock(MatchmakingAiClient.class);
+        when(mockAi.rankearComIa(any(), any())).thenReturn(List.of(
+                new RankedDesafioAiResult(d1.getId(), "Alta compatibilidade com triagem digital.")
+        ));
+
+        MatchmakingService service = new MatchmakingService(
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(mockAi)
+        );
+
+        List<DesafioRecomendadoDTO> resultado = service.recomendarDesafios(startup, List.of(d1));
+        assertEquals(1, resultado.size());
+        assertEquals("IA", resultado.get(0).origemRecomendacao());
+        assertEquals("Alta compatibilidade com triagem digital.", resultado.get(0).motivo());
+        assertFalse(resultado.get(0).motivo().contains("%"));
+    }
+
+    @Test
+    void fallbackPorRegrasQuandoIaFalhaOuTimeoutRf11Rnf03() {
+        AmbienteValidacao ambSaude = criarAmbiente("PE", "Recife", "Saude");
+        AmbienteValidacao ambAgro = criarAmbiente("PE", "Recife", "Agronegocio");
+
+        DesafioValidacao dSaude = criarDesafio(ambSaude, ModalidadeTeste.REMOTO);
+        DesafioValidacao dAgro = criarDesafio(ambAgro, ModalidadeTeste.REMOTO);
+
+        Startup startupSaude = criarStartup("PE", "Recife", List.of(ModalidadeTeste.REMOTO));
+        startupSaude.setAreaAtuacao("Saude");
+
+        MatchmakingAiClient mockAi = mock(MatchmakingAiClient.class);
+        when(mockAi.rankearComIa(any(), any())).thenThrow(new AiMatchmakingException("Timeout na API de IA"));
+
+        MatchmakingService service = new MatchmakingService(
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new NullObjectProvider<>(),
+                new FixedObjectProvider<>(mockAi)
+        );
+
+        List<DesafioRecomendadoDTO> resultado = service.recomendarDesafios(startupSaude, List.of(dAgro, dSaude));
+
+        assertEquals(2, resultado.size());
+        // Desafio do mesmo setor ("Saude") fica em 1º lugar no ranking por regras
+        assertEquals(dSaude.getId(), resultado.get(0).id());
+        assertEquals("REGRAS", resultado.get(0).origemRecomendacao());
+        assertTrue(resultado.get(0).motivo().contains("compatibilidade direta no setor Saude"));
+
+        // Desafio de outro setor fica em 2º lugar
+        assertEquals(dAgro.getId(), resultado.get(1).id());
+        assertEquals("REGRAS", resultado.get(1).origemRecomendacao());
+        assertTrue(resultado.get(1).motivo().contains("compatibilidade de perfil operacional"));
+    }
+
+    @Test
+    void obterStartupPorEmailEIdComRepositoryOuService() {
         StartupRepository repo = mock(StartupRepository.class);
         UUID startupId = UUID.randomUUID();
         Startup s = new Startup();
         s.setId(startupId);
         s.setNome("Startup do Repo");
+        s.setEmail("repo@startup.com");
+
         when(repo.findById(startupId)).thenReturn(Optional.of(s));
+        when(repo.findByEmail("repo@startup.com")).thenReturn(Optional.of(s));
 
         MatchmakingService service = new MatchmakingService(
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new FixedObjectProvider<>(repo),
+                new NullObjectProvider<>(),
                 new NullObjectProvider<>()
         );
 
-        Startup encontrada = service.obterStartup(startupId);
-        assertNotNull(encontrada);
-        assertEquals("Startup do Repo", encontrada.getNome());
+        Startup porId = service.obterStartup(startupId);
+        assertEquals("Startup do Repo", porId.getNome());
+
+        Startup porEmail = service.obterStartupPorEmail("repo@startup.com");
+        assertEquals("Startup do Repo", porEmail.getNome());
+
+        assertThrows(ResponseStatusException.class, () -> service.obterStartupPorEmail(""));
+        assertThrows(ResponseStatusException.class, () -> service.obterStartupPorEmail(null));
     }
 
     @Test
@@ -251,9 +332,11 @@ class MatchmakingServiceTest {
                 false, null, LocalDateTime.now(), "PE", "Recife", "Validar",
                 List.of(), List.of(ModalidadeTeste.REMOTO));
         when(startupService.buscar(startupId)).thenReturn(dto);
+        when(startupService.buscarPorEmail("s@test.com")).thenReturn(dto);
 
         MatchmakingService service = new MatchmakingService(
                 new FixedObjectProvider<>(startupService),
+                new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>(),
                 new NullObjectProvider<>()
@@ -263,10 +346,13 @@ class MatchmakingServiceTest {
         assertNotNull(encontrada);
         assertEquals("Startup Service", encontrada.getNome());
 
+        Startup porEmail = service.obterStartupPorEmail("s@test.com");
+        assertEquals("Startup Service", porEmail.getNome());
+
         AmbienteValidacao amb = criarAmbiente("PE", "Recife");
         DesafioValidacao d = criarDesafio(amb, ModalidadeTeste.REMOTO);
-        List<DesafioAnonimoResponseDTO> anonimos = service.preFiltrarDesafiosParaStartup(startupId, List.of(d));
-        assertEquals(1, anonimos.size());
+        List<DesafioRecomendadoDTO> recomendados = service.recomendarDesafiosParaStartup(startupId, List.of(d));
+        assertEquals(1, recomendados.size());
     }
 
     @Test
@@ -275,6 +361,8 @@ class MatchmakingServiceTest {
         assertFalse(matchmakingService.atendeCriteriosObjetivos(new Startup(), null));
         assertFalse(matchmakingService.atendeCriteriosObjetivos(null, new DesafioValidacao()));
         assertTrue(matchmakingService.filtrar(null, null).isEmpty());
+        assertTrue(matchmakingService.recomendarDesafios(null, null).isEmpty());
+        assertTrue(matchmakingService.obterDesafiosAtivos().isEmpty());
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(null));
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(UUID.randomUUID()));
     }
