@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.RankedDesafioAiResult;
 import br.senac.fullstack.exception.AiMatchmakingException;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Startup;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -17,13 +18,14 @@ public class MatchmakingAiClient {
 
     private static final int MAX_TEXT_LENGTH = 1200;
     private static final Pattern PROMPT_INJECTION_PATTERN = Pattern.compile(
-            "(ignore\\s+all\\s+previous\\s+instructions?|ignore\\s+previous\\s+instructions?|system\\s*:|human\\s*:|\\[/?inst\\]|</?system>|```|###\\s*instruction)",
+            "ignore[\\s\\w]+instructions?|system\\s*:|human\\s*:|\\[/?inst\\]",
             Pattern.CASE_INSENSITIVE
     );
 
     private boolean aiEnabled;
     private String apiKey;
 
+    @Autowired
     public MatchmakingAiClient(
             @Value("${app.ai.enabled:false}") boolean aiEnabled,
             @Value("${app.ai.api-key:}") String apiKey) {
@@ -40,7 +42,10 @@ public class MatchmakingAiClient {
             return "";
         }
         String limpo = PROMPT_INJECTION_PATTERN.matcher(entrada).replaceAll("[conteudo-sanitizado]");
-        limpo = limpo.replace("<", "&lt;").replace(">", "&gt;");
+        limpo = limpo.replace("```", "[conteudo-sanitizado]")
+                .replace("###", "[conteudo-sanitizado]")
+                .replace("<", "&lt;")
+                .replace(">", "&gt;");
         if (limpo.length() > MAX_TEXT_LENGTH) {
             limpo = limpo.substring(0, MAX_TEXT_LENGTH) + "... [truncado]";
         }
