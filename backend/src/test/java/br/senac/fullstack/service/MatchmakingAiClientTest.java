@@ -145,5 +145,27 @@ class MatchmakingAiClientTest {
         }
 
         assertTrue(aiClient.rankearComIa(s, Collections.emptyList()).isEmpty());
+        assertTrue(aiClient.rankearComIa(null, List.of(d1)).isEmpty());
+        assertTrue(aiClient.rankearComIa(s, null).isEmpty());
+    }
+
+    @Test
+    void construirPromptSeguroRetornaVazioComEntradasNulasOuVazias() {
+        Startup s = criarStartup();
+        DesafioValidacao d = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
+
+        assertEquals("", aiClient.construirPromptSeguro(null, List.of(d)));
+        assertEquals("", aiClient.construirPromptSeguro(s, null));
+        assertEquals("", aiClient.construirPromptSeguro(s, Collections.emptyList()));
+    }
+
+    @Test
+    void construtorComParametrosInjetaConfiguracoesCorretamente() {
+        MatchmakingAiClient cliente = new MatchmakingAiClient(true, "chave-123");
+        Startup s = criarStartup();
+        DesafioValidacao d = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
+
+        List<RankedDesafioAiResult> resultados = cliente.rankearComIa(s, List.of(d));
+        assertEquals(1, resultados.size());
     }
 }
