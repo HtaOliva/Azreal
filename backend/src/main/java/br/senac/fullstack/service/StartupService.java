@@ -19,6 +19,8 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class StartupService {
 
+    private static final String STARTUP_NAO_ENCONTRADA = "Startup nao encontrada";
+
     private final ObjectProvider<StartupRepository> repositoryProvider;
     private final AceiteTermoService aceiteTermoService;
     private final Map<UUID, Startup> memory = new ConcurrentHashMap<>();
@@ -43,36 +45,16 @@ public class StartupService {
         startup.setAreaAtuacao(request.areaAtuacao());
         startup.setDataFundacao(request.dataFundacao());
         startup.setEstagioAtual(request.estagioAtual());
-        if (request.integrantes() != null) {
-            startup.setIntegrantes(request.integrantes());
-        }
-        if (request.localidadeSede() != null) {
-            startup.setLocalidadeSede(request.localidadeSede());
-        }
-        if (request.localidadeAtuacao() != null) {
-            startup.setLocalidadeAtuacao(request.localidadeAtuacao());
-        }
-        if (request.ligadaIncubadora() != null) {
-            startup.setLigadaIncubadora(request.ligadaIncubadora());
-        }
-        if (request.incubadoraLigada() != null) {
-            startup.setIncubadoraLigada(request.incubadoraLigada());
-        }
-        if (request.ufIbge() != null) {
-            startup.setUfIbge(request.ufIbge());
-        }
-        if (request.municipioIbge() != null) {
-            startup.setMunicipioIbge(request.municipioIbge());
-        }
-        if (request.oQuePrecisaValidar() != null) {
-            startup.setOQuePrecisaValidar(request.oQuePrecisaValidar());
-        }
-        if (request.temasIds() != null) {
-            startup.setTemasIds(request.temasIds());
-        }
-        if (request.modalidadesSuportadas() != null) {
-            startup.setModalidadesSuportadas(request.modalidadesSuportadas());
-        }
+        startup.setLocalidadeSede(request.localidadeSede());
+        startup.setLocalidadeAtuacao(request.localidadeAtuacao());
+        startup.setIncubadoraLigada(request.incubadoraLigada());
+        startup.setUfIbge(request.ufIbge());
+        startup.setMunicipioIbge(request.municipioIbge());
+        startup.setOQuePrecisaValidar(request.oQuePrecisaValidar());
+        setIfPresent(request.integrantes(), startup::setIntegrantes);
+        setIfPresent(request.ligadaIncubadora(), startup::setLigadaIncubadora);
+        setIfPresent(request.temasIds(), startup::setTemasIds);
+        setIfPresent(request.modalidadesSuportadas(), startup::setModalidadesSuportadas);
 
         StartupRepository repo = repository();
         if (repo != null) {
@@ -83,19 +65,38 @@ public class StartupService {
         return toResponse(startup);
     }
 
-    public StartupResponseDTO buscar(UUID id) {
+    private Startup obterPorId(UUID id) {
         StartupRepository repo = repository();
-        Startup startup;
         if (repo != null) {
-            startup = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
-        } else {
-            startup = memory.get(id);
-            if (startup == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
-            }
+            return repo.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
         }
-        return toResponse(startup);
+        Startup startup = memory.get(id);
+        if (startup == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+        }
+        return startup;
+    }
+
+    public StartupResponseDTO buscar(UUID id) {
+        return toResponse(obterPorId(id));
+    }
+
+    public StartupResponseDTO buscarPorEmail(String email) {
+        if (email == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+        }
+        StartupRepository repo = repository();
+        if (repo != null) {
+            return repo.findByEmail(email)
+                    .map(this::toResponse)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
+        }
+        return memory.values().stream()
+                .filter(s -> email.equalsIgnoreCase(s.getEmail()))
+                .findFirst()
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
     }
 
     public List<StartupResponseDTO> listar() {
@@ -111,18 +112,22 @@ public class StartupService {
 
     public StartupResponseDTO atualizar(UUID id, StartupUpdateDTO request) {
         StartupRepository repo = repository();
-        Startup startup;
-        if (repo != null) {
-            startup = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada"));
-        } else {
-            startup = memory.get(id);
-            if (startup == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Startup nao encontrada");
-            }
-        }
-        aplicarAtualizacoesBasicas(startup, request);
-        aplicarAtualizacoesPocMatch(startup, request);
+        Startup startup = obterPorId(id);
+
+        setIfPresent(request.nome(), startup::setNome);
+        setIfPresent(request.descricao(), startup::setDescricao);
+        setIfPresent(request.areaAtuacao(), startup::setAreaAtuacao);
+        setIfPresent(request.estagioAtual(), startup::setEstagioAtual);
+        setIfPresent(request.integrantes(), startup::setIntegrantes);
+        setIfPresent(request.localidadeSede(), startup::setLocalidadeSede);
+        setIfPresent(request.localidadeAtuacao(), startup::setLocalidadeAtuacao);
+        setIfPresent(request.ligadaIncubadora(), startup::setLigadaIncubadora);
+        setIfPresent(request.incubadoraLigada(), startup::setIncubadoraLigada);
+        setIfPresent(request.ufIbge(), startup::setUfIbge);
+        setIfPresent(request.municipioIbge(), startup::setMunicipioIbge);
+        setIfPresent(request.oQuePrecisaValidar(), startup::setOQuePrecisaValidar);
+        setIfPresent(request.temasIds(), startup::setTemasIds);
+        setIfPresent(request.modalidadesSuportadas(), startup::setModalidadesSuportadas);
 
         if (repo != null) {
             startup = repo.save(startup);
@@ -130,51 +135,9 @@ public class StartupService {
         return toResponse(startup);
     }
 
-    private void aplicarAtualizacoesBasicas(Startup startup, StartupUpdateDTO request) {
-        if (request.nome() != null) {
-            startup.setNome(request.nome());
-        }
-        if (request.descricao() != null) {
-            startup.setDescricao(request.descricao());
-        }
-        if (request.areaAtuacao() != null) {
-            startup.setAreaAtuacao(request.areaAtuacao());
-        }
-        if (request.estagioAtual() != null) {
-            startup.setEstagioAtual(request.estagioAtual());
-        }
-        if (request.integrantes() != null) {
-            startup.setIntegrantes(request.integrantes());
-        }
-        if (request.localidadeSede() != null) {
-            startup.setLocalidadeSede(request.localidadeSede());
-        }
-        if (request.localidadeAtuacao() != null) {
-            startup.setLocalidadeAtuacao(request.localidadeAtuacao());
-        }
-        if (request.ligadaIncubadora() != null) {
-            startup.setLigadaIncubadora(request.ligadaIncubadora());
-        }
-        if (request.incubadoraLigada() != null) {
-            startup.setIncubadoraLigada(request.incubadoraLigada());
-        }
-    }
-
-    private void aplicarAtualizacoesPocMatch(Startup startup, StartupUpdateDTO request) {
-        if (request.ufIbge() != null) {
-            startup.setUfIbge(request.ufIbge());
-        }
-        if (request.municipioIbge() != null) {
-            startup.setMunicipioIbge(request.municipioIbge());
-        }
-        if (request.oQuePrecisaValidar() != null) {
-            startup.setOQuePrecisaValidar(request.oQuePrecisaValidar());
-        }
-        if (request.temasIds() != null) {
-            startup.setTemasIds(request.temasIds());
-        }
-        if (request.modalidadesSuportadas() != null) {
-            startup.setModalidadesSuportadas(request.modalidadesSuportadas());
+    private static <T> void setIfPresent(T value, java.util.function.Consumer<T> setter) {
+        if (value != null) {
+            setter.accept(value);
         }
     }
 

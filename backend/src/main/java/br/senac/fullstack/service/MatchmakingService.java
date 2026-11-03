@@ -1,0 +1,299 @@
+package br.senac.fullstack.service;
+
+import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
+import br.senac.fullstack.dto.DesafioRecomendadoDTO;
+import br.senac.fullstack.dto.RankedDesafioAiResult;
+import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.exception.AiMatchmakingException;
+import br.senac.fullstack.model.DesafioValidacao;
+import br.senac.fullstack.model.ModalidadeTeste;
+import br.senac.fullstack.model.Startup;
+import br.senac.fullstack.model.StatusDesafio;
+import br.senac.fullstack.repository.DesafioValidacaoRepository;
+import br.senac.fullstack.repository.StartupRepository;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import java.util.stream.Collectors;
+
+@Service
+public class MatchmakingService {
+
+    private static final String STARTUP_NAO_ENCONTRADA = "Startup nao encontrada";
+    private static final String ORIGEM_REGRAS = "REGRAS";
+    private static final String ORIGEM_IA = "IA";
+
+    private final ObjectProvider<StartupService> startupServiceProvider;
+    private final ObjectProvider<StartupRepository> startupRepositoryProvider;
+    private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
+    private final ObjectProvider<MatchmakingAiClient> aiClientProvider;
+
+    public MatchmakingService(
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<StartupRepository> startupRepositoryProvider,
+            ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider,
+            ObjectProvider<MatchmakingAiClient> aiClientProvider) {
+        this.startupServiceProvider = startupServiceProvider;
+        this.startupRepositoryProvider = startupRepositoryProvider;
+        this.desafioRepositoryProvider = desafioRepositoryProvider;
+        this.aiClientProvider = aiClientProvider;
+    }
+
+    public boolean atendeCriteriosObjetivos(Startup startup, DesafioValidacao desafio) {
+        if (startup == null || desafio == null) {
+            return false;
+        }
+
+        boolean ativo = desafio.isAtivo()
+                && (desafio.getStatus() == null || desafio.getStatus() == StatusDesafio.ABERTO)
+                && (desafio.getAmbienteValidacao() == null || desafio.getAmbienteValidacao().isAtivo());
+
+        return ativo
+                && compativelModalidade(startup, desafio)
+                && compativelLocalidade(startup, desafio);
+    }
+
+    private boolean compativelModalidade(Startup startup, DesafioValidacao desafio) {
+        ModalidadeTeste modalidadeDesafio = desafio.getModalidade();
+        if (modalidadeDesafio == null) {
+            return true;
+        }
+
+        List<ModalidadeTeste> modalidadesStartup = startup.getModalidadesSuportadas();
+        if (modalidadesStartup == null || modalidadesStartup.isEmpty()) {
+            return false;
+        }
+
+        boolean remoto = modalidadeDesafio == ModalidadeTeste.REMOTO
+                && (modalidadesStartup.contains(ModalidadeTeste.REMOTO)
+                || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO));
+
+        boolean presencial = modalidadeDesafio == ModalidadeTeste.PRESENCIAL
+                && (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
+                || modalidadesStartup.contains(ModalidadeTeste.HIBRIDO));
+
+        boolean hibrido = modalidadeDesafio == ModalidadeTeste.HIBRIDO
+                && (modalidadesStartup.contains(ModalidadeTeste.HIBRIDO)
+                || (modalidadesStartup.contains(ModalidadeTeste.PRESENCIAL)
+                && modalidadesStartup.contains(ModalidadeTeste.REMOTO)));
+
+        return remoto || presencial || hibrido;
+    }
+
+    private boolean compativelLocalidade(Startup startup, DesafioValidacao desafio) {
+        ModalidadeTeste modalidadeDesafio = desafio.getModalidade();
+        // Em modalidade 100% remota, a localidade geográfica não é restritiva
+        if (modalidadeDesafio == ModalidadeTeste.REMOTO) {
+            return true;
+        }
+
+        String ufDesafio = desafio.getUfIbge();
+        String municipioDesafio = desafio.getMunicipioIbge();
+
+        String ufStartup = obterUfStartup(startup);
+        String municipioStartup = obterMunicipioStartup(startup);
+
+        boolean ufInvalida = ufDesafio != null && !ufDesafio.isBlank()
+                && (ufStartup == null || !ufDesafio.trim().equalsIgnoreCase(ufStartup.trim()));
+
+        boolean municipioInvalido = modalidadeDesafio == ModalidadeTeste.PRESENCIAL
+                && municipioDesafio != null && !municipioDesafio.isBlank()
+                && municipioStartup != null && !municipioStartup.isBlank()
+                && !municipioDesafio.trim().equalsIgnoreCase(municipioStartup.trim());
+
+        return !ufInvalida && !municipioInvalido;
+    }
+
+    private String obterUfStartup(Startup startup) {
+        if (startup.getUfIbge() != null && !startup.getUfIbge().isBlank()) {
+            return startup.getUfIbge();
+        }
+        return startup.getLocalidadeAtuacao();
+    }
+
+    private String obterMunicipioStartup(Startup startup) {
+        if (startup.getMunicipioIbge() != null && !startup.getMunicipioIbge().isBlank()) {
+            return startup.getMunicipioIbge();
+        }
+        return startup.getLocalidadeSede();
+    }
+
+    public List<DesafioValidacao> filtrar(Startup startup, List<DesafioValidacao> desafios) {
+        if (startup == null || desafios == null) {
+            return List.of();
+        }
+        return desafios.stream()
+                .filter(d -> atendeCriteriosObjetivos(startup, d))
+                .toList();
+    }
+
+    public List<DesafioAnonimoResponseDTO> filtrarDesafiosAnonimos(Startup startup, List<DesafioValidacao> desafios) {
+        return filtrar(startup, desafios).stream()
+                .map(DesafioAnonimoResponseDTO::fromEntity)
+                .toList();
+    }
+
+    public List<DesafioRecomendadoDTO> rankearPorRegras(Startup startup, List<DesafioValidacao> desafios) {
+        if (desafios == null || desafios.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        String areaStartup = startup.getAreaAtuacao() != null ? startup.getAreaAtuacao().toLowerCase() : "";
+
+        List<DesafioRecomendadoDTO> recomendados = new ArrayList<>();
+        for (DesafioValidacao d : desafios) {
+            String setor = d.getAmbienteValidacao() != null ? d.getAmbienteValidacao().getSetor() : "Geral";
+            String setorLower = setor.toLowerCase();
+
+            String motivo;
+            if (!areaStartup.isBlank() && setorLower.contains(areaStartup)) {
+                motivo = "Recomendado por compatibilidade direta no setor " + setor + " e sinergia de atuacao da startup.";
+            } else if (!areaStartup.isBlank() && areaStartup.contains(setorLower)) {
+                motivo = "Recomendado por alinhamento tematico na area de " + startup.getAreaAtuacao()
+                        + " e aderencia a modalidade " + d.getModalidade() + ".";
+            } else {
+                motivo = "Recomendado por compatibilidade de perfil operacional, setor e modalidade disponivel para validacao.";
+            }
+
+            recomendados.add(DesafioRecomendadoDTO.de(d, motivo, ORIGEM_REGRAS));
+        }
+
+        recomendados.sort((a, b) -> {
+            int scoreA = calcularScoreRegras(areaStartup, a.setor());
+            int scoreB = calcularScoreRegras(areaStartup, b.setor());
+            return Integer.compare(scoreB, scoreA);
+        });
+
+        return recomendados;
+    }
+
+    private int calcularScoreRegras(String areaStartup, String setor) {
+        if (areaStartup == null || areaStartup.isBlank() || setor == null) {
+            return 1;
+        }
+        String setorLower = setor.toLowerCase();
+        if (setorLower.contains(areaStartup)) {
+            return 3;
+        }
+        if (areaStartup.contains(setorLower)) {
+            return 2;
+        }
+        return 1;
+    }
+
+    public List<DesafioRecomendadoDTO> recomendarDesafios(Startup startup, List<DesafioValidacao> desafios) {
+        List<DesafioValidacao> preFiltrados = filtrar(startup, desafios);
+        if (preFiltrados.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        try {
+            MatchmakingAiClient client = aiClientProvider.getIfAvailable();
+            if (client == null) {
+                throw new AiMatchmakingException("Cliente de IA nao configurado no contexto");
+            }
+            List<RankedDesafioAiResult> aiResults = client.rankearComIa(startup, preFiltrados);
+            if (aiResults == null || aiResults.isEmpty()) {
+                throw new AiMatchmakingException("Resposta vazia da API de IA");
+            }
+
+            Map<UUID, DesafioValidacao> map = preFiltrados.stream()
+                    .collect(Collectors.toMap(DesafioValidacao::getId, d -> d));
+
+            List<DesafioRecomendadoDTO> recomendados = new ArrayList<>();
+            for (RankedDesafioAiResult res : aiResults) {
+                DesafioValidacao d = map.get(res.desafioId());
+                if (d != null) {
+                    recomendados.add(DesafioRecomendadoDTO.de(d, res.motivo(), ORIGEM_IA));
+                }
+            }
+            return recomendados;
+        } catch (Exception ex) {
+            // Contingência / Fallback por regras simples (RF11, RNF03, RNF10)
+            return rankearPorRegras(startup, preFiltrados);
+        }
+    }
+
+    public List<DesafioValidacao> obterDesafiosAtivos() {
+        DesafioValidacaoRepository repo = desafioRepositoryProvider.getIfAvailable();
+        if (repo != null) {
+            return repo.findByAtivoTrue();
+        }
+        return Collections.emptyList();
+    }
+
+    public Startup obterStartup(UUID startupId) {
+        if (startupId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da startup e obrigatorio");
+        }
+
+        StartupRepository repo = startupRepositoryProvider.getIfAvailable();
+        if (repo != null) {
+            return repo.findById(startupId)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
+        }
+
+        StartupService service = startupServiceProvider.getIfAvailable();
+        if (service != null) {
+            var dto = service.buscar(startupId);
+            return converterDtoParaStartup(dto);
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+    }
+
+    public Startup obterStartupPorEmail(String email) {
+        if (email == null || email.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email da startup e obrigatorio");
+        }
+
+        StartupRepository repo = startupRepositoryProvider.getIfAvailable();
+        if (repo != null) {
+            return repo.findByEmail(email)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
+        }
+
+        StartupService service = startupServiceProvider.getIfAvailable();
+        if (service != null) {
+            var dto = service.buscarPorEmail(email);
+            return obterStartup(dto.id());
+        }
+
+        throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+    }
+
+    private Startup converterDtoParaStartup(StartupResponseDTO dto) {
+        Startup startup = new Startup();
+        startup.setId(dto.id());
+        startup.setNome(dto.nome());
+        startup.setEmail(dto.email());
+        startup.setAreaAtuacao(dto.areaAtuacao());
+        startup.setDescricao(dto.descricao());
+        startup.setOQuePrecisaValidar(dto.oQuePrecisaValidar());
+        startup.setUfIbge(dto.ufIbge());
+        startup.setMunicipioIbge(dto.municipioIbge());
+        startup.setLocalidadeSede(dto.localidadeSede());
+        startup.setLocalidadeAtuacao(dto.localidadeAtuacao());
+        startup.setModalidadesSuportadas(dto.modalidadesSuportadas());
+        startup.setTemasIds(dto.temasIds());
+        return startup;
+    }
+
+    public List<DesafioRecomendadoDTO> recomendarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
+        Startup startup = obterStartup(startupId);
+        List<DesafioValidacao> pool = (desafios != null && !desafios.isEmpty()) ? desafios : obterDesafiosAtivos();
+        return recomendarDesafios(startup, pool);
+    }
+
+    public List<DesafioAnonimoResponseDTO> preFiltrarDesafiosParaStartup(UUID startupId, List<DesafioValidacao> desafios) {
+        Startup startup = obterStartup(startupId);
+        return filtrarDesafiosAnonimos(startup, desafios);
+    }
+}

@@ -63,19 +63,21 @@ public class AmbienteValidacaoService {
         return toResponse(ambiente);
     }
 
-    public AmbienteValidacaoResponseDTO buscar(UUID id) {
+    private AmbienteValidacao obterPorId(UUID id) {
         AmbienteValidacaoRepository repo = repository();
-        AmbienteValidacao ambiente;
         if (repo != null) {
-            ambiente = repo.findById(id)
+            return repo.findById(id)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO));
-        } else {
-            ambiente = memory.get(id);
-            if (ambiente == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO);
-            }
         }
-        return toResponse(ambiente);
+        AmbienteValidacao ambiente = memory.get(id);
+        if (ambiente == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO);
+        }
+        return ambiente;
+    }
+
+    public AmbienteValidacaoResponseDTO buscar(UUID id) {
+        return toResponse(obterPorId(id));
     }
 
     public List<AmbienteValidacaoResponseDTO> listar() {
@@ -91,16 +93,7 @@ public class AmbienteValidacaoService {
 
     public AmbienteValidacaoResponseDTO atualizar(UUID id, AmbienteValidacaoUpdateDTO request) {
         AmbienteValidacaoRepository repo = repository();
-        AmbienteValidacao ambiente;
-        if (repo != null) {
-            ambiente = repo.findById(id)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO));
-        } else {
-            ambiente = memory.get(id);
-            if (ambiente == null) {
-                throw new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO);
-            }
-        }
+        AmbienteValidacao ambiente = obterPorId(id);
         if (request.razaoSocial() != null) {
             ambiente.setRazaoSocial(request.razaoSocial());
         }
