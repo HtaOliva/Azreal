@@ -21,6 +21,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MatchmakingAiClientTest {
 
+    private static final String TOTEM_HOSPITALAR = "Totem Hospitalar";
+    private static final String FILA_DE_ESPERA = "Fila de espera";
+    private static final String SETOR_SAUDE = "Saude";
+
     private MatchmakingAiClient aiClient;
 
     @BeforeEach
@@ -32,7 +36,7 @@ class MatchmakingAiClientTest {
         Startup s = new Startup();
         s.setId(UUID.randomUUID());
         s.setNome("Startup Triagem IA");
-        s.setAreaAtuacao("Saude");
+        s.setAreaAtuacao(SETOR_SAUDE);
         s.setDescricao("Algoritmo para reducao de filas em pronto atendimento");
         s.setOQuePrecisaValidar("Precisao do algoritmo em ambiente hospitalar real");
         return s;
@@ -86,7 +90,7 @@ class MatchmakingAiClientTest {
     @Test
     void construirPromptSeguroEncapsulaDadosEmDelimitadoresPassivos() {
         Startup s = criarStartup();
-        DesafioValidacao d = criarDesafio("Totem Hospitalar", "Fila de espera", "Saude");
+        DesafioValidacao d = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
 
         String prompt = aiClient.construirPromptSeguro(s, List.of(d));
 
@@ -99,23 +103,31 @@ class MatchmakingAiClientTest {
     }
 
     @Test
-    void rankearComIaFalhaQuandoDesabilitadaOuSemChave() {
+    void rankearComIaFalhaQuandoDesabilitada() {
         Startup s = criarStartup();
-        DesafioValidacao d = criarDesafio("Totem Hospitalar", "Fila de espera", "Saude");
+        DesafioValidacao d = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
+        List<DesafioValidacao> desafios = List.of(d);
 
         aiClient.setAiEnabled(false);
-        assertThrows(AiMatchmakingException.class, () -> aiClient.rankearComIa(s, List.of(d)));
+        assertThrows(AiMatchmakingException.class, () -> aiClient.rankearComIa(s, desafios));
+    }
+
+    @Test
+    void rankearComIaFalhaQuandoSemChave() {
+        Startup s = criarStartup();
+        DesafioValidacao d = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
+        List<DesafioValidacao> desafios = List.of(d);
 
         aiClient.setAiEnabled(true);
         aiClient.setApiKey("");
-        assertThrows(AiMatchmakingException.class, () -> aiClient.rankearComIa(s, List.of(d)));
+        assertThrows(AiMatchmakingException.class, () -> aiClient.rankearComIa(s, desafios));
     }
 
     @Test
     void rankearComIaRetornaListaOrdenadaComFraseCurtaESemNotasPercentuais() {
         Startup s = criarStartup();
-        DesafioValidacao d1 = criarDesafio("Totem Hospitalar", "Fila de espera", "Saude");
-        DesafioValidacao d2 = criarDesafio("App de Agendamento", "Demora de agendamento", "Saude");
+        DesafioValidacao d1 = criarDesafio(TOTEM_HOSPITALAR, FILA_DE_ESPERA, SETOR_SAUDE);
+        DesafioValidacao d2 = criarDesafio("App de Agendamento", "Demora de agendamento", SETOR_SAUDE);
 
         aiClient.setAiEnabled(true);
         aiClient.setApiKey("test-gemini-key");

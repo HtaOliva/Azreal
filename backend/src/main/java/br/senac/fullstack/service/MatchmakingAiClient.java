@@ -17,7 +17,7 @@ public class MatchmakingAiClient {
 
     private static final int MAX_TEXT_LENGTH = 1200;
     private static final Pattern PROMPT_INJECTION_PATTERN = Pattern.compile(
-            "(?i)(ignore\\s+(all\\s+)?previous\\s+instructions?|system\\s*:|human\\s*:|\\[/?inst\\]|</?system>|```|###\\s*instruction)",
+            "(ignore\\s+(all\\s+)?previous\\s+instructions?|system\\s*:|human\\s*:|\\[/?inst\\]|</?system>|```|###\\s*instruction)",
             Pattern.CASE_INSENSITIVE
     );
 
@@ -79,8 +79,11 @@ public class MatchmakingAiClient {
             return Collections.emptyList();
         }
 
-        // Constrói o prompt seguro com isolamento RNF06
-        construirPromptSeguro(startup, desafios);
+        // Constrói e valida o prompt seguro com isolamento RNF06
+        String promptSeguro = construirPromptSeguro(startup, desafios);
+        if (promptSeguro.isBlank()) {
+            throw new AiMatchmakingException("Falha na geracao do prompt seguro");
+        }
 
         // Chamada real ao modelo de linguagem ou simulação controlada
         List<RankedDesafioAiResult> resultado = new ArrayList<>();
