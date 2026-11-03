@@ -82,6 +82,23 @@ public class StartupService {
         return toResponse(obterPorId(id));
     }
 
+    public StartupResponseDTO buscarPorEmail(String email) {
+        if (email == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA);
+        }
+        StartupRepository repo = repository();
+        if (repo != null) {
+            return repo.findByEmail(email)
+                    .map(this::toResponse)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
+        }
+        return memory.values().stream()
+                .filter(s -> email.equalsIgnoreCase(s.getEmail()))
+                .findFirst()
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, STARTUP_NAO_ENCONTRADA));
+    }
+
     public List<StartupResponseDTO> listar() {
         StartupRepository repo = repository();
         List<Startup> items;

@@ -85,6 +85,7 @@ public class LdapSecurityConfig {
                                 || request.getRequestURI().startsWith("/termos")
                                 || request.getRequestURI().startsWith("/temas")
                                 || request.getRequestURI().startsWith("/desafios")
+                                || request.getRequestURI().startsWith("/matchmaking")
                                 || request.getRequestURI().startsWith("/regras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
