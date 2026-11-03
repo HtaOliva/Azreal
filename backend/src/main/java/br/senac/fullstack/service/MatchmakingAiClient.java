@@ -17,6 +17,7 @@ import java.util.regex.Pattern;
 public class MatchmakingAiClient {
 
     private static final int MAX_TEXT_LENGTH = 1200;
+    private static final String CONTEUDO_SANITIZADO = "[conteudo-sanitizado]";
     private static final Pattern PROMPT_INJECTION_PATTERN = Pattern.compile(
             "ignore[\\s\\w]+instructions?|system\\s*:|human\\s*:|\\[/?inst\\]",
             Pattern.CASE_INSENSITIVE
@@ -41,9 +42,9 @@ public class MatchmakingAiClient {
         if (entrada == null) {
             return "";
         }
-        String limpo = PROMPT_INJECTION_PATTERN.matcher(entrada).replaceAll("[conteudo-sanitizado]");
-        limpo = limpo.replace("```", "[conteudo-sanitizado]")
-                .replace("###", "[conteudo-sanitizado]")
+        String limpo = PROMPT_INJECTION_PATTERN.matcher(entrada).replaceAll(CONTEUDO_SANITIZADO);
+        limpo = limpo.replace("```", CONTEUDO_SANITIZADO)
+                .replace("###", CONTEUDO_SANITIZADO)
                 .replace("<", "&lt;")
                 .replace(">", "&gt;");
         if (limpo.length() > MAX_TEXT_LENGTH) {
