@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -369,7 +368,7 @@ class PropostaPocControllerTest {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
 
-        when(propostaPocService.buscar(eq(propostaId)))
+        when(propostaPocService.buscar(propostaId))
                 .thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
         mockMvc.perform(get(URI_ID, propostaId)

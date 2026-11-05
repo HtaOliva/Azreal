@@ -225,7 +225,7 @@ class PropostaPocServiceTest {
         UUID desafioId = UUID.randomUUID();
 
         PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startupId1, desafioId));
-        PropostaPocResponseDTO p2 = service.criar(criarRequestValido(startupId2, desafioId));
+        service.criar(criarRequestValido(startupId2, desafioId));
 
         PropostaPocResponseDTO encontrada = service.buscar(p1.id());
         assertEquals(p1.id(), encontrada.id());

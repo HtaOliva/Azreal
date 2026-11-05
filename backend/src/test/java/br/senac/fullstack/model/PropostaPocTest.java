@@ -68,11 +68,14 @@ class PropostaPocTest {
         PropostaPoc p3 = new PropostaPoc();
         p3.setId(UUID.randomUUID());
 
-        assertTrue(p1.equals(p1));
+        boolean reflexivo = p1.equals(p1);
+        boolean comparadoComNulo = p1.equals(null);
+
+        assertTrue(reflexivo);
         assertEquals(p1, p2);
         assertNotEquals(p1, p3);
-        assertFalse(p1.equals(null));
-        assertFalse(p1.equals("outroTipo"));
+        assertFalse(comparadoComNulo);
+        assertNotEquals(p1, "outroTipo");
         assertEquals(p1.hashCode(), p2.hashCode());
     }
 
