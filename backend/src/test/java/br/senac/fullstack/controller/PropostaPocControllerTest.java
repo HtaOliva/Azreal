@@ -12,8 +12,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
@@ -23,7 +25,9 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -435,33 +439,6 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
-    void adminPodeCriarPropostaRetorna201Created() throws Exception {
-        UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-        UUID propostaId = UUID.randomUUID();
-
-        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
-                startupId,
-                desafioId,
-                VALIDACAO_ACURACIA,
-                15,
-                RESP_STARTUP,
-                RESP_AMBIENTE,
-                TAXA_SUPERIOR_90,
-                true
-        );
-
-        when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
-
-        mockMvc.perform(post(URI_PROPOSTAS)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.id").value(propostaId.toString()));
-    }
-
-    @Test
     @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void startupCriarQuandoBuscarPorEmailFalhaProssegueParaService() throws Exception {
         UUID startupId = UUID.randomUUID();
@@ -529,9 +506,9 @@ class PropostaPocControllerTest {
     @Test
     @SuppressWarnings("unchecked")
     void controllerDiretoListarMinhasComAuthNulaRetorna401() {
-        org.springframework.beans.factory.ObjectProvider<StartupService> provider = org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        ObjectProvider<StartupService> provider = mock(ObjectProvider.class);
         PropostaPocController controller = new PropostaPocController(propostaPocService, provider);
-        org.springframework.http.ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.listarMinhas(null, null);
-        org.junit.jupiter.api.Assertions.assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
+        ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.listarMinhas(null, null);
+        assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
     }
 }

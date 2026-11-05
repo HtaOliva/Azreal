@@ -70,7 +70,7 @@ class PropostaPocTest {
 
         assertEquals(p1, p2);
         assertNotEquals(p1, p3);
-        assertNotEquals(p1, "outroTipo");
+        assertNotEquals("outroTipo", p1);
         assertEquals(p1.hashCode(), p2.hashCode());
     }
 
