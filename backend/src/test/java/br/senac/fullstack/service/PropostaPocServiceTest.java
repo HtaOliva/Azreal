@@ -468,9 +468,10 @@ class PropostaPocServiceTest {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+        UUID propostaId = p.id();
 
-        service.recusar(p.id(), "Primeira recusa");
-        assertThrows(ResponseStatusException.class, () -> service.recusar(p.id(), "Segunda recusa"));
+        service.recusar(propostaId, "Primeira recusa");
+        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Segunda recusa"));
     }
 
     @Test
@@ -478,9 +479,10 @@ class PropostaPocServiceTest {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+        UUID propostaId = p.id();
 
-        service.cancelar(p.id());
-        assertThrows(ResponseStatusException.class, () -> service.recusar(p.id(), "Tentativa em cancelada"));
+        service.cancelar(propostaId);
+        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Tentativa em cancelada"));
     }
 
     @Test

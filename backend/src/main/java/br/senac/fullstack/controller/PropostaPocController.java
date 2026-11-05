@@ -108,26 +108,33 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody RecusaPropostaRequestDTO request,
             Authentication authentication) {
-        if (authentication != null && !isAdmin(authentication)) {
-            AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                    ? ambienteServiceProvider.getIfAvailable() : null;
-            DesafioValidacaoService desafioService = desafioServiceProvider != null
-                    ? desafioServiceProvider.getIfAvailable() : null;
-
-            if (ambienteService != null && desafioService != null) {
-                try {
-                    AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
-                    PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
-                    DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
-                    if (ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-                    }
-                } catch (Exception ignored) {
-                    // Prossegue para o service
-                }
-            }
+        if (isAcessoRecusaNaoAutorizado(id, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(propostaPocService.recusar(id, request.motivoRecusa()));
+    }
+
+    private boolean isAcessoRecusaNaoAutorizado(UUID id, Authentication authentication) {
+        if (authentication == null || isAdmin(authentication)) {
+            return false;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+
+        if (ambienteService == null || desafioService == null) {
+            return false;
+        }
+
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
+            DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
+            return ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id());
+        } catch (Exception ignored) {
+            return false;
+        }
     }
 
     @GetMapping("/minhas")
@@ -180,45 +187,70 @@ public class PropostaPocController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        UUID targetAmbienteId = ambienteIdParam;
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-
-        if (!isAdmin(authentication) && ambienteService != null) {
-            try {
-                AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
-                if (ambiente != null) {
-                    if (ambienteIdParam != null && !ambienteIdParam.equals(ambiente.id())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-                    }
-                    targetAmbienteId = ambiente.id();
-                }
-            } catch (Exception ignored) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
+        if (isAcessoFilaNaoAutorizado(ambienteIdParam, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
 
+        UUID targetAmbienteId = resolverAmbienteIdFila(ambienteIdParam, authentication);
         if (targetAmbienteId == null) {
             return ResponseEntity.ok(List.of());
         }
 
-        DesafioValidacaoService desafioService = desafioServiceProvider != null
-                ? desafioServiceProvider.getIfAvailable() : null;
-
-        if (desafioService == null) {
+        Set<UUID> desafioIds = obterDesafioIdsPorAmbiente(targetAmbienteId);
+        if (desafioIds.isEmpty()) {
             return ResponseEntity.ok(List.of());
         }
-
-        List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
-        if (desafios.isEmpty()) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        Set<UUID> desafioIds = desafios.stream()
-                .map(DesafioValidacaoResponseDTO::id)
-                .collect(Collectors.toSet());
 
         return ResponseEntity.ok(propostaPocService.listarFilaAmbiente(desafioIds));
+    }
+
+    private boolean isAcessoFilaNaoAutorizado(UUID ambienteIdParam, Authentication authentication) {
+        if (isAdmin(authentication)) {
+            return false;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return false;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null && ambienteIdParam != null && !ambienteIdParam.equals(ambiente.id());
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private UUID resolverAmbienteIdFila(UUID ambienteIdParam, Authentication authentication) {
+        if (isAdmin(authentication)) {
+            return ambienteIdParam;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return ambienteIdParam;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null ? ambiente.id() : ambienteIdParam;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Set<UUID> obterDesafioIdsPorAmbiente(UUID targetAmbienteId) {
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+        if (desafioService == null) {
+            return Set.of();
+        }
+        List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
+        if (desafios.isEmpty()) {
+            return Set.of();
+        }
+        return desafios.stream()
+                .map(DesafioValidacaoResponseDTO::id)
+                .collect(Collectors.toSet());
     }
 
     @GetMapping("/{id}")

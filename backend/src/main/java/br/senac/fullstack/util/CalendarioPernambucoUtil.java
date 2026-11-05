@@ -61,7 +61,7 @@ public final class CalendarioPernambucoUtil {
             return false;
         }
         DayOfWeek dow = data.getDayOfWeek();
-        return dow == DayOfWeek.SATURDAY || dow == DayOfWeek.SUNDAY;
+        return DayOfWeek.SATURDAY.equals(dow) || DayOfWeek.SUNDAY.equals(dow);
     }
 
     /**

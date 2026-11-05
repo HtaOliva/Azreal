@@ -33,6 +33,18 @@ public class PropostaPocService {
     }
 
     public PropostaPocResponseDTO criar(PropostaPocRequestDTO request) {
+        validarCamposObrigatorios(request);
+        validarRegrasNegocioCriacao(request);
+
+        PropostaPoc proposta = request.toEntity();
+        if (proposta.getPrazoRespostaAmbiente() == null && proposta.getDataCriacao() != null) {
+            proposta.setPrazoRespostaAmbiente(CalendarioPernambucoUtil.calcularPrazo5DiasUteis(proposta.getDataCriacao()));
+        }
+        memory.put(proposta.getId(), proposta);
+        return PropostaPocResponseDTO.fromEntity(proposta);
+    }
+
+    private void validarCamposObrigatorios(PropostaPocRequestDTO request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dados da proposta sao obrigatorios");
         }
@@ -54,12 +66,10 @@ public class PropostaPocService {
         if (request.duracaoSugeridaDias() == null || request.duracaoSugeridaDias() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A duracao sugerida deve ser informada em dias e positiva");
         }
+    }
 
-        long pendentes = memory.values().stream()
-                .filter(p -> request.startupId().equals(p.getStartupId()) && p.getStatus() == StatusProposta.PENDENTE)
-                .count();
-
-        if (pendentes >= 3) {
+    private void validarRegrasNegocioCriacao(PropostaPocRequestDTO request) {
+        if (contarPendentesPorStartup(request.startupId()) >= 3) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Startup atingiu o limite maximo de 3 propostas pendentes simultaneas");
         }
@@ -73,13 +83,6 @@ public class PropostaPocService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Startup ja possui proposta ativa para este desafio de validacao");
         }
-
-        PropostaPoc proposta = request.toEntity();
-        if (proposta.getPrazoRespostaAmbiente() == null && proposta.getDataCriacao() != null) {
-            proposta.setPrazoRespostaAmbiente(CalendarioPernambucoUtil.calcularPrazo5DiasUteis(proposta.getDataCriacao()));
-        }
-        memory.put(proposta.getId(), proposta);
-        return PropostaPocResponseDTO.fromEntity(proposta);
     }
 
     public List<PropostaPocResponseDTO> listarFilaAmbiente(Collection<UUID> desafioIds) {
