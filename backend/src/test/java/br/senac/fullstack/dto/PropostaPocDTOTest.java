@@ -184,5 +184,21 @@ class PropostaPocDTOTest {
 
         assertEquals(id, dto.id());
         org.junit.jupiter.api.Assertions.assertNull(dto.prazoRespostaAmbiente());
+        org.junit.jupiter.api.Assertions.assertNull(dto.motivoRecusa());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOValidoDevePassarNaValidacaoETrimar() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO("  Escopo incompativel com cronograma  ");
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty());
+        assertEquals("Escopo incompativel com cronograma", dto.motivoRecusa());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComMotivoVazioDeveFalharNaValidacao() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO("   ");
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
     }
 }

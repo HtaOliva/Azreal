@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
+import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
@@ -64,6 +65,9 @@ class PropostaPocControllerTest {
     private static final String AMBIENTE_EMAIL = "ambiente@senac.br";
     private static final String PARAM_STARTUP_ID = "startupId";
     private static final String PARAM_AMBIENTE_ID = "ambienteId";
+    private static final String STATUS_RECUSADA = "RECUSADA";
+    private static final String URI_RECUSAR = "/propostas-poc/{id}/recusar";
+    private static final String MOTIVO_RECUSA = "Fora do escopo do desafio";
 
     @Autowired
     private MockMvc mockMvc;
@@ -144,6 +148,25 @@ class PropostaPocControllerTest {
                 true,
                 status,
                 LocalDateTime.now()
+        );
+    }
+
+    private PropostaPocResponseDTO criarPropostaRecusadaResponseDTO(
+            UUID id, UUID startupId, UUID desafioId, String motivoRecusa) {
+        return new PropostaPocResponseDTO(
+                id,
+                startupId,
+                desafioId,
+                ESCOPO_TESTE,
+                30,
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                "Disponibilidade > 99%",
+                true,
+                StatusProposta.RECUSADA,
+                LocalDateTime.now(),
+                null,
+                motivoRecusa
         );
     }
 
@@ -675,5 +698,133 @@ class PropostaPocControllerTest {
         );
         ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.consultarFila(null, null);
         assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoPodeRecusarPropostaDeSeuDesafioRetorna200Ok() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
+                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(propostaPocService.buscar(propostaId))
+                .thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
+        when(desafioValidacaoService.buscar(desafioId))
+                .thenReturn(criarDesafioDTO(desafioId, ambienteId));
+        when(propostaPocService.recusar(propostaId, MOTIVO_RECUSA))
+                .thenReturn(criarPropostaRecusadaResponseDTO(propostaId, startupId, desafioId, MOTIVO_RECUSA));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(propostaId.toString()))
+                .andExpect(jsonPath("$.status").value(STATUS_RECUSADA))
+                .andExpect(jsonPath("$.motivoRecusa").value(MOTIVO_RECUSA));
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoNaoPodeRecusarPropostaDeOutroAmbienteRetorna403Forbidden() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID outroAmbienteId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
+                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(propostaPocService.buscar(propostaId))
+                .thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
+        when(desafioValidacaoService.buscar(desafioId))
+                .thenReturn(criarDesafioDTO(desafioId, outroAmbienteId));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminPodeRecusarPropostaDeQualquerAmbienteRetorna200Ok() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        when(propostaPocService.recusar(propostaId, MOTIVO_RECUSA))
+                .thenReturn(criarPropostaRecusadaResponseDTO(propostaId, startupId, desafioId, MOTIVO_RECUSA));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(STATUS_RECUSADA))
+                .andExpect(jsonPath("$.motivoRecusa").value(MOTIVO_RECUSA));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupNaoPodeRecusarPropostaRetorna403Forbidden() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void recusarPropostaSemAutenticacaoRetorna401Unauthorized() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void recusarPropostaComMotivoVazioRetorna400BadRequest() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO("   ");
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteRecusarQuandoBuscarPorEmailFalhaProssegueParaService() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
+                .thenThrow(new RuntimeException("Falha ao buscar ambiente"));
+        when(propostaPocService.recusar(propostaId, MOTIVO_RECUSA))
+                .thenReturn(criarPropostaRecusadaResponseDTO(propostaId, startupId, desafioId, MOTIVO_RECUSA));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value(STATUS_RECUSADA));
     }
 }

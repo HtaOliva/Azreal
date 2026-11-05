@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
+import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
@@ -99,6 +100,34 @@ public class PropostaPocController {
             }
         }
         return ResponseEntity.ok(propostaPocService.cancelar(id));
+    }
+
+    @PostMapping("/{id}/recusar")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<PropostaPocResponseDTO> recusar(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody RecusaPropostaRequestDTO request,
+            Authentication authentication) {
+        if (authentication != null && !isAdmin(authentication)) {
+            AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                    ? ambienteServiceProvider.getIfAvailable() : null;
+            DesafioValidacaoService desafioService = desafioServiceProvider != null
+                    ? desafioServiceProvider.getIfAvailable() : null;
+
+            if (ambienteService != null && desafioService != null) {
+                try {
+                    AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+                    PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
+                    DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
+                    if (ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
+                } catch (Exception ignored) {
+                    // Prossegue para o service
+                }
+            }
+        }
+        return ResponseEntity.ok(propostaPocService.recusar(id, request.motivoRecusa()));
     }
 
     @GetMapping("/minhas")

@@ -62,6 +62,9 @@ public class PropostaPoc {
     @Column(name = "prazo_resposta_ambiente")
     private LocalDateTime prazoRespostaAmbiente;
 
+    @Column(name = "motivo_recusa", columnDefinition = "text")
+    private String motivoRecusa;
+
     public PropostaPoc() {
         this.id = UUID.randomUUID();
         this.dataCriacao = LocalDateTime.now(ZoneId.systemDefault());

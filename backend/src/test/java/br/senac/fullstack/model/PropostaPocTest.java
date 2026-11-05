@@ -44,6 +44,7 @@ class PropostaPocTest {
         proposta.setStatus(StatusProposta.EM_TESTE);
         proposta.setDataCriacao(agora);
         proposta.setPrazoRespostaAmbiente(agora.plusDays(7));
+        proposta.setMotivoRecusa("Fora de escopo");
 
         assertEquals(id, proposta.getId());
         assertEquals(startupId, proposta.getStartupId());
@@ -57,6 +58,7 @@ class PropostaPocTest {
         assertEquals(StatusProposta.EM_TESTE, proposta.getStatus());
         assertEquals(agora, proposta.getDataCriacao());
         assertEquals(agora.plusDays(7), proposta.getPrazoRespostaAmbiente());
+        assertEquals("Fora de escopo", proposta.getMotivoRecusa());
     }
 
     @Test

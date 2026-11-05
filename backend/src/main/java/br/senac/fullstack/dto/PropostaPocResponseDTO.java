@@ -18,8 +18,28 @@ public record PropostaPocResponseDTO(
         boolean aceitePrevioTermoSigilo,
         StatusProposta status,
         LocalDateTime dataCriacao,
-        LocalDateTime prazoRespostaAmbiente
+        LocalDateTime prazoRespostaAmbiente,
+        String motivoRecusa
 ) {
+    public PropostaPocResponseDTO(
+            UUID id,
+            UUID startupId,
+            UUID desafioValidacaoId,
+            String escopoTeste,
+            Integer duracaoSugeridaDias,
+            String responsabilidadesStartup,
+            String responsabilidadesAmbiente,
+            String metricaValidacao,
+            boolean aceitePrevioTermoSigilo,
+            StatusProposta status,
+            LocalDateTime dataCriacao,
+            LocalDateTime prazoRespostaAmbiente
+    ) {
+        this(id, startupId, desafioValidacaoId, escopoTeste, duracaoSugeridaDias, responsabilidadesStartup,
+                responsabilidadesAmbiente, metricaValidacao, aceitePrevioTermoSigilo, status, dataCriacao,
+                prazoRespostaAmbiente, null);
+    }
+
     public PropostaPocResponseDTO(
             UUID id,
             UUID startupId,
@@ -34,7 +54,8 @@ public record PropostaPocResponseDTO(
             LocalDateTime dataCriacao
     ) {
         this(id, startupId, desafioValidacaoId, escopoTeste, duracaoSugeridaDias, responsabilidadesStartup,
-                responsabilidadesAmbiente, metricaValidacao, aceitePrevioTermoSigilo, status, dataCriacao, null);
+                responsabilidadesAmbiente, metricaValidacao, aceitePrevioTermoSigilo, status, dataCriacao,
+                null, null);
     }
 
     public static PropostaPocResponseDTO fromEntity(PropostaPoc p) {
@@ -50,7 +71,8 @@ public record PropostaPocResponseDTO(
                 p.isAceitePrevioTermoSigilo(),
                 p.getStatus(),
                 p.getDataCriacao(),
-                p.getPrazoRespostaAmbiente()
+                p.getPrazoRespostaAmbiente(),
+                p.getMotivoRecusa()
         );
     }
 }

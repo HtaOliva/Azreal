@@ -355,4 +355,66 @@ class PropostaPocServiceTest {
         assertTrue(service.listarFilaAmbiente(null).isEmpty());
         assertTrue(service.listarFilaAmbiente(List.of()).isEmpty());
     }
+
+    @Test
+    void recusarPropostaPendenteAtualizaStatusELiberaLimiteImediatamente() {
+        UUID startupId = UUID.randomUUID();
+        UUID d1 = UUID.randomUUID();
+        UUID d2 = UUID.randomUUID();
+        UUID d3 = UUID.randomUUID();
+        UUID d4 = UUID.randomUUID();
+
+        PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startupId, d1));
+        service.criar(criarRequestValido(startupId, d2));
+        service.criar(criarRequestValido(startupId, d3));
+
+        assertEquals(3, service.contarPendentesPorStartup(startupId));
+
+        // 4a proposta bloqueada por atingir o limite
+        PropostaPocRequestDTO p4 = criarRequestValido(startupId, d4);
+        assertThrows(ResponseStatusException.class, () -> service.criar(p4));
+
+        // Recusa motivada de p1
+        PropostaPocResponseDTO recusada = service.recusar(p1.id(), "Fora do escopo do desafio");
+        assertEquals(StatusProposta.RECUSADA, recusada.status());
+        assertEquals("Fora do escopo do desafio", recusada.motivoRecusa());
+
+        // Limite imediatamente liberado (2 pendencias)
+        assertEquals(2, service.contarPendentesPorStartup(startupId));
+
+        // Agora pode submeter a 4a proposta com sucesso
+        PropostaPocResponseDTO criada4 = service.criar(p4);
+        assertNotNull(criada4.id());
+        assertEquals(3, service.contarPendentesPorStartup(startupId));
+    }
+
+    @Test
+    void recusarPropostaComIdNuloLancaBadRequest() {
+        assertThrows(ResponseStatusException.class, () -> service.recusar(null, "Motivo"));
+    }
+
+    @Test
+    void recusarPropostaComMotivoNuloOuVazioLancaBadRequest() {
+        UUID id = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> service.recusar(id, null));
+        assertThrows(ResponseStatusException.class, () -> service.recusar(id, "   "));
+    }
+
+    @Test
+    void recusarPropostaInexistenteLancaNotFound() {
+        UUID inexistente = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> service.recusar(inexistente, "Motivo"));
+    }
+
+    @Test
+    void recusarPropostaNaoPendenteLancaBadRequest() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+
+        UUID pId = p.id();
+        service.obterPorId(pId).setStatus(StatusProposta.EM_TESTE);
+
+        assertThrows(ResponseStatusException.class, () -> service.recusar(pId, "Motivo"));
+    }
 }

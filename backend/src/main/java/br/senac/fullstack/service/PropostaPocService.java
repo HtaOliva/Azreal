@@ -153,4 +153,23 @@ public class PropostaPocService {
         proposta.setStatus(StatusProposta.CANCELADA);
         return PropostaPocResponseDTO.fromEntity(proposta);
     }
+
+    public PropostaPocResponseDTO recusar(UUID id, String motivoRecusa) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_PROPOSTA_OBRIGATORIO);
+        }
+        if (motivoRecusa == null || motivoRecusa.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O motivo da recusa e obrigatorio");
+        }
+
+        PropostaPoc proposta = obterPorId(id);
+        if (proposta.getStatus() != StatusProposta.PENDENTE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Apenas propostas pendentes podem ser recusadas");
+        }
+
+        proposta.setStatus(StatusProposta.RECUSADA);
+        proposta.setMotivoRecusa(motivoRecusa.trim());
+        return PropostaPocResponseDTO.fromEntity(proposta);
+    }
 }
