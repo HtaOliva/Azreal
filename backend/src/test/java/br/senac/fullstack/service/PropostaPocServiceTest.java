@@ -219,6 +219,49 @@ class PropostaPocServiceTest {
     }
 
     @Test
+    void deveRejeitarEscopoNulo() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocRequestDTO escopoNulo = new PropostaPocRequestDTO(
+                startupId, desafioId, null, 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
+        );
+        assertThrows(ResponseStatusException.class, () -> service.criar(escopoNulo));
+    }
+
+    @Test
+    void deveRejeitarMetricaNula() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocRequestDTO metricaNula = new PropostaPocRequestDTO(
+                startupId, desafioId, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, null, true
+        );
+        assertThrows(ResponseStatusException.class, () -> service.criar(metricaNula));
+    }
+
+    @Test
+    void deveRejeitarDuracaoNula() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocRequestDTO duracaoNula = new PropostaPocRequestDTO(
+                startupId, desafioId, ESCOPO_PADRAO, null, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
+        );
+        assertThrows(ResponseStatusException.class, () -> service.criar(duracaoNula));
+    }
+
+    @Test
+    void naoDevePermitirPropostaParaDesafioComPropostaEmTeste() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        PropostaPocResponseDTO propostaInicial = service.criar(criarRequestValido(startupId, desafioId));
+        service.obterPorId(propostaInicial.id()).setStatus(StatusProposta.EM_TESTE);
+
+        PropostaPocRequestDTO novaTentativa = criarRequestValido(startupId, desafioId);
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> service.criar(novaTentativa));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+    }
+
+    @Test
     void buscarEListarPropostas() {
         UUID startupId1 = UUID.randomUUID();
         UUID startupId2 = UUID.randomUUID();

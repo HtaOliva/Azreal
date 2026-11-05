@@ -433,4 +433,105 @@ class PropostaPocControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
     }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminPodeCriarPropostaRetorna201Created() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                startupId,
+                desafioId,
+                VALIDACAO_ACURACIA,
+                15,
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                TAXA_SUPERIOR_90,
+                true
+        );
+
+        when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
+
+        mockMvc.perform(post(URI_PROPOSTAS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(propostaId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupCriarQuandoBuscarPorEmailFalhaProssegueParaService() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenThrow(new RuntimeException("Servico indisponivel"));
+        when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                startupId,
+                desafioId,
+                VALIDACAO_ACURACIA,
+                15,
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                TAXA_SUPERIOR_90,
+                true
+        );
+
+        mockMvc.perform(post(URI_PROPOSTAS)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated());
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupCancelarQuandoBuscarPorEmailFalhaProssegueParaService() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenThrow(new RuntimeException("Servico indisponivel"));
+        when(propostaPocService.cancelar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, UUID.randomUUID(), UUID.randomUUID(), StatusProposta.CANCELADA));
+
+        mockMvc.perform(post(URI_CANCELAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupNaoPodeListarMinhasPassandoIdDeOutraStartupRetorna403() throws Exception {
+        UUID minhaStartupId = UUID.randomUUID();
+        UUID outraStartupId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(minhaStartupId, STARTUP_EMAIL));
+
+        mockMvc.perform(get(URI_MINHAS)
+                        .param(PARAM_STARTUP_ID, outraStartupId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupListandoMinhasComParametroQuandoBuscarPorEmailFalhaRetorna403() throws Exception {
+        UUID outraStartupId = UUID.randomUUID();
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenThrow(new RuntimeException("Falha na consulta"));
+
+        mockMvc.perform(get(URI_MINHAS)
+                        .param(PARAM_STARTUP_ID, outraStartupId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void controllerDiretoListarMinhasComAuthNulaRetorna401() {
+        org.springframework.beans.factory.ObjectProvider<StartupService> provider = org.mockito.Mockito.mock(org.springframework.beans.factory.ObjectProvider.class);
+        PropostaPocController controller = new PropostaPocController(propostaPocService, provider);
+        org.springframework.http.ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.listarMinhas(null, null);
+        org.junit.jupiter.api.Assertions.assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
+    }
 }
