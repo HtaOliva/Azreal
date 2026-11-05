@@ -55,6 +55,7 @@ class PropostaPocServiceTest {
         assertEquals(startupId, response.startupId());
         assertEquals(desafioId, response.desafioValidacaoId());
         assertEquals(StatusProposta.PENDENTE, response.status());
+        assertNotNull(response.prazoRespostaAmbiente());
         assertEquals(1, service.contarPendentesPorStartup(startupId));
     }
 
@@ -326,5 +327,32 @@ class PropostaPocServiceTest {
     @Test
     void listarPorDesafioComIdNuloDeveLancarBadRequest() {
         assertThrows(ResponseStatusException.class, () -> service.listarPorDesafio(null));
+    }
+
+    @Test
+    void listarFilaAmbienteRetornaApenasPropostasPendentesDosDesafiosEspecificados() {
+        UUID startup1 = UUID.randomUUID();
+        UUID startup2 = UUID.randomUUID();
+        UUID desafio1 = UUID.randomUUID();
+        UUID desafio2 = UUID.randomUUID();
+        UUID outroDesafio = UUID.randomUUID();
+
+        PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startup1, desafio1));
+        PropostaPocResponseDTO p2 = service.criar(criarRequestValido(startup2, desafio2));
+        service.criar(criarRequestValido(startup1, outroDesafio));
+
+        // Marca p1 em teste - nao deve mais aparecer na fila pendente
+        service.obterPorId(p1.id()).setStatus(StatusProposta.EM_TESTE);
+
+        List<PropostaPocResponseDTO> fila = service.listarFilaAmbiente(List.of(desafio1, desafio2));
+        assertEquals(1, fila.size());
+        assertEquals(p2.id(), fila.get(0).id());
+        assertNotNull(fila.get(0).prazoRespostaAmbiente());
+    }
+
+    @Test
+    void listarFilaAmbienteComListaNulaOuVaziaRetornaVazio() {
+        assertTrue(service.listarFilaAmbiente(null).isEmpty());
+        assertTrue(service.listarFilaAmbiente(List.of()).isEmpty());
     }
 }

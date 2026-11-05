@@ -1,12 +1,17 @@
 package br.senac.fullstack.controller;
 
+import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.service.AmbienteValidacaoService;
+import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -20,7 +25,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/propostas-poc")
@@ -28,12 +35,25 @@ public class PropostaPocController {
 
     private final PropostaPocService propostaPocService;
     private final ObjectProvider<StartupService> startupServiceProvider;
+    private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
+    private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
+
+    @Autowired
+    public PropostaPocController(
+            PropostaPocService propostaPocService,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider) {
+        this.propostaPocService = propostaPocService;
+        this.startupServiceProvider = startupServiceProvider;
+        this.ambienteServiceProvider = ambienteServiceProvider;
+        this.desafioServiceProvider = desafioServiceProvider;
+    }
 
     public PropostaPocController(
             PropostaPocService propostaPocService,
             ObjectProvider<StartupService> startupServiceProvider) {
-        this.propostaPocService = propostaPocService;
-        this.startupServiceProvider = startupServiceProvider;
+        this(propostaPocService, startupServiceProvider, null, null);
     }
 
     @PostMapping
@@ -120,6 +140,56 @@ public class PropostaPocController {
         }
 
         return ResponseEntity.ok(propostaPocService.listarPorStartup(targetStartupId));
+    }
+
+    @GetMapping("/fila")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<PropostaPocResponseDTO>> consultarFila(
+            @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UUID targetAmbienteId = ambienteIdParam;
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+
+        if (!isAdmin(authentication) && ambienteService != null) {
+            try {
+                AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+                if (ambiente != null) {
+                    if (ambienteIdParam != null && !ambienteIdParam.equals(ambiente.id())) {
+                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    }
+                    targetAmbienteId = ambiente.id();
+                }
+            } catch (Exception ignored) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+
+        if (targetAmbienteId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+
+        if (desafioService == null) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
+        if (desafios.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+
+        Set<UUID> desafioIds = desafios.stream()
+                .map(DesafioValidacaoResponseDTO::id)
+                .collect(Collectors.toSet());
+
+        return ResponseEntity.ok(propostaPocService.listarFilaAmbiente(desafioIds));
     }
 
     @GetMapping("/{id}")

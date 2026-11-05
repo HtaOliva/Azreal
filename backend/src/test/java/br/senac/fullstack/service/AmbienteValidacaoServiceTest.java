@@ -73,4 +73,24 @@ class AmbienteValidacaoServiceTest {
         assertThrows(ResponseStatusException.class, () -> s.buscar(id));
         assertThrows(ResponseStatusException.class, () -> s.atualizar(id, update));
     }
+
+    @Test
+    void buscarPorEmailComSucesso() {
+        AmbienteValidacaoService s = service();
+        AmbienteValidacaoRequestDTO req = new AmbienteValidacaoRequestDTO(
+                "Hospital Beta S.A.", "Beta PE", "Saude",
+                PorteOrganizacao.GRANDE, "PE", "Recife",
+                "beta@hospital.com", "81999998888", null, "senha123", aceiteId());
+        AmbienteValidacaoResponseDTO criado = s.criar(req);
+
+        AmbienteValidacaoResponseDTO encontrado = s.buscarPorEmail("beta@hospital.com");
+        assertEquals(criado.id(), encontrado.id());
+    }
+
+    @Test
+    void buscarPorEmailNuloOuInexistenteLanca404() {
+        AmbienteValidacaoService s = service();
+        assertThrows(ResponseStatusException.class, () -> s.buscarPorEmail(null));
+        assertThrows(ResponseStatusException.class, () -> s.buscarPorEmail("inexistente@hospital.com"));
+    }
 }

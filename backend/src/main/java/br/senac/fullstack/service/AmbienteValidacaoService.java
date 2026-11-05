@@ -80,6 +80,23 @@ public class AmbienteValidacaoService {
         return toResponse(obterPorId(id));
     }
 
+    public AmbienteValidacaoResponseDTO buscarPorEmail(String email) {
+        if (email == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO);
+        }
+        AmbienteValidacaoRepository repo = repository();
+        if (repo != null) {
+            return repo.findByEmailContato(email)
+                    .map(this::toResponse)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO));
+        }
+        return memory.values().stream()
+                .filter(a -> email.equalsIgnoreCase(a.getEmailContato()))
+                .findFirst()
+                .map(this::toResponse)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, AMBIENTE_NAO_ENCONTRADO));
+    }
+
     public List<AmbienteValidacaoResponseDTO> listar() {
         AmbienteValidacaoRepository repo = repository();
         List<AmbienteValidacao> items;

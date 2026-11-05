@@ -168,5 +168,21 @@ class PropostaPocDTOTest {
         assertTrue(dto.aceitePrevioTermoSigilo());
         assertEquals(StatusProposta.EM_TESTE, dto.status());
         assertEquals(agora, dto.dataCriacao());
+        assertNotNull(dto.prazoRespostaAmbiente());
+    }
+
+    @Test
+    void responseDTOConstrutorLegadoSemPrazoDeveDefinirPrazoComoNulo() {
+        UUID id = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        LocalDateTime agora = LocalDateTime.now();
+
+        PropostaPocResponseDTO dto = new PropostaPocResponseDTO(
+                id, startupId, desafioId, "Escopo", 15, "Resp S", "Resp A", "Metrica", true, StatusProposta.PENDENTE, agora
+        );
+
+        assertEquals(id, dto.id());
+        org.junit.jupiter.api.Assertions.assertNull(dto.prazoRespostaAmbiente());
     }
 }

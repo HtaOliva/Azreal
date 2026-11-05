@@ -1,10 +1,18 @@
 package br.senac.fullstack.controller;
 
+import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.model.AmbienteValidacao;
+import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Estagio;
+import br.senac.fullstack.model.PorteOrganizacao;
+import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.service.AmbienteValidacaoService;
+import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -23,6 +31,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,7 +60,10 @@ class PropostaPocControllerTest {
     private static final String URI_MINHAS = "/propostas-poc/minhas";
     private static final String URI_CANCELAR = "/propostas-poc/{id}/cancelar";
     private static final String URI_ID = "/propostas-poc/{id}";
+    private static final String URI_FILA = "/propostas-poc/fila";
+    private static final String AMBIENTE_EMAIL = "ambiente@senac.br";
     private static final String PARAM_STARTUP_ID = "startupId";
+    private static final String PARAM_AMBIENTE_ID = "ambienteId";
 
     @Autowired
     private MockMvc mockMvc;
@@ -64,6 +76,42 @@ class PropostaPocControllerTest {
 
     @MockBean
     private StartupService startupService;
+
+    @MockBean
+    private AmbienteValidacaoService ambienteValidacaoService;
+
+    @MockBean
+    private DesafioValidacaoService desafioValidacaoService;
+
+    private AmbienteValidacaoResponseDTO criarAmbienteDTO(UUID id, String email) {
+        return new AmbienteValidacaoResponseDTO(
+                id,
+                "Hospital Esperanca",
+                "Hospital Esperanca PE",
+                "Saude",
+                PorteOrganizacao.GRANDE,
+                "PE",
+                "Recife",
+                email,
+                "81988887777",
+                null,
+                true,
+                LocalDateTime.now()
+        );
+    }
+
+    private DesafioValidacaoResponseDTO criarDesafioDTO(UUID id, UUID ambienteId) {
+        DesafioValidacao desafio = new DesafioValidacao();
+        desafio.setId(id);
+        AmbienteValidacao amb = new AmbienteValidacao();
+        amb.setId(ambienteId);
+        desafio.setAmbienteValidacao(amb);
+        desafio.setTitulo("Triagem IA");
+        desafio.setStatus(StatusDesafio.ABERTO);
+        desafio.setAtivo(true);
+        desafio.setDataCriacao(LocalDateTime.now());
+        return DesafioValidacaoResponseDTO.fromEntity(desafio);
+    }
 
     private StartupResponseDTO criarStartupDTO(UUID id, String email) {
         return new StartupResponseDTO(
@@ -509,6 +557,123 @@ class PropostaPocControllerTest {
         ObjectProvider<StartupService> provider = mock(ObjectProvider.class);
         PropostaPocController controller = new PropostaPocController(propostaPocService, provider);
         ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.listarMinhas(null, null);
+        assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoConsultaFilaComSucessoRetorna200Ok() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL)).thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(desafioValidacaoService.listarPorAmbiente(ambienteId)).thenReturn(List.of(criarDesafioDTO(desafioId, ambienteId)));
+        when(propostaPocService.listarFilaAmbiente(Set.of(desafioId))).thenReturn(List.of(
+                criarPropostaResponseDTO(propostaId, UUID.randomUUID(), desafioId, StatusProposta.PENDENTE)
+        ));
+
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(propostaId.toString()))
+                .andExpect(jsonPath("$[0].status").value(STATUS_PENDENTE));
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoTentaConsultarFilaDeOutroAmbienteRetorna403Forbidden() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID outroAmbienteId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL)).thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+
+        mockMvc.perform(get(URI_FILA)
+                        .param(PARAM_AMBIENTE_ID, outroAmbienteId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoConsultaFilaQuandoBuscarPorEmailFalhaRetorna403Forbidden() throws Exception {
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL)).thenThrow(new RuntimeException("Falha na consulta"));
+
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoConsultaFilaSemDesafiosRetornaListaVazia() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL)).thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(desafioValidacaoService.listarPorAmbiente(ambienteId)).thenReturn(List.of());
+
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminConsultaFilaDeAmbienteEspecificoRetorna200Ok() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        when(desafioValidacaoService.listarPorAmbiente(ambienteId)).thenReturn(List.of(criarDesafioDTO(desafioId, ambienteId)));
+        when(propostaPocService.listarFilaAmbiente(Set.of(desafioId))).thenReturn(List.of(
+                criarPropostaResponseDTO(propostaId, UUID.randomUUID(), desafioId, StatusProposta.PENDENTE)
+        ));
+
+        mockMvc.perform(get(URI_FILA)
+                        .param(PARAM_AMBIENTE_ID, ambienteId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(propostaId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminConsultaFilaSemParametroAmbienteRetornaListaVazia() throws Exception {
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupTentaConsultarFilaRetorna403Forbidden() throws Exception {
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void consultarFilaSemAutenticacaoRetorna401Unauthorized() throws Exception {
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void controllerDiretoConsultarFilaComAuthNulaRetorna401() {
+        ObjectProvider<StartupService> startupProvider = mock(ObjectProvider.class);
+        ObjectProvider<AmbienteValidacaoService> ambienteProvider = mock(ObjectProvider.class);
+        ObjectProvider<DesafioValidacaoService> desafioProvider = mock(ObjectProvider.class);
+
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, startupProvider, ambienteProvider, desafioProvider
+        );
+        ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.consultarFila(null, null);
         assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
     }
 }

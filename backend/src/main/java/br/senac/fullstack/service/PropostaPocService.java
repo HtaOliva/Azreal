@@ -4,11 +4,14 @@ import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.model.PropostaPoc;
 import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.util.CalendarioPernambucoUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,8 +75,23 @@ public class PropostaPocService {
         }
 
         PropostaPoc proposta = request.toEntity();
+        if (proposta.getPrazoRespostaAmbiente() == null && proposta.getDataCriacao() != null) {
+            proposta.setPrazoRespostaAmbiente(CalendarioPernambucoUtil.calcularPrazo5DiasUteis(proposta.getDataCriacao()));
+        }
         memory.put(proposta.getId(), proposta);
         return PropostaPocResponseDTO.fromEntity(proposta);
+    }
+
+    public List<PropostaPocResponseDTO> listarFilaAmbiente(Collection<UUID> desafioIds) {
+        if (desafioIds == null || desafioIds.isEmpty()) {
+            return List.of();
+        }
+        return memory.values().stream()
+                .filter(p -> p.getStatus() == StatusProposta.PENDENTE
+                        && desafioIds.contains(p.getDesafioValidacaoId()))
+                .sorted(Comparator.comparing(PropostaPoc::getDataCriacao))
+                .map(PropostaPocResponseDTO::fromEntity)
+                .toList();
     }
 
     public PropostaPocResponseDTO buscar(UUID id) {
