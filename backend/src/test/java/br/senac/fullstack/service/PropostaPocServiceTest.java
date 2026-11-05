@@ -146,17 +146,24 @@ class PropostaPocServiceTest {
     }
 
     @Test
-    void deveRejeitarRequisicaoNulaOuSemAceite() {
+    void deveRejeitarRequisicaoNula() {
+        assertThrows(ResponseStatusException.class, () -> service.criar(null));
+    }
+
+    @Test
+    void deveRejeitarRequisicaoComAceiteFalso() {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
-
-        assertThrows(ResponseStatusException.class, () -> service.criar(null));
-
         PropostaPocRequestDTO semAceite = new PropostaPocRequestDTO(
                 startupId, desafioId, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, false
         );
         assertThrows(ResponseStatusException.class, () -> service.criar(semAceite));
+    }
 
+    @Test
+    void deveRejeitarRequisicaoComAceiteNulo() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
         PropostaPocRequestDTO aceiteNulo = new PropostaPocRequestDTO(
                 startupId, desafioId, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, null
         );
@@ -164,30 +171,47 @@ class PropostaPocServiceTest {
     }
 
     @Test
-    void deveRejeitarCamposObrigatoriosInvalidos() {
+    void deveRejeitarEscopoVazio() {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
-
         PropostaPocRequestDTO escopoVazio = new PropostaPocRequestDTO(
                 startupId, desafioId, "   ", 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
         );
         assertThrows(ResponseStatusException.class, () -> service.criar(escopoVazio));
+    }
 
+    @Test
+    void deveRejeitarMetricaVazia() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
         PropostaPocRequestDTO metricaVazia = new PropostaPocRequestDTO(
                 startupId, desafioId, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, "   ", true
         );
         assertThrows(ResponseStatusException.class, () -> service.criar(metricaVazia));
+    }
 
+    @Test
+    void deveRejeitarStartupNula() {
+        UUID desafioId = UUID.randomUUID();
         PropostaPocRequestDTO startupNula = new PropostaPocRequestDTO(
                 null, desafioId, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
         );
         assertThrows(ResponseStatusException.class, () -> service.criar(startupNula));
+    }
 
+    @Test
+    void deveRejeitarDesafioNulo() {
+        UUID startupId = UUID.randomUUID();
         PropostaPocRequestDTO desafioNulo = new PropostaPocRequestDTO(
                 startupId, null, ESCOPO_PADRAO, 15, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
         );
         assertThrows(ResponseStatusException.class, () -> service.criar(desafioNulo));
+    }
 
+    @Test
+    void deveRejeitarDuracaoInvalida() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
         PropostaPocRequestDTO duracaoInvalida = new PropostaPocRequestDTO(
                 startupId, desafioId, ESCOPO_PADRAO, 0, RESP_STARTUP, RESP_AMBIENTE, METRICA_PADRAO, true
         );
@@ -242,10 +266,22 @@ class PropostaPocServiceTest {
     }
 
     @Test
-    void parametrosNulosEmConsultasDevemRetornarPadraoOuLancarBadRequest() {
+    void contarPendentesComStartupNulaRetornaZero() {
         assertEquals(0, service.contarPendentesPorStartup(null));
+    }
+
+    @Test
+    void obterPorIdComIdNuloDeveLancarBadRequest() {
         assertThrows(ResponseStatusException.class, () -> service.obterPorId(null));
+    }
+
+    @Test
+    void listarPorStartupComIdNuloDeveLancarBadRequest() {
         assertThrows(ResponseStatusException.class, () -> service.listarPorStartup(null));
+    }
+
+    @Test
+    void listarPorDesafioComIdNuloDeveLancarBadRequest() {
         assertThrows(ResponseStatusException.class, () -> service.listarPorDesafio(null));
     }
 }

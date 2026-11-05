@@ -42,6 +42,13 @@ class PropostaPocControllerTest {
     private static final String RESP_AMBIENTE = "Resp ambiente";
     private static final String VALIDACAO_ACURACIA = "Validacao da acuracia";
     private static final String STATUS_PENDENTE = "PENDENTE";
+    private static final String STATUS_CANCELADA = "CANCELADA";
+    private static final String TAXA_SUPERIOR_90 = "Taxa > 90%";
+    private static final String URI_PROPOSTAS = "/propostas-poc";
+    private static final String URI_MINHAS = "/propostas-poc/minhas";
+    private static final String URI_CANCELAR = "/propostas-poc/{id}/cancelar";
+    private static final String URI_ID = "/propostas-poc/{id}";
+    private static final String PARAM_STARTUP_ID = "startupId";
 
     @Autowired
     private MockMvc mockMvc;
@@ -105,13 +112,13 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
         when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -134,13 +141,13 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
         when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
@@ -163,11 +170,11 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -186,11 +193,11 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isForbidden());
@@ -213,7 +220,7 @@ class PropostaPocControllerTest {
                 false
         );
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(requestInvalido)))
                 .andExpect(status().isBadRequest());
@@ -230,11 +237,11 @@ class PropostaPocControllerTest {
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
         when(propostaPocService.cancelar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.CANCELADA));
 
-        mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
+        mockMvc.perform(post(URI_CANCELAR, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(propostaId.toString()))
-                .andExpect(jsonPath("$.status").value("CANCELADA"));
+                .andExpect(jsonPath("$.status").value(STATUS_CANCELADA));
     }
 
     @Test
@@ -246,10 +253,10 @@ class PropostaPocControllerTest {
 
         when(propostaPocService.cancelar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.CANCELADA));
 
-        mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
+        mockMvc.perform(post(URI_CANCELAR, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CANCELADA"));
+                .andExpect(jsonPath("$.status").value(STATUS_CANCELADA));
     }
 
     @Test
@@ -263,7 +270,7 @@ class PropostaPocControllerTest {
         when(startupService.buscarPorEmail(OUTRA_EMAIL)).thenReturn(criarStartupDTO(outraStartupId, OUTRA_EMAIL));
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
-        mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
+        mockMvc.perform(post(URI_CANCELAR, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
@@ -278,7 +285,7 @@ class PropostaPocControllerTest {
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, UUID.randomUUID(), StatusProposta.EM_TESTE));
         when(propostaPocService.cancelar(propostaId)).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apenas propostas pendentes podem ser canceladas"));
 
-        mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
+        mockMvc.perform(post(URI_CANCELAR, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isBadRequest());
     }
@@ -295,7 +302,7 @@ class PropostaPocControllerTest {
                 criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE)
         ));
 
-        mockMvc.perform(get("/propostas-poc/minhas")
+        mockMvc.perform(get(URI_MINHAS)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(propostaId.toString()))
@@ -311,8 +318,8 @@ class PropostaPocControllerTest {
         when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
         when(propostaPocService.listarPorStartup(startupId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/propostas-poc/minhas")
-                        .param("startupId", startupId.toString())
+        mockMvc.perform(get(URI_MINHAS)
+                        .param(PARAM_STARTUP_ID, startupId.toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
@@ -322,7 +329,7 @@ class PropostaPocControllerTest {
     void listarMinhasSemStartupCadastradaRetornaListaVazia() throws Exception {
         when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        mockMvc.perform(get("/propostas-poc/minhas")
+        mockMvc.perform(get(URI_MINHAS)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray())
@@ -335,15 +342,15 @@ class PropostaPocControllerTest {
         UUID startupId = UUID.randomUUID();
         when(propostaPocService.listarPorStartup(startupId)).thenReturn(List.of());
 
-        mockMvc.perform(get("/propostas-poc/minhas")
-                        .param("startupId", startupId.toString())
+        mockMvc.perform(get(URI_MINHAS)
+                        .param(PARAM_STARTUP_ID, startupId.toString())
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk());
     }
 
     @Test
     void listarMinhasSemAutenticacaoRetorna401Unauthorized() throws Exception {
-        mockMvc.perform(get("/propostas-poc/minhas")
+        mockMvc.perform(get(URI_MINHAS)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isUnauthorized());
     }
@@ -351,7 +358,7 @@ class PropostaPocControllerTest {
     @Test
     @WithMockUser(roles = "AMBIENTE_VALIDACAO")
     void listarMinhasComPerfilInvalidoRetorna403Forbidden() throws Exception {
-        mockMvc.perform(get("/propostas-poc/minhas")
+        mockMvc.perform(get(URI_MINHAS)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
     }
@@ -365,7 +372,7 @@ class PropostaPocControllerTest {
         when(propostaPocService.buscar(eq(propostaId)))
                 .thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
-        mockMvc.perform(get("/propostas-poc/{id}", propostaId)
+        mockMvc.perform(get(URI_ID, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(propostaId.toString()))
@@ -387,14 +394,14 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
         when(propostaPocService.criar(any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Startup atingiu o limite maximo de 3 propostas pendentes simultaneas"));
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
@@ -415,14 +422,14 @@ class PropostaPocControllerTest {
                 15,
                 RESP_STARTUP,
                 RESP_AMBIENTE,
-                "Taxa > 90%",
+                TAXA_SUPERIOR_90,
                 true
         );
 
         when(propostaPocService.criar(any()))
                 .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Startup ja possui proposta ativa para este desafio de validacao"));
 
-        mockMvc.perform(post("/propostas-poc")
+        mockMvc.perform(post(URI_PROPOSTAS)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isBadRequest());
