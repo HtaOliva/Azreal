@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,35 +21,6 @@ class PropostaPocTest {
         assertNotNull(proposta.getDataCriacao());
         assertEquals(StatusProposta.PENDENTE, proposta.getStatus());
         assertFalse(proposta.isAceitePrevioTermoSigilo());
-    }
-
-    @Test
-    void instanciacaoComConstrutorParametrizado() {
-        UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-
-        PropostaPoc proposta = new PropostaPoc(
-                startupId,
-                desafioId,
-                "Validar integracao de telemetria",
-                30,
-                "Fornecer sensores e dashboard",
-                "Disponibilizar conexao e espaco fisico",
-                "Taxa de disponibilidade > 99%",
-                true
-        );
-
-        assertNotNull(proposta.getId());
-        assertNotNull(proposta.getDataCriacao());
-        assertEquals(startupId, proposta.getStartupId());
-        assertEquals(desafioId, proposta.getDesafioValidacaoId());
-        assertEquals("Validar integracao de telemetria", proposta.getEscopoTeste());
-        assertEquals(30, proposta.getDuracaoSugeridaDias());
-        assertEquals("Fornecer sensores e dashboard", proposta.getResponsabilidadesStartup());
-        assertEquals("Disponibilizar conexao e espaco fisico", proposta.getResponsabilidadesAmbiente());
-        assertEquals("Taxa de disponibilidade > 99%", proposta.getMetricaValidacao());
-        assertTrue(proposta.isAceitePrevioTermoSigilo());
-        assertEquals(StatusProposta.PENDENTE, proposta.getStatus());
     }
 
     @Test
@@ -82,6 +54,26 @@ class PropostaPocTest {
         assertTrue(proposta.isAceitePrevioTermoSigilo());
         assertEquals(StatusProposta.EM_TESTE, proposta.getStatus());
         assertEquals(agora, proposta.getDataCriacao());
+    }
+
+    @Test
+    void equalsEHashCodeBaseadosNoId() {
+        UUID id = UUID.randomUUID();
+        PropostaPoc p1 = new PropostaPoc();
+        p1.setId(id);
+
+        PropostaPoc p2 = new PropostaPoc();
+        p2.setId(id);
+
+        PropostaPoc p3 = new PropostaPoc();
+        p3.setId(UUID.randomUUID());
+
+        assertEquals(p1, p1);
+        assertEquals(p1, p2);
+        assertNotEquals(p1, p3);
+        assertNotEquals(p1, null);
+        assertNotEquals(p1, new Object());
+        assertEquals(p1.hashCode(), p2.hashCode());
     }
 
     @Test

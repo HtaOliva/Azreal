@@ -34,6 +34,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(PropostaPocController.class)
 class PropostaPocControllerTest {
 
+    private static final String STARTUP_EMAIL = "startup@azreal.com";
+    private static final String OUTRA_EMAIL = "outra@azreal.com";
+    private static final String ADMIN_EMAIL = "admin@azreal.com";
+    private static final String ESCOPO_TESTE = "Escopo do teste de telemetria";
+    private static final String RESP_STARTUP = "Resp startup";
+    private static final String RESP_AMBIENTE = "Resp ambiente";
+    private static final String VALIDACAO_ACURACIA = "Validacao da acuracia";
+    private static final String STATUS_PENDENTE = "PENDENTE";
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -69,10 +78,10 @@ class PropostaPocControllerTest {
                 id,
                 startupId,
                 desafioId,
-                "Escopo do teste de telemetria",
+                ESCOPO_TESTE,
                 30,
-                "Resp startup",
-                "Resp ambiente",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Disponibilidade > 99%",
                 true,
                 status,
@@ -81,21 +90,21 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void startupAutenticadaSubmetePropostaComSucesso() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         UUID propostaId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
 
         PropostaPocRequestDTO request = new PropostaPocRequestDTO(
                 startupId,
                 desafioId,
-                "Validacao da acuracia",
+                VALIDACAO_ACURACIA,
                 15,
-                "Resp startup",
-                "Resp ambiente",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Taxa > 90%",
                 true
         );
@@ -107,8 +116,61 @@ class PropostaPocControllerTest {
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(propostaId.toString()))
-                .andExpect(jsonPath("$.status").value("PENDENTE"))
-                .andExpect(jsonPath("$.escopoTeste").value("Escopo do teste de telemetria"));
+                .andExpect(jsonPath("$.status").value(STATUS_PENDENTE))
+                .andExpect(jsonPath("$.escopoTeste").value(ESCOPO_TESTE));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminPodeSubmeterPropostaParaQualquerStartup() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                startupId,
+                desafioId,
+                VALIDACAO_ACURACIA,
+                15,
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                "Taxa > 90%",
+                true
+        );
+
+        when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
+
+        mockMvc.perform(post("/propostas-poc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(propostaId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void startupNaoPodeSubmeterPropostaEmNomeDeOutraStartup() throws Exception {
+        UUID minhaStartupId = UUID.randomUUID();
+        UUID outraStartupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(minhaStartupId, STARTUP_EMAIL));
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                outraStartupId,
+                desafioId,
+                VALIDACAO_ACURACIA,
+                15,
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                "Taxa > 90%",
+                true
+        );
+
+        mockMvc.perform(post("/propostas-poc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -122,8 +184,8 @@ class PropostaPocControllerTest {
                 desafioId,
                 "Validacao indevida",
                 15,
-                "Resp startup",
-                "Resp ambiente",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Taxa > 90%",
                 true
         );
@@ -135,7 +197,7 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void submissaoSemAceitePrevioRetornaBadRequest400() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
@@ -145,8 +207,8 @@ class PropostaPocControllerTest {
                 desafioId,
                 "Escopo",
                 15,
-                "Resp",
-                "Resp",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Metrica",
                 false
         );
@@ -158,13 +220,13 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void startupCancelaPropostaPendenteComSucesso() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         UUID propostaId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
         when(propostaPocService.cancelar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.CANCELADA));
 
@@ -176,14 +238,29 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "outra@azreal.com")
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminPodeCancelarPropostaDeQualquerStartup() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        when(propostaPocService.cancelar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.CANCELADA));
+
+        mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELADA"));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = OUTRA_EMAIL)
     void startupNaoPodeCancelarPropostaDeOutraStartup() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID outraStartupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         UUID propostaId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("outra@azreal.com")).thenReturn(criarStartupDTO(outraStartupId, "outra@azreal.com"));
+        when(startupService.buscarPorEmail(OUTRA_EMAIL)).thenReturn(criarStartupDTO(outraStartupId, OUTRA_EMAIL));
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE));
 
         mockMvc.perform(post("/propostas-poc/{id}/cancelar", propostaId)
@@ -192,12 +269,12 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void cancelarPropostaNaoPendenteRetorna400BadRequest() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID propostaId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
         when(propostaPocService.buscar(propostaId)).thenReturn(criarPropostaResponseDTO(propostaId, startupId, UUID.randomUUID(), StatusProposta.EM_TESTE));
         when(propostaPocService.cancelar(propostaId)).thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apenas propostas pendentes podem ser canceladas"));
 
@@ -207,13 +284,13 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void listarMinhasPropostasRetornaPropostasDaStartupAutenticada() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
         UUID propostaId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
         when(propostaPocService.listarPorStartup(startupId)).thenReturn(List.of(
                 criarPropostaResponseDTO(propostaId, startupId, desafioId, StatusProposta.PENDENTE)
         ));
@@ -222,8 +299,46 @@ class PropostaPocControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(propostaId.toString()))
-                .andExpect(jsonPath("$[0].status").value("PENDENTE"))
+                .andExpect(jsonPath("$[0].status").value(STATUS_PENDENTE))
                 .andExpect(jsonPath("$[0].startupId").value(startupId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void listarMinhasComParametroProprioRetornaOk() throws Exception {
+        UUID startupId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
+        when(propostaPocService.listarPorStartup(startupId)).thenReturn(List.of());
+
+        mockMvc.perform(get("/propostas-poc/minhas")
+                        .param("startupId", startupId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
+    void listarMinhasSemStartupCadastradaRetornaListaVazia() throws Exception {
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        mockMvc.perform(get("/propostas-poc/minhas")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void adminPodeListarMinhasComParametroQualquer() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        when(propostaPocService.listarPorStartup(startupId)).thenReturn(List.of());
+
+        mockMvc.perform(get("/propostas-poc/minhas")
+                        .param("startupId", startupId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
     }
 
     @Test
@@ -254,24 +369,24 @@ class PropostaPocControllerTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(propostaId.toString()))
-                .andExpect(jsonPath("$.status").value("PENDENTE"));
+                .andExpect(jsonPath("$.status").value(STATUS_PENDENTE));
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void submissaoAtingindoLimiteMaximoRetorna400BadRequest() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
 
         PropostaPocRequestDTO request = new PropostaPocRequestDTO(
                 startupId,
                 desafioId,
-                "Validacao da acuracia",
+                VALIDACAO_ACURACIA,
                 15,
-                "Resp startup",
-                "Resp ambiente",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Taxa > 90%",
                 true
         );
@@ -286,20 +401,20 @@ class PropostaPocControllerTest {
     }
 
     @Test
-    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    @WithMockUser(roles = "STARTUP", username = STARTUP_EMAIL)
     void submissaoDuplicadaParaMesmoDesafioRetorna400BadRequest() throws Exception {
         UUID startupId = UUID.randomUUID();
         UUID desafioId = UUID.randomUUID();
 
-        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
 
         PropostaPocRequestDTO request = new PropostaPocRequestDTO(
                 startupId,
                 desafioId,
-                "Validacao da acuracia",
+                VALIDACAO_ACURACIA,
                 15,
-                "Resp startup",
-                "Resp ambiente",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
                 "Taxa > 90%",
                 true
         );

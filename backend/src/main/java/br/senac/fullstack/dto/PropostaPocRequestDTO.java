@@ -34,15 +34,15 @@ public record PropostaPocRequestDTO(
         Boolean aceitePrevioTermoSigilo
 ) {
     public PropostaPoc toEntity() {
-        return new PropostaPoc(
-                startupId,
-                desafioValidacaoId,
-                escopoTeste,
-                duracaoSugeridaDias,
-                responsabilidadesStartup,
-                responsabilidadesAmbiente,
-                metricaValidacao,
-                Boolean.TRUE.equals(aceitePrevioTermoSigilo)
-        );
+        PropostaPoc entity = new PropostaPoc();
+        entity.setStartupId(startupId);
+        entity.setDesafioValidacaoId(desafioValidacaoId);
+        entity.setEscopoTeste(escopoTeste);
+        entity.setDuracaoSugeridaDias(duracaoSugeridaDias);
+        entity.setResponsabilidadesStartup(responsabilidadesStartup);
+        entity.setResponsabilidadesAmbiente(responsabilidadesAmbiente);
+        entity.setMetricaValidacao(metricaValidacao);
+        entity.setAceitePrevioTermoSigilo(Boolean.TRUE.equals(aceitePrevioTermoSigilo));
+        return entity;
     }
 }

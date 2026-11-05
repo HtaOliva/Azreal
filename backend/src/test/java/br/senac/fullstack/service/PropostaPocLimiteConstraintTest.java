@@ -18,6 +18,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PropostaPocLimiteConstraintTest {
 
+    private static final String ESCOPO_PADRAO = "Validar solucao de automacao no ambiente parceiro";
+    private static final String RESP_STARTUP = "Fornecer software e suporte a operacao";
+    private static final String RESP_AMBIENTE = "Disponibilizar estacao de trabalho e base de dados";
+    private static final String METRICA_PADRAO = "Tempo medio de resposta < 500ms em 95% das requisicoes";
+
     private PropostaPocService service;
 
     @BeforeEach
@@ -29,11 +34,11 @@ class PropostaPocLimiteConstraintTest {
         return new PropostaPocRequestDTO(
                 startupId,
                 desafioId,
-                "Validar solucao de automacao no ambiente parceiro",
+                ESCOPO_PADRAO,
                 15,
-                "Fornecer software e suporte a operacao",
-                "Disponibilizar estacao de trabalho e base de dados",
-                "Tempo medio de resposta < 500ms em 95% das requisicoes",
+                RESP_STARTUP,
+                RESP_AMBIENTE,
+                METRICA_PADRAO,
                 true
         );
     }
@@ -103,7 +108,7 @@ class PropostaPocLimiteConstraintTest {
                 "Outro escopo para o mesmo desafio",
                 30,
                 "Outra responsabilidade",
-                "Outra responsabilidade",
+                "Outra responsabilidade ambiente",
                 "Outra metrica",
                 true
         );
@@ -147,16 +152,14 @@ class PropostaPocLimiteConstraintTest {
 
         assertEquals(3, service.contarPendentesPorStartup(startupId));
 
-        // Rejeita a 4ª proposta antes de cancelar
-        assertThrows(ResponseStatusException.class, () -> service.criar(criarDTO(startupId, desafioNovo)));
+        PropostaPocRequestDTO reqNovo = criarDTO(startupId, desafioNovo);
+        assertThrows(ResponseStatusException.class, () -> service.criar(reqNovo));
 
-        // Cancela a primeira proposta
         PropostaPocResponseDTO cancelada = service.cancelar(p1.id());
         assertEquals(StatusProposta.CANCELADA, cancelada.status());
         assertEquals(2, service.contarPendentesPorStartup(startupId));
 
-        // Slot recuperado: agora a nova proposta é aceita com sucesso
-        PropostaPocResponseDTO aceita = service.criar(criarDTO(startupId, desafioNovo));
+        PropostaPocResponseDTO aceita = service.criar(reqNovo);
         assertNotNull(aceita.id());
         assertEquals(StatusProposta.PENDENTE, aceita.status());
         assertEquals(3, service.contarPendentesPorStartup(startupId));
@@ -191,18 +194,18 @@ class PropostaPocLimiteConstraintTest {
 
         assertEquals(3, service.contarPendentesPorStartup(startupId));
 
-        // Simula aceite pelo ambiente (passa para EM_TESTE) e recusa (RECUSADA)
-        service.obterPorId(p1.id()).setStatus(StatusProposta.EM_TESTE);
-        service.obterPorId(p2.id()).setStatus(StatusProposta.RECUSADA);
+        UUID p1Id = p1.id();
+        UUID p2Id = p2.id();
+        service.obterPorId(p1Id).setStatus(StatusProposta.EM_TESTE);
+        service.obterPorId(p2Id).setStatus(StatusProposta.RECUSADA);
 
         assertEquals(1, service.contarPendentesPorStartup(startupId));
 
-        // Pode submeter mais duas propostas pendentes
         service.criar(criarDTO(startupId, UUID.randomUUID()));
         service.criar(criarDTO(startupId, UUID.randomUUID()));
         assertEquals(3, service.contarPendentesPorStartup(startupId));
 
-        // Agora uma sexta proposta estoura o limite de pendencias novamente
-        assertThrows(ResponseStatusException.class, () -> service.criar(criarDTO(startupId, UUID.randomUUID())));
+        PropostaPocRequestDTO sexta = criarDTO(startupId, UUID.randomUUID());
+        assertThrows(ResponseStatusException.class, () -> service.criar(sexta));
     }
 }

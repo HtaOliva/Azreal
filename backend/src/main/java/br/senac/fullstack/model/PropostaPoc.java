@@ -13,6 +13,7 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -60,21 +61,22 @@ public class PropostaPoc {
     public PropostaPoc() {
         this.id = UUID.randomUUID();
         this.dataCriacao = LocalDateTime.now(ZoneId.systemDefault());
-        this.status = StatusProposta.PENDENTE;
     }
 
-    public PropostaPoc(UUID startupId, UUID desafioValidacaoId, String escopoTeste,
-                       Integer duracaoSugeridaDias, String responsabilidadesStartup,
-                       String responsabilidadesAmbiente, String metricaValidacao,
-                       boolean aceitePrevioTermoSigilo) {
-        this();
-        this.startupId = startupId;
-        this.desafioValidacaoId = desafioValidacaoId;
-        this.escopoTeste = escopoTeste;
-        this.duracaoSugeridaDias = duracaoSugeridaDias;
-        this.responsabilidadesStartup = responsabilidadesStartup;
-        this.responsabilidadesAmbiente = responsabilidadesAmbiente;
-        this.metricaValidacao = metricaValidacao;
-        this.aceitePrevioTermoSigilo = aceitePrevioTermoSigilo;
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PropostaPoc that = (PropostaPoc) o;
+        return Objects.equals(id, that.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return getClass().hashCode();
     }
 }

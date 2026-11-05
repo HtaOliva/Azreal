@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.model.PropostaPoc;
 import br.senac.fullstack.model.StatusProposta;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,13 +17,23 @@ import java.util.concurrent.ConcurrentHashMap;
 @Service
 public class PropostaPocService {
 
+    private static final String ID_STARTUP_OBRIGATORIO = "ID da startup e obrigatorio";
+    private static final String ID_DESAFIO_OBRIGATORIO = "ID do desafio e obrigatorio";
+    private static final String ID_PROPOSTA_OBRIGATORIO = "ID da proposta e obrigatorio";
+    private static final String PROPOSTA_NAO_ENCONTRADA = "Proposta de POC nao encontrada";
+
     private final Map<UUID, PropostaPoc> memory = new ConcurrentHashMap<>();
+
+    @Autowired
+    public PropostaPocService() {
+        // Construtor gerenciado pelo Spring Framework
+    }
 
     public PropostaPocResponseDTO criar(PropostaPocRequestDTO request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Dados da proposta sao obrigatorios");
         }
-        if (Boolean.FALSE.equals(request.aceitePrevioTermoSigilo()) || request.aceitePrevioTermoSigilo() == null) {
+        if (!Boolean.TRUE.equals(request.aceitePrevioTermoSigilo())) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O aceite previo do termo de sigilo e obrigatorio");
         }
         if (request.escopoTeste() == null || request.escopoTeste().isBlank()) {
@@ -32,10 +43,10 @@ public class PropostaPocService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A metrica de validacao e obrigatoria");
         }
         if (request.startupId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O ID da startup e obrigatorio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
         }
         if (request.desafioValidacaoId() == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "O ID do desafio de validacao e obrigatorio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_DESAFIO_OBRIGATORIO);
         }
         if (request.duracaoSugeridaDias() == null || request.duracaoSugeridaDias() <= 0) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A duracao sugerida deve ser informada em dias e positiva");
@@ -71,18 +82,18 @@ public class PropostaPocService {
 
     public PropostaPoc obterPorId(UUID id) {
         if (id == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da proposta e obrigatorio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_PROPOSTA_OBRIGATORIO);
         }
         PropostaPoc proposta = memory.get(id);
         if (proposta == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposta de POC nao encontrada");
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, PROPOSTA_NAO_ENCONTRADA);
         }
         return proposta;
     }
 
     public List<PropostaPocResponseDTO> listarPorStartup(UUID startupId) {
         if (startupId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID da startup e obrigatorio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
         }
         return memory.values().stream()
                 .filter(p -> startupId.equals(p.getStartupId()))
@@ -92,7 +103,7 @@ public class PropostaPocService {
 
     public List<PropostaPocResponseDTO> listarPorDesafio(UUID desafioId) {
         if (desafioId == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID do desafio e obrigatorio");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_DESAFIO_OBRIGATORIO);
         }
         return memory.values().stream()
                 .filter(p -> desafioId.equals(p.getDesafioValidacaoId()))
