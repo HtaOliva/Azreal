@@ -256,4 +256,60 @@ class PropostaPocControllerTest {
                 .andExpect(jsonPath("$.id").value(propostaId.toString()))
                 .andExpect(jsonPath("$.status").value("PENDENTE"));
     }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    void submissaoAtingindoLimiteMaximoRetorna400BadRequest() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                startupId,
+                desafioId,
+                "Validacao da acuracia",
+                15,
+                "Resp startup",
+                "Resp ambiente",
+                "Taxa > 90%",
+                true
+        );
+
+        when(propostaPocService.criar(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Startup atingiu o limite maximo de 3 propostas pendentes simultaneas"));
+
+        mockMvc.perform(post("/propostas-poc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "STARTUP", username = "startup@azreal.com")
+    void submissaoDuplicadaParaMesmoDesafioRetorna400BadRequest() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        when(startupService.buscarPorEmail("startup@azreal.com")).thenReturn(criarStartupDTO(startupId, "startup@azreal.com"));
+
+        PropostaPocRequestDTO request = new PropostaPocRequestDTO(
+                startupId,
+                desafioId,
+                "Validacao da acuracia",
+                15,
+                "Resp startup",
+                "Resp ambiente",
+                "Taxa > 90%",
+                true
+        );
+
+        when(propostaPocService.criar(any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Startup ja possui proposta ativa para este desafio de validacao"));
+
+        mockMvc.perform(post("/propostas-poc")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
 }
