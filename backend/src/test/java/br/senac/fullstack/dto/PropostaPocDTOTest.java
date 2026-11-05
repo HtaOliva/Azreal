@@ -201,4 +201,29 @@ class PropostaPocDTOTest {
         Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
         assertFalse(violations.isEmpty());
     }
+
+    @Test
+    void recusaPropostaRequestDTOComMotivoNuloDeveFalharNaValidacao() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(null);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComLimiteExato500CaracteresDevePassar() {
+        String motivo500 = "a".repeat(500);
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(motivo500);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty());
+        assertEquals(500, dto.motivoRecusa().length());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComMaisDe500CaracteresDeveFalharNaValidacao() {
+        String motivo501 = "a".repeat(501);
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(motivo501);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("motivoRecusa")));
+    }
 }

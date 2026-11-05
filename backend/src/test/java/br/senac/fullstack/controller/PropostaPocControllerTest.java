@@ -827,4 +827,95 @@ class PropostaPocControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value(STATUS_RECUSADA));
     }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void recusarPropostaComMotivoMaiorQue500CaracteresRetorna400BadRequest() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        String motivoLongo = "a".repeat(501);
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(motivoLongo);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void recusarPropostaInexistenteRetorna404NotFound() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        when(propostaPocService.recusar(propostaId, MOTIVO_RECUSA))
+                .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Proposta nao encontrada"));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMIN", username = ADMIN_EMAIL)
+    void recusarPropostaNaoPendenteRetorna400BadRequest() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        when(propostaPocService.recusar(propostaId, MOTIVO_RECUSA))
+                .thenThrow(new ResponseStatusException(HttpStatus.BAD_REQUEST, "Apenas propostas pendentes podem ser recusadas"));
+
+        RecusaPropostaRequestDTO request = new RecusaPropostaRequestDTO(MOTIVO_RECUSA);
+
+        mockMvc.perform(post(URI_RECUSAR, propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoConsultaFilaPassandoSeuProprioAmbienteIdRetorna200Ok() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
+                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(desafioValidacaoService.listarPorAmbiente(ambienteId))
+                .thenReturn(List.of(criarDesafioDTO(desafioId, ambienteId)));
+        when(propostaPocService.listarFilaAmbiente(Set.of(desafioId)))
+                .thenReturn(List.of(criarPropostaResponseDTO(propostaId, UUID.randomUUID(), desafioId, StatusProposta.PENDENTE)));
+
+        mockMvc.perform(get(URI_FILA)
+                        .param(PARAM_AMBIENTE_ID, ambienteId.toString())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(propostaId.toString()));
+    }
+
+    @Test
+    @WithMockUser(roles = "AMBIENTE_VALIDACAO", username = AMBIENTE_EMAIL)
+    void ambienteValidacaoConsultaFilaComMultiplosDesafiosRetornaTodasPropostas() throws Exception {
+        UUID ambienteId = UUID.randomUUID();
+        UUID d1 = UUID.randomUUID();
+        UUID d2 = UUID.randomUUID();
+        UUID p1 = UUID.randomUUID();
+        UUID p2 = UUID.randomUUID();
+
+        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
+                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
+        when(desafioValidacaoService.listarPorAmbiente(ambienteId))
+                .thenReturn(List.of(criarDesafioDTO(d1, ambienteId), criarDesafioDTO(d2, ambienteId)));
+        when(propostaPocService.listarFilaAmbiente(Set.of(d1, d2)))
+                .thenReturn(List.of(
+                        criarPropostaResponseDTO(p1, UUID.randomUUID(), d1, StatusProposta.PENDENTE),
+                        criarPropostaResponseDTO(p2, UUID.randomUUID(), d2, StatusProposta.PENDENTE)
+                ));
+
+        mockMvc.perform(get(URI_FILA)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(p1.toString()))
+                .andExpect(jsonPath("$[1].id").value(p2.toString()));
+    }
 }

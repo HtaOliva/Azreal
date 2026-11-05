@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -416,5 +417,88 @@ class PropostaPocServiceTest {
         service.obterPorId(pId).setStatus(StatusProposta.EM_TESTE);
 
         assertThrows(ResponseStatusException.class, () -> service.recusar(pId, "Motivo"));
+    }
+
+    @Test
+    void listarFilaAmbienteOrdenaPorDataCriacaoAscendente() {
+        UUID startup1 = UUID.randomUUID();
+        UUID startup2 = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        PropostaPocRequestDTO req1 = criarRequestValido(startup1, desafioId);
+        PropostaPocResponseDTO p1 = service.criar(req1);
+
+        PropostaPocRequestDTO req2 = criarRequestValido(startup2, desafioId);
+        PropostaPocResponseDTO p2 = service.criar(req2);
+
+        service.obterPorId(p1.id()).setDataCriacao(LocalDateTime.now().minusHours(2));
+        service.obterPorId(p2.id()).setDataCriacao(LocalDateTime.now().minusHours(1));
+
+        List<PropostaPocResponseDTO> fila = service.listarFilaAmbiente(List.of(desafioId));
+        assertEquals(2, fila.size());
+        assertEquals(p1.id(), fila.get(0).id());
+        assertEquals(p2.id(), fila.get(1).id());
+    }
+
+    @Test
+    void listarFilaAmbienteIgnoraPropostasRecusadasCanceladasAceitas() {
+        UUID s1 = UUID.randomUUID();
+        UUID s2 = UUID.randomUUID();
+        UUID s3 = UUID.randomUUID();
+        UUID s4 = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+
+        PropostaPocResponseDTO pPendente = service.criar(criarRequestValido(s1, desafioId));
+        PropostaPocResponseDTO pRecusada = service.criar(criarRequestValido(s2, desafioId));
+        PropostaPocResponseDTO pCancelada = service.criar(criarRequestValido(s3, desafioId));
+        PropostaPocResponseDTO pEmTeste = service.criar(criarRequestValido(s4, desafioId));
+
+        service.recusar(pRecusada.id(), "Recusa formal");
+        service.cancelar(pCancelada.id());
+        service.obterPorId(pEmTeste.id()).setStatus(StatusProposta.EM_TESTE);
+
+        List<PropostaPocResponseDTO> fila = service.listarFilaAmbiente(List.of(desafioId));
+        assertEquals(1, fila.size());
+        assertEquals(pPendente.id(), fila.get(0).id());
+        assertEquals(StatusProposta.PENDENTE, fila.get(0).status());
+    }
+
+    @Test
+    void recusarPropostaJaRecusadaLancaBadRequest() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+
+        service.recusar(p.id(), "Primeira recusa");
+        assertThrows(ResponseStatusException.class, () -> service.recusar(p.id(), "Segunda recusa"));
+    }
+
+    @Test
+    void recusarPropostaCanceladaLancaBadRequest() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+
+        service.cancelar(p.id());
+        assertThrows(ResponseStatusException.class, () -> service.recusar(p.id(), "Tentativa em cancelada"));
+    }
+
+    @Test
+    void recusarPropostaPreservaDemaisCamposEAtualizaMotivo() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocResponseDTO criada = service.criar(criarRequestValido(startupId, desafioId));
+
+        PropostaPocResponseDTO recusada = service.recusar(criada.id(), "  Inviabilidade tecnica  ");
+        assertEquals(criada.id(), recusada.id());
+        assertEquals(startupId, recusada.startupId());
+        assertEquals(desafioId, recusada.desafioValidacaoId());
+        assertEquals(criada.escopoTeste(), recusada.escopoTeste());
+        assertEquals(criada.duracaoSugeridaDias(), recusada.duracaoSugeridaDias());
+        assertEquals(criada.responsabilidadesStartup(), recusada.responsabilidadesStartup());
+        assertEquals(criada.responsabilidadesAmbiente(), recusada.responsabilidadesAmbiente());
+        assertEquals(criada.metricaValidacao(), recusada.metricaValidacao());
+        assertEquals(StatusProposta.RECUSADA, recusada.status());
+        assertEquals("Inviabilidade tecnica", recusada.motivoRecusa());
     }
 }
