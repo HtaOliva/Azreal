@@ -6,6 +6,9 @@ import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.dto.TermoPilotoResponseDTO;
+import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Set;
@@ -108,13 +112,47 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody RecusaPropostaRequestDTO request,
             Authentication authentication) {
-        if (isAcessoRecusaNaoAutorizado(id, authentication)) {
+        if (isAcessoAmbienteDesafioNaoAutorizado(id, authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(propostaPocService.recusar(id, request.motivoRecusa()));
     }
 
-    private boolean isAcessoRecusaNaoAutorizado(UUID id, Authentication authentication) {
+    @PostMapping("/{id}/aceitar")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<TermoPilotoResponseDTO> aceitar(
+            @PathVariable("id") UUID id,
+            Authentication authentication) {
+        if (isAcessoAmbienteDesafioNaoAutorizado(id, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        UUID ambienteId = resolverAmbienteIdPorProposta(id, authentication);
+        TermoPiloto termo = propostaPocService.aceitar(id, ambienteId);
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(ambienteId);
+
+        TermoPilotoResponseDTO response = TermoPilotoResponseDTO.fromEntity(
+                termo,
+                StatusProposta.EM_TESTE,
+                ambienteRevelado
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/termo")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<TermoPilotoResponseDTO> buscarTermoDaProposta(
+            @PathVariable("id") UUID id,
+            Authentication authentication) {
+        TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
+        if (isAcessoTermoNaoAutorizado(termo, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
+    }
+
+    private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
         if (authentication == null || isAdmin(authentication)) {
             return false;
         }
@@ -132,6 +170,93 @@ public class PropostaPocController {
             PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id());
+        } catch (ResponseStatusException e) {
+            throw e;
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private UUID resolverAmbienteIdPorProposta(UUID propostaId, Authentication authentication) {
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (!isAdmin(authentication) && ambienteService != null) {
+            try {
+                AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+                if (ambiente != null) {
+                    return ambiente.id();
+                }
+            } catch (Exception ignored) {
+                // continua
+            }
+        }
+        return obterAmbienteIdDoDesafioDaProposta(propostaId);
+    }
+
+    private UUID obterAmbienteIdDoDesafioDaProposta(UUID propostaId) {
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+        if (desafioService == null) {
+            return null;
+        }
+        try {
+            PropostaPocResponseDTO proposta = propostaPocService.buscar(propostaId);
+            DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
+            return desafio != null ? desafio.ambienteValidacaoId() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
+        if (ambienteId == null) {
+            return null;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return null;
+        }
+        try {
+            return ambienteService.buscar(ambienteId);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private boolean isAcessoTermoNaoAutorizado(TermoPiloto termo, Authentication authentication) {
+        if (authentication == null || isAdmin(authentication) || termo == null) {
+            return false;
+        }
+        if (isStartupDonaDoTermo(termo.getStartupId(), authentication)) {
+            return false;
+        }
+        return !isAmbienteDonoDoTermo(termo.getAmbienteValidacaoId(), authentication);
+    }
+
+    private boolean isStartupDonaDoTermo(UUID startupId, Authentication authentication) {
+        StartupService startupService = startupServiceProvider != null
+                ? startupServiceProvider.getIfAvailable() : null;
+        if (startupService == null || startupId == null) {
+            return false;
+        }
+        try {
+            StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
+            return startup != null && startupId.equals(startup.id());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean isAmbienteDonoDoTermo(UUID ambienteId, Authentication authentication) {
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null || ambienteId == null) {
+            return false;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null && ambienteId.equals(ambiente.id());
         } catch (Exception ignored) {
             return false;
         }
