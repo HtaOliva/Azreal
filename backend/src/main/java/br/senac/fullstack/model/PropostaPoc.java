@@ -1,5 +1,6 @@
 package br.senac.fullstack.model;
 
+import br.senac.fullstack.util.CalendarioPernambucoUtil;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -58,9 +59,16 @@ public class PropostaPoc {
     @Column(name = "data_criacao", nullable = false, updatable = false)
     private LocalDateTime dataCriacao;
 
+    @Column(name = "prazo_resposta_ambiente")
+    private LocalDateTime prazoRespostaAmbiente;
+
+    @Column(name = "motivo_recusa", columnDefinition = "text")
+    private String motivoRecusa;
+
     public PropostaPoc() {
         this.id = UUID.randomUUID();
         this.dataCriacao = LocalDateTime.now(ZoneId.systemDefault());
+        this.prazoRespostaAmbiente = CalendarioPernambucoUtil.calcularPrazo5DiasUteis(this.dataCriacao);
     }
 
     @Override

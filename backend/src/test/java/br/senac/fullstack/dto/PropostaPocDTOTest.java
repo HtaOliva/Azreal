@@ -168,5 +168,62 @@ class PropostaPocDTOTest {
         assertTrue(dto.aceitePrevioTermoSigilo());
         assertEquals(StatusProposta.EM_TESTE, dto.status());
         assertEquals(agora, dto.dataCriacao());
+        assertNotNull(dto.prazoRespostaAmbiente());
+    }
+
+    @Test
+    void responseDTOConstrutorLegadoSemPrazoDeveDefinirPrazoComoNulo() {
+        UUID id = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        LocalDateTime agora = LocalDateTime.now();
+
+        PropostaPocResponseDTO dto = new PropostaPocResponseDTO(
+                id, startupId, desafioId, "Escopo", 15, "Resp S", "Resp A", "Metrica", true, StatusProposta.PENDENTE, agora
+        );
+
+        assertEquals(id, dto.id());
+        org.junit.jupiter.api.Assertions.assertNull(dto.prazoRespostaAmbiente());
+        org.junit.jupiter.api.Assertions.assertNull(dto.motivoRecusa());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOValidoDevePassarNaValidacaoETrimar() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO("  Escopo incompativel com cronograma  ");
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty());
+        assertEquals("Escopo incompativel com cronograma", dto.motivoRecusa());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComMotivoVazioDeveFalharNaValidacao() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO("   ");
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComMotivoNuloDeveFalharNaValidacao() {
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(null);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComLimiteExato500CaracteresDevePassar() {
+        String motivo500 = "a".repeat(500);
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(motivo500);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertTrue(violations.isEmpty());
+        assertEquals(500, dto.motivoRecusa().length());
+    }
+
+    @Test
+    void recusaPropostaRequestDTOComMaisDe500CaracteresDeveFalharNaValidacao() {
+        String motivo501 = "a".repeat(501);
+        RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO(motivo501);
+        Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("motivoRecusa")));
     }
 }

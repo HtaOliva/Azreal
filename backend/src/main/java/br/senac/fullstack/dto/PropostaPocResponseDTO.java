@@ -17,8 +17,47 @@ public record PropostaPocResponseDTO(
         String metricaValidacao,
         boolean aceitePrevioTermoSigilo,
         StatusProposta status,
-        LocalDateTime dataCriacao
+        LocalDateTime dataCriacao,
+        LocalDateTime prazoRespostaAmbiente,
+        String motivoRecusa
 ) {
+    public PropostaPocResponseDTO(
+            UUID id,
+            UUID startupId,
+            UUID desafioValidacaoId,
+            String escopoTeste,
+            Integer duracaoSugeridaDias,
+            String responsabilidadesStartup,
+            String responsabilidadesAmbiente,
+            String metricaValidacao,
+            boolean aceitePrevioTermoSigilo,
+            StatusProposta status,
+            LocalDateTime dataCriacao,
+            LocalDateTime prazoRespostaAmbiente
+    ) {
+        this(id, startupId, desafioValidacaoId, escopoTeste, duracaoSugeridaDias, responsabilidadesStartup,
+                responsabilidadesAmbiente, metricaValidacao, aceitePrevioTermoSigilo, status, dataCriacao,
+                prazoRespostaAmbiente, null);
+    }
+
+    public PropostaPocResponseDTO(
+            UUID id,
+            UUID startupId,
+            UUID desafioValidacaoId,
+            String escopoTeste,
+            Integer duracaoSugeridaDias,
+            String responsabilidadesStartup,
+            String responsabilidadesAmbiente,
+            String metricaValidacao,
+            boolean aceitePrevioTermoSigilo,
+            StatusProposta status,
+            LocalDateTime dataCriacao
+    ) {
+        this(id, startupId, desafioValidacaoId, escopoTeste, duracaoSugeridaDias, responsabilidadesStartup,
+                responsabilidadesAmbiente, metricaValidacao, aceitePrevioTermoSigilo, status, dataCriacao,
+                null, null);
+    }
+
     public static PropostaPocResponseDTO fromEntity(PropostaPoc p) {
         return new PropostaPocResponseDTO(
                 p.getId(),
@@ -31,7 +70,9 @@ public record PropostaPocResponseDTO(
                 p.getMetricaValidacao(),
                 p.isAceitePrevioTermoSigilo(),
                 p.getStatus(),
-                p.getDataCriacao()
+                p.getDataCriacao(),
+                p.getPrazoRespostaAmbiente(),
+                p.getMotivoRecusa()
         );
     }
 }
