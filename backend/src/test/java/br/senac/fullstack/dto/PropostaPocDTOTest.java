@@ -188,6 +188,23 @@ class PropostaPocDTOTest {
     }
 
     @Test
+    void responseDTOConstrutorComPrazoESemMotivoRecusa() {
+        UUID id = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        LocalDateTime agora = LocalDateTime.now();
+        LocalDateTime prazo = agora.plusDays(7);
+
+        PropostaPocResponseDTO dto = new PropostaPocResponseDTO(
+                id, startupId, desafioId, "Escopo", 15, "Resp S", "Resp A", "Metrica", true, StatusProposta.PENDENTE, agora, prazo
+        );
+
+        assertEquals(id, dto.id());
+        assertEquals(prazo, dto.prazoRespostaAmbiente());
+        org.junit.jupiter.api.Assertions.assertNull(dto.motivoRecusa());
+    }
+
+    @Test
     void recusaPropostaRequestDTOValidoDevePassarNaValidacaoETrimar() {
         RecusaPropostaRequestDTO dto = new RecusaPropostaRequestDTO("  Escopo incompativel com cronograma  ");
         Set<ConstraintViolation<RecusaPropostaRequestDTO>> violations = validator.validate(dto);

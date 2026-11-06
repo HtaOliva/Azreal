@@ -25,6 +25,9 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
@@ -36,6 +39,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -917,5 +921,32 @@ class PropostaPocControllerTest {
                 .andExpect(jsonPath("$.length()").value(2))
                 .andExpect(jsonPath("$[0].id").value(p1.toString()))
                 .andExpect(jsonPath("$[1].id").value(p2.toString()));
+    }
+
+    @Test
+    void controllerDiretoRecusarComProvidersNulos() {
+        PropostaPocController controller = new PropostaPocController(propostaPocService, null, null, null);
+        UUID id = UUID.randomUUID();
+        when(propostaPocService.recusar(id, MOTIVO_RECUSA))
+                .thenReturn(criarPropostaRecusadaResponseDTO(id, UUID.randomUUID(), UUID.randomUUID(), MOTIVO_RECUSA));
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "parceiro@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ResponseEntity<PropostaPocResponseDTO> resp = controller.recusar(
+                id, new RecusaPropostaRequestDTO(MOTIVO_RECUSA), auth);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+    }
+
+    @Test
+    void controllerDiretoConsultarFilaComProvidersNulos() {
+        PropostaPocController controller = new PropostaPocController(propostaPocService, null, null, null);
+        UUID ambienteId = UUID.randomUUID();
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "parceiro@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.consultarFila(ambienteId, auth);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertTrue(resp.getBody().isEmpty());
     }
 }

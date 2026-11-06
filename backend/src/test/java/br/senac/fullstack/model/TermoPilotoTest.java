@@ -105,11 +105,11 @@ class TermoPilotoTest {
         TermoPiloto t3 = new TermoPiloto();
         t3.setId(UUID.randomUUID());
 
-        assertEquals(t1, t1);
+        assertTrue(t1.equals(t1));
         assertEquals(t1, t2);
         assertNotEquals(t1, t3);
-        assertNotEquals(null, t1);
-        assertNotEquals("outroTipo", t1);
+        assertFalse(t1.equals(null));
+        assertFalse(t1.equals("outroTipo"));
         assertEquals(t1.hashCode(), t2.hashCode());
     }
 }
