@@ -86,10 +86,12 @@ class PropostaPocTest {
 
     @Test
     void statusPropostaValoresDisponiveis() {
-        assertEquals(4, StatusProposta.values().length);
+        assertEquals(6, StatusProposta.values().length);
         assertEquals(StatusProposta.PENDENTE, StatusProposta.valueOf("PENDENTE"));
         assertEquals(StatusProposta.EM_TESTE, StatusProposta.valueOf("EM_TESTE"));
         assertEquals(StatusProposta.RECUSADA, StatusProposta.valueOf("RECUSADA"));
         assertEquals(StatusProposta.CANCELADA, StatusProposta.valueOf("CANCELADA"));
+        assertEquals(StatusProposta.POC_CONCLUIDA, StatusProposta.valueOf("POC_CONCLUIDA"));
+        assertEquals(StatusProposta.POC_NAO_CONFIRMADA, StatusProposta.valueOf("POC_NAO_CONFIRMADA"));
     }
 }

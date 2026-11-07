@@ -1,14 +1,19 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
+import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
+import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
+import br.senac.fullstack.model.AvaliacaoMetrica;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Estagio;
+import br.senac.fullstack.model.ModoPrivacidadePoc;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.model.StatusProposta;
@@ -43,8 +48,10 @@ import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -1223,5 +1230,52 @@ class PropostaPocControllerTest {
         ResponseEntity<TermoPilotoResponseDTO> resp = controller.buscarTermoDaProposta(id, auth);
         assertEquals(HttpStatus.OK, resp.getStatusCode());
         assertNotNull(resp.getBody());
+    }
+
+    @Test
+    void controllerDiretoRegistrarEntregaEConfirmacao() {
+        ObjectProvider<TermoPilotoService> termoProvider = mock(ObjectProvider.class);
+        TermoPilotoService termoService = mock(TermoPilotoService.class);
+        when(termoProvider.getIfAvailable()).thenReturn(termoService);
+
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, null, null, termoProvider);
+
+        UUID id = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+        TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), id, UUID.randomUUID(), UUID.randomUUID(), ambienteId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        EntregaPilotoRequestDTO entregaReq = new EntregaPilotoRequestDTO("Resumo", null, null);
+        when(termoService.registrarEntrega(eq(id), eq(entregaReq), any())).thenReturn(termo);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                ADMIN_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        ResponseEntity<TermoPilotoResponseDTO> entregaResp = controller.registrarEntrega(id, entregaReq, auth);
+        assertEquals(HttpStatus.OK, entregaResp.getStatusCode());
+
+        ConfirmacaoExecucaoRequestDTO confReq = new ConfirmacaoExecucaoRequestDTO(
+                true, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null);
+        termo.confirmarExecucao(true, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null);
+        when(termoService.confirmarExecucao(eq(id), eq(confReq), any())).thenReturn(termo);
+
+        ResponseEntity<ConfirmacaoExecucaoResponseDTO> confResp = controller.confirmarResultado(id, confReq, auth);
+        assertEquals(HttpStatus.OK, confResp.getStatusCode());
+        assertEquals(StatusProposta.POC_CONCLUIDA, confResp.getBody().status());
+    }
+
+    @Test
+    void controllerDiretoRegistrarEntregaEConfirmacaoServicoIndisponivel() {
+        PropostaPocController controller = new PropostaPocController(propostaPocService, null, null, null, null);
+        UUID id = UUID.randomUUID();
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                ADMIN_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        EntregaPilotoRequestDTO entregaReq = new EntregaPilotoRequestDTO("Resumo", null, null);
+        assertThrows(ResponseStatusException.class, () -> controller.registrarEntrega(id, entregaReq, auth));
+
+        ConfirmacaoExecucaoRequestDTO confReq = new ConfirmacaoExecucaoRequestDTO(false, null, null, null, null, null);
+        assertThrows(ResponseStatusException.class, () -> controller.confirmarResultado(id, confReq, auth));
     }
 }
