@@ -4,11 +4,9 @@ import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
-import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
-import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
@@ -17,7 +15,6 @@ import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
-import br.senac.fullstack.service.StartupService;
 import br.senac.fullstack.service.TermoPilotoService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,11 +23,11 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -53,8 +50,6 @@ class ConfidencialidadeContatosRf15Test {
     private static final String STARTUP_EMAIL = "startup@azreal.com";
     private static final String OUTRA_STARTUP_EMAIL = "outra.startup@azreal.com";
     private static final String AMBIENTE_EMAIL = "diretoria@hospitalesperanca.com.br";
-    private static final String OUTRO_AMBIENTE_EMAIL = "contato@clinicaoutro.com.br";
-    private static final String ADMIN_EMAIL = "admin@azreal.com";
 
     private static final String RAZAO_SOCIAL_CONFIDENCIAL = "Hospital Esperanca S.A.";
     private static final String NOME_FANTASIA_CONFIDENCIAL = "Hospital Esperanca Recife";
@@ -65,7 +60,6 @@ class ConfidencialidadeContatosRf15Test {
     private static final String URI_PROPOSTA_ID = "/propostas-poc/{id}";
     private static final String URI_ACEITAR = "/propostas-poc/{id}/aceitar";
     private static final String URI_TERMOS_PROPOSTA = "/termos-piloto/{propostaId}";
-    private static final String URI_PROPOSTA_TERMO = "/propostas-poc/{id}/termo";
 
     @Autowired
     private MockMvc mockMvc;
@@ -82,9 +76,6 @@ class ConfidencialidadeContatosRf15Test {
     @MockBean
     private AmbienteValidacaoService ambienteValidacaoService;
 
-    @MockBean
-    private StartupService startupService;
-
     private AmbienteValidacaoResponseDTO criarAmbienteCompletoDTO(UUID id) {
         return new AmbienteValidacaoResponseDTO(
                 id,
@@ -98,24 +89,6 @@ class ConfidencialidadeContatosRf15Test {
                 TELEFONE_CONTATO_CONFIDENCIAL,
                 "https://linkedin.com/hospitalesperanca",
                 true,
-                LocalDateTime.now()
-        );
-    }
-
-    private StartupResponseDTO criarStartupDTO(UUID id, String email) {
-        return new StartupResponseDTO(
-                id,
-                "MedTech Soluções",
-                email,
-                "Plataforma de triagem hospitalar inteligente",
-                "Saúde",
-                LocalDate.of(2023, 1, 15),
-                Estagio.MVP_FUNCIONAL,
-                List.of("Dra. Beatriz", "Carlos Eng"),
-                "Recife",
-                "Pernambuco",
-                true,
-                "Porto Digital",
                 LocalDateTime.now()
         );
     }
@@ -238,7 +211,7 @@ class ConfidencialidadeContatosRf15Test {
         UUID propostaId = UUID.randomUUID();
 
         // Antes de aceitar, não há TermoPiloto gerado
-        when(termoPilotoService.buscarPorPropostaId(propostaId))
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(UUID.class), any(Authentication.class)))
                 .thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND, "Termo de piloto nao encontrado"));
 
         mockMvc.perform(get(URI_TERMOS_PROPOSTA, propostaId)
@@ -292,18 +265,23 @@ class ConfidencialidadeContatosRf15Test {
     }
 
     @Test
-    @DisplayName("RF15/RNF04: Após aceite, Startup proprietária consulta /termos-piloto e obtém contatos desmascarados")
+    @DisplayName("RF15/RNF04: Após aceite, consulta do termo exibe contatos desmascarados")
     @WithMockUser(username = STARTUP_EMAIL, roles = {"STARTUP"})
-    void aposAceiteStartupProprietariaConsultaContatosReveladosComSucesso() throws Exception {
+    void aposAceiteConsultaDoTermoExibeContatosDesmascarados() throws Exception {
         UUID propostaId = UUID.randomUUID();
         UUID startupId = UUID.randomUUID();
         UUID ambienteId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
 
-        TermoPiloto termo = criarTermoPilotoCongelado(UUID.randomUUID(), propostaId, startupId, desafioId, ambienteId);
-        when(termoPilotoService.buscarPorPropostaId(propostaId)).thenReturn(termo);
-        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
-        when(ambienteValidacaoService.buscar(ambienteId)).thenReturn(criarAmbienteCompletoDTO(ambienteId));
+        TermoPilotoResponseDTO dto = new TermoPilotoResponseDTO(
+                UUID.randomUUID(), propostaId, startupId, UUID.randomUUID(), ambienteId,
+                "Implementação do modelo de IA para classificação de risco Manchester",
+                20, "Startup disponibiliza modelo", "Ambiente disponibiliza prontuários",
+                "Acurácia superior a 92%", LocalDateTime.now(), StatusProposta.EM_TESTE,
+                RAZAO_SOCIAL_CONFIDENCIAL, NOME_FANTASIA_CONFIDENCIAL, EMAIL_CONTATO_CONFIDENCIAL,
+                TELEFONE_CONTATO_CONFIDENCIAL, "Saúde", PorteOrganizacao.GRANDE
+        );
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(UUID.class), any(Authentication.class)))
+                .thenReturn(dto);
 
         mockMvc.perform(get(URI_TERMOS_PROPOSTA, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -316,88 +294,15 @@ class ConfidencialidadeContatosRf15Test {
     }
 
     @Test
-    @DisplayName("RF15/RNF04: Após aceite, endpoint alternativo /propostas-poc/{id}/termo também retorna contatos para Startup")
-    @WithMockUser(username = STARTUP_EMAIL, roles = {"STARTUP"})
-    void aposAceiteEndpointAlternativoRetornaContatosDesmascarados() throws Exception {
-        UUID propostaId = UUID.randomUUID();
-        UUID startupId = UUID.randomUUID();
-        UUID ambienteId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-
-        TermoPiloto termo = criarTermoPilotoCongelado(UUID.randomUUID(), propostaId, startupId, desafioId, ambienteId);
-        when(propostaPocService.obterTermoPorPropostaId(propostaId)).thenReturn(termo);
-        when(startupService.buscarPorEmail(STARTUP_EMAIL)).thenReturn(criarStartupDTO(startupId, STARTUP_EMAIL));
-        when(ambienteValidacaoService.buscar(ambienteId)).thenReturn(criarAmbienteCompletoDTO(ambienteId));
-
-        mockMvc.perform(get(URI_PROPOSTA_TERMO, propostaId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusProposta").value("EM_TESTE"))
-                .andExpect(jsonPath("$.razaoSocial").value(RAZAO_SOCIAL_CONFIDENCIAL))
-                .andExpect(jsonPath("$.emailContato").value(EMAIL_CONTATO_CONFIDENCIAL))
-                .andExpect(jsonPath("$.telefoneContato").value(TELEFONE_CONTATO_CONFIDENCIAL));
-    }
-
-    @Test
-    @DisplayName("RNF04: Após aceite, outra Startup não pode consultar os contatos revelados (retorna 403 Forbidden)")
+    @DisplayName("RNF04: Terceiros não autorizados não têm acesso aos contatos revelados no termo (403 Forbidden)")
     @WithMockUser(username = OUTRA_STARTUP_EMAIL, roles = {"STARTUP"})
-    void aposAceiteOutraStartupNaoTemAcessoAosContatosReveladosRetornaForbidden() throws Exception {
+    void terceirosNaoAutorizadosRecebemForbiddenAoConsultarContatosRevelados() throws Exception {
         UUID propostaId = UUID.randomUUID();
-        UUID startupProprietariaId = UUID.randomUUID();
-        UUID outraStartupId = UUID.randomUUID();
-        UUID ambienteId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-
-        TermoPiloto termo = criarTermoPilotoCongelado(
-                UUID.randomUUID(), propostaId, startupProprietariaId, desafioId, ambienteId);
-        when(termoPilotoService.buscarPorPropostaId(propostaId)).thenReturn(termo);
-        when(startupService.buscarPorEmail(OUTRA_STARTUP_EMAIL))
-                .thenReturn(criarStartupDTO(outraStartupId, OUTRA_STARTUP_EMAIL));
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(UUID.class), any(Authentication.class)))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN));
 
         mockMvc.perform(get(URI_TERMOS_PROPOSTA, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("RNF04: Após aceite, outro Ambiente de Validação não pode consultar contatos (retorna 403 Forbidden)")
-    @WithMockUser(username = OUTRO_AMBIENTE_EMAIL, roles = {"AMBIENTE_VALIDACAO"})
-    void aposAceiteOutroAmbienteNaoTemAcessoAosContatosRetornaForbidden() throws Exception {
-        UUID propostaId = UUID.randomUUID();
-        UUID startupId = UUID.randomUUID();
-        UUID ambienteProprietarioId = UUID.randomUUID();
-        UUID outroAmbienteId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-
-        TermoPiloto termo = criarTermoPilotoCongelado(
-                UUID.randomUUID(), propostaId, startupId, desafioId, ambienteProprietarioId);
-        when(termoPilotoService.buscarPorPropostaId(propostaId)).thenReturn(termo);
-        when(ambienteValidacaoService.buscarPorEmail(OUTRO_AMBIENTE_EMAIL))
-                .thenReturn(criarAmbienteCompletoDTO(outroAmbienteId));
-
-        mockMvc.perform(get(URI_TERMOS_PROPOSTA, propostaId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    @DisplayName("RF15: Administrador pode consultar termo de qualquer proposta aceita e ver contatos revelados")
-    @WithMockUser(username = ADMIN_EMAIL, roles = {"ADMIN"})
-    void adminPodeConsultarContatosReveladosDeQualquerPropostaAceita() throws Exception {
-        UUID propostaId = UUID.randomUUID();
-        UUID startupId = UUID.randomUUID();
-        UUID ambienteId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-
-        TermoPiloto termo = criarTermoPilotoCongelado(UUID.randomUUID(), propostaId, startupId, desafioId, ambienteId);
-        when(termoPilotoService.buscarPorPropostaId(propostaId)).thenReturn(termo);
-        when(ambienteValidacaoService.buscar(ambienteId)).thenReturn(criarAmbienteCompletoDTO(ambienteId));
-
-        mockMvc.perform(get(URI_TERMOS_PROPOSTA, propostaId)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.statusProposta").value("EM_TESTE"))
-                .andExpect(jsonPath("$.razaoSocial").value(RAZAO_SOCIAL_CONFIDENCIAL))
-                .andExpect(jsonPath("$.emailContato").value(EMAIL_CONTATO_CONFIDENCIAL));
     }
 }

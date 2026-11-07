@@ -1,7 +1,9 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
+import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
@@ -11,8 +13,12 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -21,6 +27,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -213,5 +220,78 @@ class TermoPilotoServiceTest {
         assertEquals(StatusProposta.EM_TESTE, dto.statusProposta());
         assertEquals("Org S.A.", dto.razaoSocial());
         assertEquals("contato@org.com", dto.emailContato());
+    }
+
+    @Test
+    @DisplayName("Deve obter termo com identidade revelada quando usuario for admin ou proprietario")
+    @SuppressWarnings("unchecked")
+    void deveObterTermoComIdentidadeRevelada() {
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        StartupService startService = mock(StartupService.class);
+
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        ObjectProvider<StartupService> startProvider = mock(ObjectProvider.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+        when(startProvider.getIfAvailable()).thenReturn(startService);
+
+        TermoPilotoService serviceCompleto = new TermoPilotoService(repositoryProvider, ambProvider, startProvider);
+
+        UUID propostaId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setPropostaPocId(propostaId);
+        termo.setStartupId(startupId);
+        termo.setAmbienteValidacaoId(ambienteId);
+        when(repository.findByPropostaPocId(propostaId)).thenReturn(Optional.of(termo));
+
+        AmbienteValidacaoResponseDTO ambDTO = new AmbienteValidacaoResponseDTO(
+                ambienteId, "Org S.A.", "Org", "TI", PorteOrganizacao.MEDIO,
+                "2611606", "Recife", "contato@org.com", "81988887777", null, true, LocalDateTime.now()
+        );
+        when(ambService.buscar(ambienteId)).thenReturn(ambDTO);
+        when(ambService.buscarPorEmail("parceiro@email.com")).thenReturn(ambDTO);
+
+        Authentication authAdmin = new UsernamePasswordAuthenticationToken(
+                "admin@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        TermoPilotoResponseDTO respAdmin = serviceCompleto.obterTermoComIdentidadeRevelada(propostaId, authAdmin);
+        assertNotNull(respAdmin);
+        assertEquals("Org S.A.", respAdmin.razaoSocial());
+
+        Authentication authAmbiente = new UsernamePasswordAuthenticationToken(
+                "parceiro@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        TermoPilotoResponseDTO respAmbiente = serviceCompleto.obterTermoComIdentidadeRevelada(propostaId, authAmbiente);
+        assertNotNull(respAmbiente);
+        assertEquals("Org S.A.", respAmbiente.razaoSocial());
+
+        StartupResponseDTO startupDTO = new StartupResponseDTO(
+                startupId, "Startup", "startup@email.com", "Desc", "TI",
+                LocalDate.now(), Estagio.MVP_FUNCIONAL, List.of(), "Recife", "PE", false, null, LocalDateTime.now()
+        );
+        when(startService.buscarPorEmail("startup@email.com")).thenReturn(startupDTO);
+
+        Authentication authStartup = new UsernamePasswordAuthenticationToken(
+                "startup@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        TermoPilotoResponseDTO respStartup = serviceCompleto.obterTermoComIdentidadeRevelada(propostaId, authStartup);
+        assertNotNull(respStartup);
+
+        Authentication authOutro = new UsernamePasswordAuthenticationToken(
+                "estranho@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+        when(startService.buscarPorEmail("estranho@email.com")).thenReturn(null);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> serviceCompleto.obterTermoComIdentidadeRevelada(propostaId, authOutro));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("buscarAmbienteRevelado deve retornar nulo quando id for nulo ou provider ausente")
+    void buscarAmbienteReveladoTrataNulosEFalhas() {
+        assertNull(service.buscarAmbienteRevelado(null));
+        assertNull(service.buscarAmbienteRevelado(UUID.randomUUID()));
     }
 }

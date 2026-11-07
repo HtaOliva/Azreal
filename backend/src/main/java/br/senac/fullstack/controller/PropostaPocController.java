@@ -13,6 +13,7 @@ import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
+import br.senac.fullstack.service.TermoPilotoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,23 +43,34 @@ public class PropostaPocController {
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
     private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
+    private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
 
     @Autowired
     public PropostaPocController(
             PropostaPocService propostaPocService,
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
-            ObjectProvider<DesafioValidacaoService> desafioServiceProvider) {
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
         this.propostaPocService = propostaPocService;
         this.startupServiceProvider = startupServiceProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.desafioServiceProvider = desafioServiceProvider;
+        this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+    }
+
+    public PropostaPocController(
+            PropostaPocService propostaPocService,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider) {
+        this(propostaPocService, startupServiceProvider, ambienteServiceProvider, desafioServiceProvider, null);
     }
 
     public PropostaPocController(
             PropostaPocService propostaPocService,
             ObjectProvider<StartupService> startupServiceProvider) {
-        this(propostaPocService, startupServiceProvider, null, null);
+        this(propostaPocService, startupServiceProvider, null, null, null);
     }
 
     @PostMapping
@@ -144,10 +156,12 @@ public class PropostaPocController {
     public ResponseEntity<TermoPilotoResponseDTO> buscarTermoDaProposta(
             @PathVariable("id") UUID id,
             Authentication authentication) {
-        TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
-        if (isAcessoTermoNaoAutorizado(termo, authentication)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService != null) {
+            return ResponseEntity.ok(termoService.obterTermoComIdentidadeRevelada(id, authentication));
         }
+        TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
     }
@@ -221,44 +235,6 @@ public class PropostaPocController {
             return ambienteService.buscar(ambienteId);
         } catch (Exception ignored) {
             return null;
-        }
-    }
-
-    private boolean isAcessoTermoNaoAutorizado(TermoPiloto termo, Authentication authentication) {
-        if (authentication == null || isAdmin(authentication) || termo == null) {
-            return false;
-        }
-        if (isStartupDonaDoTermo(termo.getStartupId(), authentication)) {
-            return false;
-        }
-        return !isAmbienteDonoDoTermo(termo.getAmbienteValidacaoId(), authentication);
-    }
-
-    private boolean isStartupDonaDoTermo(UUID startupId, Authentication authentication) {
-        StartupService startupService = startupServiceProvider != null
-                ? startupServiceProvider.getIfAvailable() : null;
-        if (startupService == null || startupId == null) {
-            return false;
-        }
-        try {
-            StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
-            return startup != null && startupId.equals(startup.id());
-        } catch (Exception ignored) {
-            return false;
-        }
-    }
-
-    private boolean isAmbienteDonoDoTermo(UUID ambienteId, Authentication authentication) {
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService == null || ambienteId == null) {
-            return false;
-        }
-        try {
-            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
-            return ambiente != null && ambienteId.equals(ambiente.id());
-        } catch (Exception ignored) {
-            return false;
         }
     }
 

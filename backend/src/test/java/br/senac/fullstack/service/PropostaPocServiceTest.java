@@ -472,25 +472,23 @@ class PropostaPocServiceTest {
     }
 
     @Test
-    void recusarPropostaJaRecusadaLancaBadRequest() {
+    void recusarPropostaComStatusInvalidoLancaBadRequest() {
         UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
-        UUID propostaId = p.id();
+        PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID id1 = p1.id();
+        service.recusar(id1, "Primeira recusa");
 
-        service.recusar(propostaId, "Primeira recusa");
-        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Segunda recusa"));
-    }
+        ResponseStatusException ex1 = assertThrows(ResponseStatusException.class,
+                () -> service.recusar(id1, "Segunda recusa"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex1.getStatusCode());
 
-    @Test
-    void recusarPropostaCanceladaLancaBadRequest() {
-        UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
-        UUID propostaId = p.id();
+        PropostaPocResponseDTO p2 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID id2 = p2.id();
+        service.cancelar(id2);
 
-        service.cancelar(propostaId);
-        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Tentativa em cancelada"));
+        ResponseStatusException ex2 = assertThrows(ResponseStatusException.class,
+                () -> service.recusar(id2, "Tentativa em cancelada"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex2.getStatusCode());
     }
 
     @Test
@@ -549,10 +547,13 @@ class PropostaPocServiceTest {
 
         assertEquals(3, service.contarPendentesPorStartup(startupId));
 
-        service.aceitar(p1.id(), UUID.randomUUID());
+        UUID p1Id = p1.id();
+        UUID ambId = UUID.randomUUID();
+        service.aceitar(p1Id, ambId);
 
         assertEquals(2, service.contarPendentesPorStartup(startupId));
-        PropostaPocResponseDTO p4 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID d4 = UUID.randomUUID();
+        PropostaPocResponseDTO p4 = service.criar(criarRequestValido(startupId, d4));
         assertNotNull(p4);
         assertEquals(3, service.contarPendentesPorStartup(startupId));
     }

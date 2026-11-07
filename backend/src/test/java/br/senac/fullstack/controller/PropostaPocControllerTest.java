@@ -18,6 +18,7 @@ import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
+import br.senac.fullstack.service.TermoPilotoService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -95,6 +96,9 @@ class PropostaPocControllerTest {
 
     @MockBean
     private DesafioValidacaoService desafioValidacaoService;
+
+    @MockBean
+    private TermoPilotoService termoPilotoService;
 
     private AmbienteValidacaoResponseDTO criarAmbienteDTO(UUID id, String email) {
         return new AmbienteValidacaoResponseDTO(
@@ -1121,6 +1125,13 @@ class PropostaPocControllerTest {
 
         TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), propostaId, startupId, desafioId, ambienteId);
         when(propostaPocService.obterTermoPorPropostaId(propostaId)).thenReturn(termo);
+        TermoPilotoResponseDTO termoDTO = new TermoPilotoResponseDTO(
+                UUID.randomUUID(), propostaId, startupId, desafioId, ambienteId,
+                ESCOPO_TESTE, 30, RESP_STARTUP, RESP_AMBIENTE, TAXA_SUPERIOR_90,
+                LocalDateTime.now(), StatusProposta.EM_TESTE, "Hospital Esperanca",
+                "Hospital Esperanca PE", AMBIENTE_EMAIL, "81988887777", "Saude", PorteOrganizacao.GRANDE
+        );
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(), any())).thenReturn(termoDTO);
 
         mockMvc.perform(get(URI_TERMO, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -1133,14 +1144,8 @@ class PropostaPocControllerTest {
     @WithMockUser(username = OUTRA_EMAIL, roles = {"STARTUP"})
     void outraStartupNaoPodeConsultarTermoDaPropostaRetornaForbidden() throws Exception {
         UUID propostaId = UUID.randomUUID();
-        UUID startupId = UUID.randomUUID();
-        UUID outraId = UUID.randomUUID();
-
-        when(startupService.buscarPorEmail(OUTRA_EMAIL))
-                .thenReturn(criarStartupDTO(outraId, OUTRA_EMAIL));
-
-        TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), propostaId, startupId, UUID.randomUUID(), UUID.randomUUID());
-        when(propostaPocService.obterTermoPorPropostaId(propostaId)).thenReturn(termo);
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(), any()))
+                .thenThrow(new ResponseStatusException(HttpStatus.FORBIDDEN));
 
         mockMvc.perform(get(URI_TERMO, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -1154,13 +1159,13 @@ class PropostaPocControllerTest {
         UUID startupId = UUID.randomUUID();
         UUID ambienteId = UUID.randomUUID();
 
-        when(ambienteValidacaoService.buscarPorEmail(AMBIENTE_EMAIL))
-                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
-        when(ambienteValidacaoService.buscar(ambienteId))
-                .thenReturn(criarAmbienteDTO(ambienteId, AMBIENTE_EMAIL));
-
-        TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), propostaId, startupId, UUID.randomUUID(), ambienteId);
-        when(propostaPocService.obterTermoPorPropostaId(propostaId)).thenReturn(termo);
+        TermoPilotoResponseDTO termoDTO = new TermoPilotoResponseDTO(
+                UUID.randomUUID(), propostaId, startupId, UUID.randomUUID(), ambienteId,
+                ESCOPO_TESTE, 30, RESP_STARTUP, RESP_AMBIENTE, TAXA_SUPERIOR_90,
+                LocalDateTime.now(), StatusProposta.EM_TESTE, "Hospital Esperanca",
+                "Hospital Esperanca PE", AMBIENTE_EMAIL, "81988887777", "Saude", PorteOrganizacao.GRANDE
+        );
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(), any())).thenReturn(termoDTO);
 
         mockMvc.perform(get(URI_TERMO, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -1174,11 +1179,13 @@ class PropostaPocControllerTest {
         UUID propostaId = UUID.randomUUID();
         UUID ambienteId = UUID.randomUUID();
 
-        when(ambienteValidacaoService.buscar(ambienteId))
-                .thenReturn(criarAmbienteDTO(ambienteId, "outro@email.com"));
-
-        TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), propostaId, UUID.randomUUID(), UUID.randomUUID(), ambienteId);
-        when(propostaPocService.obterTermoPorPropostaId(propostaId)).thenReturn(termo);
+        TermoPilotoResponseDTO termoDTO = new TermoPilotoResponseDTO(
+                UUID.randomUUID(), propostaId, UUID.randomUUID(), UUID.randomUUID(), ambienteId,
+                ESCOPO_TESTE, 30, RESP_STARTUP, RESP_AMBIENTE, TAXA_SUPERIOR_90,
+                LocalDateTime.now(), StatusProposta.EM_TESTE, "Hospital Esperanca",
+                "Hospital Esperanca PE", "outro@email.com", "81988887777", "Saude", PorteOrganizacao.GRANDE
+        );
+        when(termoPilotoService.obterTermoComIdentidadeRevelada(any(), any())).thenReturn(termoDTO);
 
         mockMvc.perform(get(URI_TERMO, propostaId)
                         .contentType(MediaType.APPLICATION_JSON))
@@ -1204,7 +1211,7 @@ class PropostaPocControllerTest {
 
     @Test
     void controllerDiretoBuscarTermoComProvidersNulos() {
-        PropostaPocController controller = new PropostaPocController(propostaPocService, null, null, null);
+        PropostaPocController controller = new PropostaPocController(propostaPocService, null, null, null, null);
         UUID id = UUID.randomUUID();
         UUID ambienteId = UUID.randomUUID();
         TermoPiloto termo = criarTermoPiloto(UUID.randomUUID(), id, UUID.randomUUID(), UUID.randomUUID(), ambienteId);

@@ -1,6 +1,7 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
@@ -8,6 +9,7 @@ import br.senac.fullstack.repository.TermoPilotoRepository;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -23,11 +25,22 @@ public class TermoPilotoService {
     private static final String TERMO_NAO_ENCONTRADO = "Termo de piloto nao encontrado";
 
     private final ObjectProvider<TermoPilotoRepository> repositoryProvider;
+    private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
+    private final ObjectProvider<StartupService> startupServiceProvider;
     private final Map<UUID, TermoPiloto> memory = new ConcurrentHashMap<>();
 
     @Autowired
-    public TermoPilotoService(ObjectProvider<TermoPilotoRepository> repositoryProvider) {
+    public TermoPilotoService(
+            ObjectProvider<TermoPilotoRepository> repositoryProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<StartupService> startupServiceProvider) {
         this.repositoryProvider = repositoryProvider;
+        this.ambienteServiceProvider = ambienteServiceProvider;
+        this.startupServiceProvider = startupServiceProvider;
+    }
+
+    public TermoPilotoService(ObjectProvider<TermoPilotoRepository> repositoryProvider) {
+        this(repositoryProvider, null, null);
     }
 
     public TermoPiloto salvar(TermoPiloto termo) {
@@ -101,6 +114,74 @@ public class TermoPilotoService {
             }
         }
         return new ArrayList<>(memory.values());
+    }
+
+    public TermoPilotoResponseDTO obterTermoComIdentidadeRevelada(UUID propostaId, Authentication authentication) {
+        TermoPiloto termo = buscarPorPropostaId(propostaId);
+        if (isAcessoTermoNaoAutorizado(termo, authentication)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        }
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
+        return TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado);
+    }
+
+    public boolean isAcessoTermoNaoAutorizado(TermoPiloto termo, Authentication authentication) {
+        if (authentication == null || isAdmin(authentication) || termo == null) {
+            return false;
+        }
+        if (isStartupDonaDoTermo(termo.getStartupId(), authentication)) {
+            return false;
+        }
+        return !isAmbienteDonoDoTermo(termo.getAmbienteValidacaoId(), authentication);
+    }
+
+    private boolean isStartupDonaDoTermo(UUID startupId, Authentication authentication) {
+        StartupService startupService = startupServiceProvider != null
+                ? startupServiceProvider.getIfAvailable() : null;
+        if (startupService == null || startupId == null) {
+            return false;
+        }
+        try {
+            StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
+            return startup != null && startupId.equals(startup.id());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    private boolean isAmbienteDonoDoTermo(UUID ambienteId, Authentication authentication) {
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null || ambienteId == null) {
+            return false;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null && ambienteId.equals(ambiente.id());
+        } catch (Exception ignored) {
+            return false;
+        }
+    }
+
+    public AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
+        if (ambienteId == null) {
+            return null;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return null;
+        }
+        try {
+            return ambienteService.buscar(ambienteId);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private boolean isAdmin(Authentication authentication) {
+        return authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
     public TermoPilotoResponseDTO construirResponseDTO(
