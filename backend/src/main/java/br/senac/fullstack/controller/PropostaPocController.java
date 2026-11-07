@@ -6,10 +6,14 @@ import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.dto.TermoPilotoResponseDTO;
+import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.service.AmbienteValidacaoService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
+import br.senac.fullstack.service.TermoPilotoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,6 +28,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Set;
@@ -38,23 +43,34 @@ public class PropostaPocController {
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
     private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
+    private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
 
     @Autowired
     public PropostaPocController(
             PropostaPocService propostaPocService,
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
-            ObjectProvider<DesafioValidacaoService> desafioServiceProvider) {
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
         this.propostaPocService = propostaPocService;
         this.startupServiceProvider = startupServiceProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.desafioServiceProvider = desafioServiceProvider;
+        this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+    }
+
+    public PropostaPocController(
+            PropostaPocService propostaPocService,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider) {
+        this(propostaPocService, startupServiceProvider, ambienteServiceProvider, desafioServiceProvider, null);
     }
 
     public PropostaPocController(
             PropostaPocService propostaPocService,
             ObjectProvider<StartupService> startupServiceProvider) {
-        this(propostaPocService, startupServiceProvider, null, null);
+        this(propostaPocService, startupServiceProvider, null, null, null);
     }
 
     @PostMapping
@@ -108,13 +124,49 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody RecusaPropostaRequestDTO request,
             Authentication authentication) {
-        if (isAcessoRecusaNaoAutorizado(id, authentication)) {
+        if (isAcessoAmbienteDesafioNaoAutorizado(id, authentication)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
         return ResponseEntity.ok(propostaPocService.recusar(id, request.motivoRecusa()));
     }
 
-    private boolean isAcessoRecusaNaoAutorizado(UUID id, Authentication authentication) {
+    @PostMapping("/{id}/aceitar")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<TermoPilotoResponseDTO> aceitar(
+            @PathVariable("id") UUID id,
+            Authentication authentication) {
+        if (isAcessoAmbienteDesafioNaoAutorizado(id, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        UUID ambienteId = resolverAmbienteIdPorProposta(id, authentication);
+        TermoPiloto termo = propostaPocService.aceitar(id, ambienteId);
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(ambienteId);
+
+        TermoPilotoResponseDTO response = TermoPilotoResponseDTO.fromEntity(
+                termo,
+                StatusProposta.EM_TESTE,
+                ambienteRevelado
+        );
+        return ResponseEntity.ok(response);
+    }
+
+    @GetMapping("/{id}/termo")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<TermoPilotoResponseDTO> buscarTermoDaProposta(
+            @PathVariable("id") UUID id,
+            Authentication authentication) {
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService != null) {
+            return ResponseEntity.ok(termoService.obterTermoComIdentidadeRevelada(id, authentication));
+        }
+        TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
+    }
+
+    private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
         if (authentication == null || isAdmin(authentication)) {
             return false;
         }
@@ -132,8 +184,57 @@ public class PropostaPocController {
             PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id());
+        } catch (ResponseStatusException e) {
+            throw e;
         } catch (Exception ignored) {
             return false;
+        }
+    }
+
+    private UUID resolverAmbienteIdPorProposta(UUID propostaId, Authentication authentication) {
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (!isAdmin(authentication) && ambienteService != null) {
+            try {
+                AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+                if (ambiente != null) {
+                    return ambiente.id();
+                }
+            } catch (Exception ignored) {
+                // continua
+            }
+        }
+        return obterAmbienteIdDoDesafioDaProposta(propostaId);
+    }
+
+    private UUID obterAmbienteIdDoDesafioDaProposta(UUID propostaId) {
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+        if (desafioService == null) {
+            return null;
+        }
+        try {
+            PropostaPocResponseDTO proposta = propostaPocService.buscar(propostaId);
+            DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
+            return desafio != null ? desafio.ambienteValidacaoId() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
+        if (ambienteId == null) {
+            return null;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return null;
+        }
+        try {
+            return ambienteService.buscar(ambienteId);
+        } catch (Exception ignored) {
+            return null;
         }
     }
 

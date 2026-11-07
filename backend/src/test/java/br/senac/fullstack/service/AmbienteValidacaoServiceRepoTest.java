@@ -66,6 +66,11 @@ class AmbienteValidacaoServiceRepoTest {
         AmbienteValidacaoResponseDTO atualizado = svc.atualizar(id, update);
         assertEquals("Sec. Transformacao Digital", atualizado.nomeFantasia());
 
+        when(repo.findByEmailContato("inovacao@recife.pe.gov.br")).thenReturn(Optional.of(entidade));
+        when(repo.findByEmailContato("inexistente@recife.pe.gov.br")).thenReturn(Optional.empty());
+        assertEquals(id, svc.buscarPorEmail("inovacao@recife.pe.gov.br").id());
+        assertThrows(ResponseStatusException.class, () -> svc.buscarPorEmail("inexistente@recife.pe.gov.br"));
+
         assertThrows(ResponseStatusException.class, () -> svc.buscar(inexistente));
         assertThrows(ResponseStatusException.class, () -> svc.atualizar(inexistente, update));
     }

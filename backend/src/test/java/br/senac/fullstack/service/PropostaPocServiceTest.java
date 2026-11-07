@@ -3,8 +3,11 @@ package br.senac.fullstack.service;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.model.TermoPiloto;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -16,6 +19,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class PropostaPocServiceTest {
 
@@ -464,25 +471,23 @@ class PropostaPocServiceTest {
     }
 
     @Test
-    void recusarPropostaJaRecusadaLancaBadRequest() {
+    void recusarPropostaComStatusInvalidoLancaBadRequest() {
         UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
-        UUID propostaId = p.id();
+        PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID id1 = p1.id();
+        service.recusar(id1, "Primeira recusa");
 
-        service.recusar(propostaId, "Primeira recusa");
-        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Segunda recusa"));
-    }
+        ResponseStatusException ex1 = assertThrows(ResponseStatusException.class,
+                () -> service.recusar(id1, "Segunda recusa"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex1.getStatusCode());
 
-    @Test
-    void recusarPropostaCanceladaLancaBadRequest() {
-        UUID startupId = UUID.randomUUID();
-        UUID desafioId = UUID.randomUUID();
-        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
-        UUID propostaId = p.id();
+        PropostaPocResponseDTO p2 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID id2 = p2.id();
+        service.cancelar(id2);
 
-        service.cancelar(propostaId);
-        assertThrows(ResponseStatusException.class, () -> service.recusar(propostaId, "Tentativa em cancelada"));
+        ResponseStatusException ex2 = assertThrows(ResponseStatusException.class,
+                () -> service.recusar(id2, "Tentativa em cancelada"));
+        assertEquals(HttpStatus.BAD_REQUEST, ex2.getStatusCode());
     }
 
     @Test
@@ -502,5 +507,160 @@ class PropostaPocServiceTest {
         assertEquals(criada.metricaValidacao(), recusada.metricaValidacao());
         assertEquals(StatusProposta.RECUSADA, recusada.status());
         assertEquals("Inviabilidade tecnica", recusada.motivoRecusa());
+    }
+
+    @Test
+    @DisplayName("Deve aceitar proposta com sucesso, gerando TermoPiloto congelado e alterando status para EM_TESTE")
+    void aceitarPropostaComSucessoGeraTermoEAlteraStatusParaEmTeste() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+        PropostaPocResponseDTO criada = service.criar(criarRequestValido(startupId, desafioId));
+        UUID propostaId = criada.id();
+
+        TermoPiloto termo = service.aceitar(propostaId, ambienteId);
+
+        assertNotNull(termo);
+        assertEquals(propostaId, termo.getPropostaPocId());
+        assertEquals(startupId, termo.getStartupId());
+        assertEquals(desafioId, termo.getDesafioValidacaoId());
+        assertEquals(ambienteId, termo.getAmbienteValidacaoId());
+        assertEquals(criada.escopoTeste(), termo.getEscopoTeste());
+        assertEquals(criada.duracaoSugeridaDias(), termo.getDuracaoDias());
+        assertEquals(criada.responsabilidadesStartup(), termo.getResponsabilidadesStartup());
+        assertEquals(criada.responsabilidadesAmbiente(), termo.getResponsabilidadesAmbiente());
+        assertEquals(criada.metricaValidacao(), termo.getMetricaValidacao());
+        assertNotNull(termo.getDataCriacao());
+
+        PropostaPocResponseDTO atualizada = service.buscar(propostaId);
+        assertEquals(StatusProposta.EM_TESTE, atualizada.status());
+    }
+
+    @Test
+    @DisplayName("Deve desbloquear limite de 3 propostas pendentes da startup quando uma for aceita")
+    void aceitarPropostaDesbloqueiaLimiteDeTresPendentesDaStartup() {
+        UUID startupId = UUID.randomUUID();
+        PropostaPocResponseDTO p1 = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+
+        assertEquals(3, service.contarPendentesPorStartup(startupId));
+
+        UUID p1Id = p1.id();
+        UUID ambId = UUID.randomUUID();
+        service.aceitar(p1Id, ambId);
+
+        assertEquals(2, service.contarPendentesPorStartup(startupId));
+        UUID d4 = UUID.randomUUID();
+        PropostaPocResponseDTO p4 = service.criar(criarRequestValido(startupId, d4));
+        assertNotNull(p4);
+        assertEquals(3, service.contarPendentesPorStartup(startupId));
+    }
+
+    @Test
+    @DisplayName("Deve lancar BAD_REQUEST ao tentar aceitar proposta ja aceita")
+    void aceitarPropostaJaAceitaLancaBadRequest() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+        PropostaPocResponseDTO criada = service.criar(criarRequestValido(startupId, desafioId));
+        UUID propostaId = criada.id();
+
+        service.aceitar(propostaId, ambienteId);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(propostaId, ambienteId));
+        assertEquals(HttpStatus.BAD_REQUEST, ex.getStatusCode());
+        assertEquals("Apenas propostas pendentes podem ser aceitas", ex.getReason());
+    }
+
+    @Test
+    @DisplayName("Deve lancar BAD_REQUEST ao tentar aceitar proposta recusada ou cancelada")
+    void aceitarPropostaRecusadaOuCanceladaLancaBadRequest() {
+        UUID startupId = UUID.randomUUID();
+        PropostaPocResponseDTO pRecusada = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID recId = pRecusada.id();
+        service.recusar(recId, "Recusada");
+
+        UUID ambienteId = UUID.randomUUID();
+        ResponseStatusException exRec = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(recId, ambienteId));
+        assertEquals(HttpStatus.BAD_REQUEST, exRec.getStatusCode());
+
+        PropostaPocResponseDTO pCancelada = service.criar(criarRequestValido(startupId, UUID.randomUUID()));
+        UUID cancId = pCancelada.id();
+        service.cancelar(cancId);
+
+        ResponseStatusException exCanc = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(cancId, ambienteId));
+        assertEquals(HttpStatus.BAD_REQUEST, exCanc.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Deve lancar excecao ao aceitar com parametros nulos ou proposta inexistente")
+    void aceitarComParametrosNulosOuInexistenteLancaExcecao() {
+        UUID fakeId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        ResponseStatusException ex1 = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(null, ambienteId));
+        assertEquals(HttpStatus.BAD_REQUEST, ex1.getStatusCode());
+
+        ResponseStatusException ex2 = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(fakeId, null));
+        assertEquals(HttpStatus.BAD_REQUEST, ex2.getStatusCode());
+
+        ResponseStatusException ex3 = assertThrows(ResponseStatusException.class,
+                () -> service.aceitar(fakeId, ambienteId));
+        assertEquals(HttpStatus.NOT_FOUND, ex3.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Deve obter termo por proposta id com sucesso e lancar excecoes quando aplicavel")
+    void obterTermoPorPropostaId() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+        PropostaPocResponseDTO p = service.criar(criarRequestValido(startupId, desafioId));
+        UUID propostaId = p.id();
+
+        ResponseStatusException exAntes = assertThrows(ResponseStatusException.class,
+                () -> service.obterTermoPorPropostaId(propostaId));
+        assertEquals(HttpStatus.NOT_FOUND, exAntes.getStatusCode());
+
+        service.aceitar(propostaId, ambienteId);
+        TermoPiloto termo = service.obterTermoPorPropostaId(propostaId);
+        assertNotNull(termo);
+        assertEquals(propostaId, termo.getPropostaPocId());
+
+        ResponseStatusException exNulo = assertThrows(ResponseStatusException.class,
+                () -> service.obterTermoPorPropostaId(null));
+        assertEquals(HttpStatus.BAD_REQUEST, exNulo.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("Deve persistir e consultar termo via TermoPilotoService quando fornecido via provider")
+    @SuppressWarnings("unchecked")
+    void devePersistirEConsultarViaTermoPilotoService() {
+        TermoPilotoService termoServiceMock = mock(TermoPilotoService.class);
+        ObjectProvider<TermoPilotoService> providerMock = mock(ObjectProvider.class);
+        when(providerMock.getIfAvailable()).thenReturn(termoServiceMock);
+
+        PropostaPocService serviceComProvider = new PropostaPocService(providerMock);
+        PropostaPocResponseDTO p = serviceComProvider.criar(criarRequestValido(UUID.randomUUID(), UUID.randomUUID()));
+        UUID propostaId = p.id();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termoMock = new TermoPiloto();
+        termoMock.setPropostaPocId(propostaId);
+        when(termoServiceMock.buscarPorPropostaId(propostaId)).thenReturn(termoMock);
+
+        TermoPiloto resultadoAceite = serviceComProvider.aceitar(propostaId, ambienteId);
+        assertNotNull(resultadoAceite);
+        verify(termoServiceMock).salvar(any(TermoPiloto.class));
+
+        TermoPiloto resultadoBusca = serviceComProvider.obterTermoPorPropostaId(propostaId);
+        assertEquals(termoMock, resultadoBusca);
+        verify(termoServiceMock).buscarPorPropostaId(propostaId);
     }
 }
