@@ -4,7 +4,9 @@ import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.model.PropostaPoc;
 import br.senac.fullstack.model.StatusProposta;
+import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.util.CalendarioPernambucoUtil;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -26,10 +28,16 @@ public class PropostaPocService {
     private static final String PROPOSTA_NAO_ENCONTRADA = "Proposta de POC nao encontrada";
 
     private final Map<UUID, PropostaPoc> memory = new ConcurrentHashMap<>();
+    private final Map<UUID, TermoPiloto> termosMemory = new ConcurrentHashMap<>();
+    private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
 
     @Autowired
+    public PropostaPocService(ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+        this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+    }
+
     public PropostaPocService() {
-        // Construtor gerenciado pelo Spring Framework
+        this(null);
     }
 
     public PropostaPocResponseDTO criar(PropostaPocRequestDTO request) {
@@ -174,5 +182,48 @@ public class PropostaPocService {
         proposta.setStatus(StatusProposta.RECUSADA);
         proposta.setMotivoRecusa(motivoRecusa.trim());
         return PropostaPocResponseDTO.fromEntity(proposta);
+    }
+
+    public TermoPiloto aceitar(UUID id, UUID ambienteValidacaoId) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_PROPOSTA_OBRIGATORIO);
+        }
+        if (ambienteValidacaoId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID do ambiente de validacao e obrigatorio");
+        }
+
+        PropostaPoc proposta = obterPorId(id);
+        if (proposta.getStatus() != StatusProposta.PENDENTE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Apenas propostas pendentes podem ser aceitas");
+        }
+
+        proposta.setStatus(StatusProposta.EM_TESTE);
+        TermoPiloto termo = TermoPiloto.congelar(proposta, ambienteValidacaoId);
+
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService != null) {
+            termoService.salvar(termo);
+        } else {
+            termosMemory.put(proposta.getId(), termo);
+        }
+        return termo;
+    }
+
+    public TermoPiloto obterTermoPorPropostaId(UUID propostaId) {
+        if (propostaId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_PROPOSTA_OBRIGATORIO);
+        }
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService != null) {
+            return termoService.buscarPorPropostaId(propostaId);
+        }
+        TermoPiloto termo = termosMemory.get(propostaId);
+        if (termo == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Termo de piloto nao encontrado");
+        }
+        return termo;
     }
 }

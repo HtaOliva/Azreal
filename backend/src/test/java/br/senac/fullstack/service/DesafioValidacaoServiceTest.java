@@ -321,6 +321,10 @@ class DesafioValidacaoServiceTest {
         DesafioValidacaoResponseDTO buscado = s.buscar(desafioId);
         assertEquals("Desafio Banco", buscado.titulo());
 
+        UUID inexistente = UUID.randomUUID();
+        when(desafioRepo.findById(inexistente)).thenReturn(Optional.empty());
+        assertThrows(ResponseStatusException.class, () -> s.buscar(inexistente));
+
         DesafioValidacaoUpdateDTO update = new DesafioValidacaoUpdateDTO(
                 "Desafio Banco Atualizado", null, null, null, null, null, null);
         s.atualizar(desafioId, update);
