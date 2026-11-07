@@ -226,4 +226,14 @@ public class PropostaPocService {
         }
         return termo;
     }
+
+    public void atualizarStatus(UUID propostaId, StatusProposta status) {
+        if (propostaId == null || status == null) {
+            return;
+        }
+        PropostaPoc proposta = memory.get(propostaId);
+        if (proposta != null) {
+            proposta.setStatus(status);
+        }
+    }
 }
