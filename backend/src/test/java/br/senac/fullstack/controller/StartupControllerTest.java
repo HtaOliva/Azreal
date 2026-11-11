@@ -1,17 +1,23 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AceiteTermoRequestDTO;
+import br.senac.fullstack.dto.RegistroOficialPocResponseDTO;
 import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
+import br.senac.fullstack.model.AvaliacaoMetrica;
 import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
+import br.senac.fullstack.model.ModoPrivacidadePoc;
+import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.repository.StartupRepository;
 import br.senac.fullstack.service.AceiteTermoService;
 import br.senac.fullstack.service.FixedObjectProvider;
 import br.senac.fullstack.service.NullObjectProvider;
+import br.senac.fullstack.service.RegistroOficialPocService;
 import br.senac.fullstack.service.StartupService;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -26,6 +32,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -33,10 +40,13 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(StartupController.class)
@@ -47,6 +57,9 @@ class StartupControllerTest {
 
     @MockBean
     private StartupService startupService;
+
+    @MockBean
+    private RegistroOficialPocService registroOficialPocService;
 
     @Test
     @WithMockUser(roles = "AMBIENTE_VALIDACAO")
@@ -164,5 +177,57 @@ class StartupControllerTest {
 
         ResponseEntity<StartupResponseDTO> resp = controller.atualizar(id, update, auth);
         assertEquals(HttpStatus.FORBIDDEN, resp.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("GET /startups/{id}/pocs retorna lista de registros oficiais de POC da startup")
+    void deveListarPocsPortfolioStartup() throws Exception {
+        UUID startupId = UUID.randomUUID();
+        RegistroOficialPocResponseDTO dto = new RegistroOficialPocResponseDTO(
+                UUID.randomUUID(),
+                "POC-2026-PORT0001",
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                startupId,
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "Escopo testado",
+                30,
+                AvaliacaoMetrica.ATENDEU_TOTALMENTE,
+                "Parecer positivo",
+                ModoPrivacidadePoc.EXIBICAO_NOMINAL,
+                "Direcionamento",
+                "Metrica KPI",
+                "Resumo",
+                "Parceiro Real S.A.",
+                "Tecnologia",
+                PorteOrganizacao.MEDIO,
+                LocalDateTime.now(),
+                false
+        );
+
+        when(registroOficialPocService.listarPorStartup(startupId)).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/startups/{id}/pocs", startupId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigoVerificador").value("POC-2026-PORT0001"))
+                .andExpect(jsonPath("$[0].escopoTestado").value("Escopo testado"))
+                .andExpect(jsonPath("$[0].nomeOrganizacao").value("Parceiro Real S.A."));
+
+        mockMvc.perform(get("/startups/{id}/registros-poc", startupId)
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].codigoVerificador").value("POC-2026-PORT0001"));
+    }
+
+    @Test
+    @DisplayName("Invocacao direta de listarPocsPortfolio trata provider ausente")
+    void invocacaoDiretaListarPocsTrataProviderNulo() {
+        StartupController controllerSemProvider = new StartupController(startupService);
+        ResponseEntity<List<RegistroOficialPocResponseDTO>> resp =
+                controllerSemProvider.listarPocsPortfolio(UUID.randomUUID());
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertTrue(resp.getBody().isEmpty());
     }
 }

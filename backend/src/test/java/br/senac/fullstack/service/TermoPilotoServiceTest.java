@@ -471,6 +471,63 @@ class TermoPilotoServiceTest {
     }
 
     @Test
+    @DisplayName("RF19/RF20 - confirmarExecucao emite RegistroOficialPoc automaticamente quando provider disponivel")
+    @SuppressWarnings("unchecked")
+    void deveEmitirRegistroOficialAutomaticamenteAoConfirmarExecucao() {
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        PropostaPocService propService = mock(PropostaPocService.class);
+        RegistroOficialPocService regService = mock(RegistroOficialPocService.class);
+
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        ObjectProvider<PropostaPocService> propProvider = mock(ObjectProvider.class);
+        ObjectProvider<RegistroOficialPocService> regProvider = mock(ObjectProvider.class);
+
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+        when(propProvider.getIfAvailable()).thenReturn(propService);
+        when(regProvider.getIfAvailable()).thenReturn(regService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, ambProvider, null, propProvider, regProvider);
+
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setPropostaPocId(propostaId);
+        termo.setAmbienteValidacaoId(ambienteId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(repository.save(any(TermoPiloto.class))).thenAnswer(i -> i.getArgument(0));
+
+        AmbienteValidacaoResponseDTO ambDTO = new AmbienteValidacaoResponseDTO(
+                ambienteId, "Clinica Sul S.A.", "Clinica Sul", "Saude", PorteOrganizacao.MEDIO,
+                "2611606", "Recife", "diretoria@clinicasul.com", "81999991111", null, true, LocalDateTime.now()
+        );
+        when(ambService.buscarPorEmail("diretoria@clinicasul.com")).thenReturn(ambDTO);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "diretoria@clinicasul.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ConfirmacaoExecucaoRequestDTO req = new ConfirmacaoExecucaoRequestDTO(
+                true,
+                AvaliacaoMetrica.ATENDEU_TOTALMENTE,
+                "Atingiu o tempo de resposta medio abaixo de 200ms",
+                ModoPrivacidadePoc.EXIBICAO_NOMINAL,
+                "Interesse em contratacao imediata",
+                null
+        );
+
+        TermoPiloto confirmado = serv.confirmarExecucao(termoId, req, auth);
+
+        assertNotNull(confirmado);
+        assertEquals(StatusProposta.POC_CONCLUIDA, confirmado.getStatus());
+        assertTrue(confirmado.getCertificadoEmitido());
+        verify(regService).emitir(any(TermoPiloto.class));
+    }
+
+    @Test
     @DisplayName("RF19 - confirmarExecucao quando teste nao aconteceu (pilotoExecutado=false) -> POC_NAO_CONFIRMADA")
     @SuppressWarnings("unchecked")
     void deveConfirmarExecucaoQuandoPilotoNaoAconteceu() {
