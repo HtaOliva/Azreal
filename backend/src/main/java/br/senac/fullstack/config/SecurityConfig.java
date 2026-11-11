@@ -50,6 +50,8 @@ public class SecurityConfig {
                                 || request.getRequestURI().startsWith("/desafios")
                                 || request.getRequestURI().startsWith("/matchmaking")
                                 || request.getRequestURI().startsWith("/propostas-poc")
+                                || request.getRequestURI().startsWith("/pocs")
+                                || request.getRequestURI().startsWith("/registros-poc")
                                 || request.getRequestURI().startsWith("/regras")).permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
