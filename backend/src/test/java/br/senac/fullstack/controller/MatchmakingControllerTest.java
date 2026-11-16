@@ -11,7 +11,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -121,5 +123,12 @@ class MatchmakingControllerTest {
     void usuarioSemAutenticacaoRecebe401() throws Exception {
         mockMvc.perform(get("/matchmaking/desafios-compativeis"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    void controllerDiretoComAuthNulaRetorna401() {
+        MatchmakingController controller = new MatchmakingController(matchmakingService);
+        ResponseEntity<List<DesafioRecomendadoDTO>> resp = controller.obterDesafiosCompativeis(null, null);
+        org.junit.jupiter.api.Assertions.assertEquals(HttpStatus.UNAUTHORIZED, resp.getStatusCode());
     }
 }

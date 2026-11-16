@@ -6,16 +6,22 @@ import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
 import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
+import br.senac.fullstack.model.Startup;
+import br.senac.fullstack.repository.StartupRepository;
 import org.junit.jupiter.api.Test;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class StartupServiceTest {
 
@@ -76,5 +82,41 @@ class StartupServiceTest {
         StartupService s = service();
         StartupUpdateDTO update = new StartupUpdateDTO(null, null, null, null, null, null, null, null, null);
         assertThrows(Exception.class, () -> s.atualizar(UUID.randomUUID(), update));
+    }
+
+    @Test
+    void buscarPorEmailNuloLanca404() {
+        StartupService s = service();
+        assertThrows(ResponseStatusException.class, () -> s.buscarPorEmail(null));
+    }
+
+    @Test
+    void buscarPorEmailEmMemoriaExistenteEInexistente() {
+        StartupService s = service();
+        UUID aid = aceiteId();
+        StartupRequestDTO req = new StartupRequestDTO(
+                "Health PE", "health@pe.com", "senha123", "desc", "Saude",
+                LocalDate.now(), Estagio.MVP_FUNCIONAL, List.of("Lucas"),
+                "Recife", "PE", false, null, aid, null, null, null, null, null);
+        StartupResponseDTO criado = s.criar(req);
+
+        StartupResponseDTO encontrado = s.buscarPorEmail("health@pe.com");
+        assertEquals(criado.id(), encontrado.id());
+        assertThrows(ResponseStatusException.class, () -> s.buscarPorEmail("inexistente@pe.com"));
+    }
+
+    @Test
+    void buscarPorEmailComRepositorio() {
+        StartupRepository repo = mock(StartupRepository.class);
+        Startup entidade = new Startup();
+        entidade.setNome("BioTech");
+        entidade.setEmail("bio@tech.com");
+        when(repo.findByEmail("bio@tech.com")).thenReturn(Optional.of(entidade));
+        when(repo.findByEmail("inexistente@tech.com")).thenReturn(Optional.empty());
+
+        StartupService s = new StartupService(new FixedObjectProvider<>(repo), aceiteService);
+        StartupResponseDTO encontrado = s.buscarPorEmail("bio@tech.com");
+        assertEquals("BioTech", encontrado.nome());
+        assertThrows(ResponseStatusException.class, () -> s.buscarPorEmail("inexistente@tech.com"));
     }
 }

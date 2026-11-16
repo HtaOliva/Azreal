@@ -289,4 +289,23 @@ class DesafioValidacaoControllerTest {
         assertEquals(HttpStatus.FORBIDDEN,
                 ctx.controller().inativar(ctx.desafio().id(), null).getStatusCode());
     }
+
+    @Test
+    void atualizarEDesativarComAmbienteProprietarioEAdmin() {
+        Contexto ctx = criarContexto();
+        Authentication authAdmin = new UsernamePasswordAuthenticationToken(
+                "admin@senac.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        Authentication authAmbienteProprietario = new UsernamePasswordAuthenticationToken(
+                "contato@ambiente.com.br", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ResponseEntity<DesafioValidacaoResponseDTO> buscaResp =
+                ctx.controller().buscar(ctx.desafio().id(), authAdmin);
+        assertEquals(HttpStatus.OK, buscaResp.getStatusCode());
+
+        DesafioValidacaoUpdateDTO update = new DesafioValidacaoUpdateDTO("Novo Titulo", null, null, null, null, null, null);
+        ResponseEntity<DesafioValidacaoResponseDTO> atualizadoResp =
+                ctx.controller().atualizar(ctx.desafio().id(), update, authAmbienteProprietario);
+        assertEquals(HttpStatus.OK, atualizadoResp.getStatusCode());
+        assertEquals("Novo Titulo", atualizadoResp.getBody().titulo());
+    }
 }

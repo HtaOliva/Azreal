@@ -93,4 +93,22 @@ class UsuarioServiceRepoTest {
         UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
         assertDoesNotThrow(() -> s.deletar(1L));
     }
+
+    @Test
+    void atualizarUsuarioInexistenteLanca404() {
+        UsuarioRepository repo = mock(UsuarioRepository.class);
+        when(repo.findById(99L)).thenReturn(Optional.empty());
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> s.atualizar(99L, new br.senac.fullstack.dto.UsuarioUpdateDTO("n", "e@e.com", "s")));
+    }
+
+    @Test
+    void definirAtivoUsuarioInexistenteLanca404() {
+        UsuarioRepository repo = mock(UsuarioRepository.class);
+        when(repo.findById(99L)).thenReturn(Optional.empty());
+        UsuarioService s = new UsuarioService(new FixedObjectProvider<>(repo), encoder());
+        assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> s.definirAtivo(99L, true));
+    }
 }

@@ -27,6 +27,8 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -99,5 +101,17 @@ class AmbienteValidacaoControllerTest {
 
         assertEquals(HttpStatus.FORBIDDEN,
                 ctx.controller().atualizar(ctx.ambiente().id(), update, authOutro).getStatusCode());
+    }
+
+    @Test
+    void atualizarAmbienteRetornandoNuloRetorna403() {
+        AmbienteValidacaoService svc = mock(AmbienteValidacaoService.class);
+        AmbienteValidacaoController controller = new AmbienteValidacaoController(svc);
+        UUID id = UUID.randomUUID();
+        when(svc.buscar(id)).thenReturn(null);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "dono@empresa.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+        ResponseEntity<AmbienteValidacaoResponseDTO> resp = controller.atualizar(id, null, auth);
+        assertEquals(HttpStatus.FORBIDDEN, resp.getStatusCode());
     }
 }
