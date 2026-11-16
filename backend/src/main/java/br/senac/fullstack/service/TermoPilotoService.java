@@ -31,6 +31,7 @@ public class TermoPilotoService {
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<PropostaPocService> propostaServiceProvider;
     private final ObjectProvider<RegistroOficialPocService> registroServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
     private final Map<UUID, TermoPiloto> memory = new ConcurrentHashMap<>();
 
     @Autowired
@@ -39,12 +40,24 @@ public class TermoPilotoService {
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<PropostaPocService> propostaServiceProvider,
-            ObjectProvider<RegistroOficialPocService> registroServiceProvider) {
+            ObjectProvider<RegistroOficialPocService> registroServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.repositoryProvider = repositoryProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.startupServiceProvider = startupServiceProvider;
         this.propostaServiceProvider = propostaServiceProvider;
         this.registroServiceProvider = registroServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public TermoPilotoService(
+            ObjectProvider<TermoPilotoRepository> repositoryProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<PropostaPocService> propostaServiceProvider,
+            ObjectProvider<RegistroOficialPocService> registroServiceProvider) {
+        this(repositoryProvider, ambienteServiceProvider, startupServiceProvider, propostaServiceProvider,
+                registroServiceProvider, null);
     }
 
     public TermoPilotoService(
@@ -185,7 +198,11 @@ public class TermoPilotoService {
         }
 
         termo.registrarEntrega(request.resumoEntrega(), request.linksEvidencias(), request.observacoes());
-        return salvar(termo);
+        TermoPiloto salvo = salvar(termo);
+        gravarAuditoria(salvo.getPropostaPocId(), salvo.getId(), StatusProposta.EM_TESTE, StatusProposta.EM_TESTE,
+                authentication != null ? authentication.getName() : "STARTUP",
+                "REGISTRO_ENTREGA", "Startup registrou entrega do piloto");
+        return salvo;
     }
 
     public TermoPiloto confirmarExecucao(
@@ -223,6 +240,7 @@ public class TermoPilotoService {
             }
         }
 
+        StatusProposta statusAnterior = termo.getStatus();
         termo.confirmarExecucao(
                 request.pilotoExecutado(),
                 request.avaliacaoMetrica(),
@@ -240,6 +258,13 @@ public class TermoPilotoService {
             propostaService.atualizarStatus(termo.getPropostaPocId(), termo.getStatus());
         }
 
+        gravarAuditoria(salvo.getPropostaPocId(), salvo.getId(), statusAnterior, salvo.getStatus(),
+                authentication != null ? authentication.getName() : "AMBIENTE_VALIDACAO",
+                "CONFIRMACAO_EXECUCAO",
+                Boolean.TRUE.equals(salvo.getPilotoExecutado())
+                        ? "Execucao confirmada com sucesso: " + salvo.getAvaliacaoMetrica()
+                        : "Piloto nao confirmado: " + salvo.getJustificativaNaoExecucao());
+
         if (salvo.getStatus() == StatusProposta.POC_CONCLUIDA) {
             RegistroOficialPocService registroService = registroServiceProvider != null
                     ? registroServiceProvider.getIfAvailable() : null;
@@ -255,6 +280,25 @@ public class TermoPilotoService {
         }
 
         return salvo;
+    }
+
+    private void gravarAuditoria(
+            UUID propostaId,
+            UUID termoId,
+            StatusProposta statusAnterior,
+            StatusProposta statusNovo,
+            String usuario,
+            String acao,
+            String detalhes) {
+        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditoriaService != null) {
+            try {
+                auditoriaService.registrar(propostaId, termoId, statusAnterior, statusNovo, usuario, acao, detalhes);
+            } catch (Exception ignored) {
+                // segue sem erro se falhar auditoria
+            }
+        }
     }
 
     public TermoPilotoResponseDTO obterTermoComIdentidadeRevelada(UUID propostaId, Authentication authentication) {

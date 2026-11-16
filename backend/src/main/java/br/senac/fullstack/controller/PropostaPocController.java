@@ -1,6 +1,8 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchRequestDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchResponseDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
@@ -8,11 +10,14 @@ import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
+import br.senac.fullstack.dto.RegistroAuditoriaResponseDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.service.AmbienteValidacaoService;
+import br.senac.fullstack.service.AuditoriaService;
+import br.senac.fullstack.service.AvaliacaoMatchService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
@@ -47,6 +52,8 @@ public class PropostaPocController {
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
     private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
+    private final ObjectProvider<AvaliacaoMatchService> avaliacaoMatchServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
 
     @Autowired
     public PropostaPocController(
@@ -54,12 +61,26 @@ public class PropostaPocController {
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
             ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
-            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider,
+            ObjectProvider<AvaliacaoMatchService> avaliacaoMatchServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.propostaPocService = propostaPocService;
         this.startupServiceProvider = startupServiceProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.desafioServiceProvider = desafioServiceProvider;
         this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+        this.avaliacaoMatchServiceProvider = avaliacaoMatchServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public PropostaPocController(
+            PropostaPocService propostaPocService,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+        this(propostaPocService, startupServiceProvider, ambienteServiceProvider, desafioServiceProvider,
+                termoPilotoServiceProvider, null, null);
     }
 
     public PropostaPocController(
@@ -391,6 +412,47 @@ public class PropostaPocController {
     @GetMapping("/{id}")
     public ResponseEntity<PropostaPocResponseDTO> buscar(@PathVariable("id") UUID id) {
         return ResponseEntity.ok(propostaPocService.buscar(id));
+    }
+
+    @PostMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match"})
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<AvaliacaoMatchResponseDTO> avaliarMatch(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AvaliacaoMatchRequestDTO request,
+            Authentication authentication) {
+        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
+        if (matchService == null) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        }
+        AvaliacaoMatchResponseDTO response = matchService.avaliar(id, request, authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    @GetMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match", "/{id}/avaliacoes-match"})
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<AvaliacaoMatchResponseDTO>> listarAvaliacoesMatch(@PathVariable("id") UUID id) {
+        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
+        if (matchService == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(matchService.listarPorPropostaOuTermo(id));
+    }
+
+    @GetMapping("/{id}/auditoria")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<RegistroAuditoriaResponseDTO>> consultarAuditoria(@PathVariable("id") UUID id) {
+        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditoriaService == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        List<RegistroAuditoriaResponseDTO> audit = auditoriaService.listarPorProposta(id);
+        if (audit.isEmpty()) {
+            audit = auditoriaService.listarPorTermo(id);
+        }
+        return ResponseEntity.ok(audit);
     }
 
     private boolean isAdmin(Authentication authentication) {

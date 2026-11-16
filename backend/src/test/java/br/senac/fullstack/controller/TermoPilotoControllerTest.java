@@ -1,14 +1,21 @@
 package br.senac.fullstack.controller;
 
+import br.senac.fullstack.dto.AvaliacaoMatchRequestDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchResponseDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
+import br.senac.fullstack.dto.RegistroAuditoriaResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.AvaliacaoMetrica;
 import br.senac.fullstack.model.ModoPrivacidadePoc;
+import br.senac.fullstack.model.OrigemMatch;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
+import br.senac.fullstack.model.TipoAvaliadorMatch;
+import br.senac.fullstack.service.AuditoriaService;
+import br.senac.fullstack.service.AvaliacaoMatchService;
 import br.senac.fullstack.service.TermoPilotoService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -56,6 +63,12 @@ class TermoPilotoControllerTest {
 
     @MockBean
     private TermoPilotoService termoPilotoService;
+
+    @MockBean
+    private AvaliacaoMatchService avaliacaoMatchService;
+
+    @MockBean
+    private AuditoriaService auditoriaService;
 
     private TermoPilotoResponseDTO criarDTO(UUID propostaId, UUID startupId, UUID ambienteId) {
         return new TermoPilotoResponseDTO(
@@ -383,5 +396,100 @@ class TermoPilotoControllerTest {
 
         ResponseEntity<ConfirmacaoExecucaoResponseDTO> confResp = controller.confirmarExecucao(termoId, confReq, auth);
         assertEquals(HttpStatus.OK, confResp.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("POST /termos-piloto/{id}/avaliar-match registra avaliacao de match com sucesso")
+    @WithMockUser(username = STARTUP_EMAIL, roles = "STARTUP")
+    void avaliarMatchComSucesso() throws Exception {
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        AvaliacaoMatchResponseDTO responseDTO = new AvaliacaoMatchResponseDTO(
+                UUID.randomUUID(),
+                propostaId,
+                termoId,
+                TipoAvaliadorMatch.STARTUP,
+                STARTUP_EMAIL,
+                true,
+                5,
+                "Encaixe muito bom",
+                OrigemMatch.IA,
+                LocalDateTime.now()
+        );
+
+        when(avaliacaoMatchService.avaliar(eq(termoId), any(AvaliacaoMatchRequestDTO.class), any(Authentication.class)))
+                .thenReturn(responseDTO);
+
+        String jsonBody = """
+                {
+                    "encaixeFezSentido": true,
+                    "notaQualidade": 5,
+                    "comentario": "Encaixe muito bom",
+                    "origemMatch": "IA"
+                }
+                """;
+
+        mockMvc.perform(post("/termos-piloto/{id}/avaliar-match", termoId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(jsonBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.encaixeFezSentido").value(true))
+                .andExpect(jsonPath("$.notaQualidade").value(5))
+                .andExpect(jsonPath("$.origemMatch").value("IA"))
+                .andExpect(jsonPath("$.comentario").value("Encaixe muito bom"));
+    }
+
+    @Test
+    @DisplayName("GET /termos-piloto/{id}/avaliar-match retorna lista de avaliacoes")
+    @WithMockUser(username = ADMIN_EMAIL, roles = "ADMIN")
+    void listarAvaliacoesMatchEndpoint() throws Exception {
+        UUID termoId = UUID.randomUUID();
+        AvaliacaoMatchResponseDTO responseDTO = new AvaliacaoMatchResponseDTO(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                termoId,
+                TipoAvaliadorMatch.STARTUP,
+                STARTUP_EMAIL,
+                true,
+                5,
+                "Excelente",
+                OrigemMatch.IA,
+                LocalDateTime.now()
+        );
+
+        when(avaliacaoMatchService.listarPorPropostaOuTermo(termoId)).thenReturn(List.of(responseDTO));
+
+        mockMvc.perform(get("/termos-piloto/{id}/avaliar-match", termoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].notaQualidade").value(5));
+    }
+
+    @Test
+    @DisplayName("GET /termos-piloto/{id}/auditoria retorna trilha de auditoria")
+    @WithMockUser(username = ADMIN_EMAIL, roles = "ADMIN")
+    void consultarAuditoriaEndpoint() throws Exception {
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        RegistroAuditoriaResponseDTO auditDTO = new RegistroAuditoriaResponseDTO(
+                UUID.randomUUID(),
+                propostaId,
+                termoId,
+                StatusProposta.EM_TESTE,
+                StatusProposta.POC_CONCLUIDA,
+                AMBIENTE_EMAIL,
+                "CONFIRMACAO_EXECUCAO",
+                "Execucao confirmada",
+                LocalDateTime.now()
+        );
+
+        when(auditoriaService.listarPorTermo(termoId)).thenReturn(List.of(auditDTO));
+
+        mockMvc.perform(get("/termos-piloto/{id}/auditoria", termoId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].acao").value("CONFIRMACAO_EXECUCAO"))
+                .andExpect(jsonPath("$[0].statusNovo").value("POC_CONCLUIDA"));
     }
 }

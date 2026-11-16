@@ -1,6 +1,8 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchRequestDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchResponseDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
@@ -8,18 +10,23 @@ import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
+import br.senac.fullstack.dto.RegistroAuditoriaResponseDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
+import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.AvaliacaoMetrica;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModoPrivacidadePoc;
+import br.senac.fullstack.model.OrigemMatch;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
-import br.senac.fullstack.dto.TermoPilotoResponseDTO;
+import br.senac.fullstack.model.TipoAvaliadorMatch;
 import br.senac.fullstack.service.AmbienteValidacaoService;
+import br.senac.fullstack.service.AuditoriaService;
+import br.senac.fullstack.service.AvaliacaoMatchService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
@@ -106,6 +113,12 @@ class PropostaPocControllerTest {
 
     @MockBean
     private TermoPilotoService termoPilotoService;
+
+    @MockBean
+    private AvaliacaoMatchService avaliacaoMatchService;
+
+    @MockBean
+    private AuditoriaService auditoriaService;
 
     private AmbienteValidacaoResponseDTO criarAmbienteDTO(UUID id, String email) {
         return new AmbienteValidacaoResponseDTO(
@@ -1277,5 +1290,67 @@ class PropostaPocControllerTest {
 
         ConfirmacaoExecucaoRequestDTO confReq = new ConfirmacaoExecucaoRequestDTO(false, null, null, null, null, null);
         assertThrows(ResponseStatusException.class, () -> controller.confirmarResultado(id, confReq, auth));
+    }
+
+    @Test
+    @WithMockUser(username = STARTUP_EMAIL, roles = "STARTUP")
+    void avaliarMatchEndpointPropostaPoc() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        AvaliacaoMatchResponseDTO responseDTO = new AvaliacaoMatchResponseDTO(
+                UUID.randomUUID(),
+                propostaId,
+                null,
+                TipoAvaliadorMatch.STARTUP,
+                STARTUP_EMAIL,
+                true,
+                5,
+                "Encaixe perfeito na proposta",
+                OrigemMatch.IA,
+                LocalDateTime.now()
+        );
+
+        when(avaliacaoMatchService.avaliar(eq(propostaId), any(AvaliacaoMatchRequestDTO.class), any(Authentication.class)))
+                .thenReturn(responseDTO);
+
+        String json = """
+                {
+                    "encaixeFezSentido": true,
+                    "notaQualidade": 5,
+                    "comentario": "Encaixe perfeito na proposta",
+                    "origemMatch": "IA"
+                }
+                """;
+
+        mockMvc.perform(post("/propostas-poc/{id}/avaliacao-match", propostaId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(json))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.encaixeFezSentido").value(true))
+                .andExpect(jsonPath("$.notaQualidade").value(5))
+                .andExpect(jsonPath("$.origemMatch").value("IA"));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_EMAIL, roles = "ADMIN")
+    void consultarAuditoriaEndpointPropostaPoc() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        RegistroAuditoriaResponseDTO auditDTO = new RegistroAuditoriaResponseDTO(
+                UUID.randomUUID(),
+                propostaId,
+                null,
+                StatusProposta.PENDENTE,
+                StatusProposta.EM_TESTE,
+                AMBIENTE_EMAIL,
+                "ACEITE_TERMO_PILOTO",
+                "Termo aceito",
+                LocalDateTime.now()
+        );
+
+        when(auditoriaService.listarPorProposta(propostaId)).thenReturn(List.of(auditDTO));
+
+        mockMvc.perform(get("/propostas-poc/{id}/auditoria", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].acao").value("ACEITE_TERMO_PILOTO"));
     }
 }

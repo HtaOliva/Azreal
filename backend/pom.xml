@@ -7,7 +7,7 @@
     <parent>
         <groupId>br.senac.fullstack</groupId>
         <artifactId>fullstack-starter</artifactId>
-        <version>0.1.0-alpha</version>
+        <version>1.0.0</version>
     </parent>
 
     <properties>

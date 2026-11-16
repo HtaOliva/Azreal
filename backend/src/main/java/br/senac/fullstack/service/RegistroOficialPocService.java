@@ -28,18 +28,27 @@ public class RegistroOficialPocService {
 
     private final ObjectProvider<RegistroOficialPocRepository> repositoryProvider;
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
     private final Map<UUID, RegistroOficialPoc> memory = new ConcurrentHashMap<>();
 
     @Autowired
     public RegistroOficialPocService(
             ObjectProvider<RegistroOficialPocRepository> repositoryProvider,
-            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider) {
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.repositoryProvider = repositoryProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public RegistroOficialPocService(
+            ObjectProvider<RegistroOficialPocRepository> repositoryProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider) {
+        this(repositoryProvider, ambienteServiceProvider, null);
     }
 
     public RegistroOficialPocService(ObjectProvider<RegistroOficialPocRepository> repositoryProvider) {
-        this(repositoryProvider, null);
+        this(repositoryProvider, null, null);
     }
 
     public RegistroOficialPocResponseDTO emitir(TermoPiloto termo) {
@@ -79,6 +88,24 @@ public class RegistroOficialPocService {
         RegistroOficialPoc registro = RegistroOficialPoc.emitir(termo, nomeOrg, setorOrg, porteOrg);
         salvar(registro);
         termo.setCertificadoEmitido(true);
+
+        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditoriaService != null) {
+            try {
+                auditoriaService.registrar(
+                        termo.getPropostaPocId(),
+                        termo.getId(),
+                        StatusProposta.POC_CONCLUIDA,
+                        StatusProposta.POC_CONCLUIDA,
+                        "SISTEMA",
+                        "EMISSAO_REGISTRO_POC",
+                        "Registro Oficial de POC emitido com codigo: " + registro.getCodigoVerificador()
+                );
+            } catch (Exception ignored) {
+                // segue sem erro se falhar auditoria
+            }
+        }
 
         return RegistroOficialPocResponseDTO.fromEntity(registro);
     }
