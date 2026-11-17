@@ -1,9 +1,13 @@
 package br.senac.fullstack.service;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
+import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
+import br.senac.fullstack.model.AvaliacaoMetrica;
 import br.senac.fullstack.model.Estagio;
+import br.senac.fullstack.model.ModoPrivacidadePoc;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
@@ -29,6 +33,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -293,5 +298,280 @@ class TermoPilotoServiceTest {
     void buscarAmbienteReveladoTrataNulosEFalhas() {
         assertNull(service.buscarAmbienteRevelado(null));
         assertNull(service.buscarAmbienteRevelado(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("buscarPorIdOuPropostaId deve buscar por id ou por propostaId com sucesso")
+    void buscarPorIdOuPropostaIdCenarios() {
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setPropostaPocId(propostaId);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(repository.findByPropostaPocId(propostaId)).thenReturn(Optional.of(termo));
+
+        assertEquals(termoId, service.buscarPorIdOuPropostaId(termoId).getId());
+        assertEquals(propostaId, service.buscarPorIdOuPropostaId(propostaId).getPropostaPocId());
+
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(null));
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(UUID.randomUUID()));
+    }
+
+    @Test
+    @DisplayName("RF18 - registrarEntrega com sucesso quando startup for dona do termo")
+    @SuppressWarnings("unchecked")
+    void deveRegistrarEntregaComSucesso() {
+        StartupService startService = mock(StartupService.class);
+        ObjectProvider<StartupService> startProvider = mock(ObjectProvider.class);
+        when(startProvider.getIfAvailable()).thenReturn(startService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, null, startProvider, null);
+
+        UUID termoId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setStartupId(startupId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(repository.save(any(TermoPiloto.class))).thenAnswer(i -> i.getArgument(0));
+
+        StartupResponseDTO startupDTO = new StartupResponseDTO(
+                startupId, "Startup Tech", "owner@startup.com", "Desc", "TI",
+                LocalDate.now(), Estagio.EM_TESTE, List.of(), "Recife", "PE", false, null, LocalDateTime.now()
+        );
+        when(startService.buscarPorEmail("owner@startup.com")).thenReturn(startupDTO);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "owner@startup.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        EntregaPilotoRequestDTO req = new EntregaPilotoRequestDTO(
+                "Algoritmo testado em 500 pacientes com sucesso",
+                "https://drive.google.com/evidencias",
+                "Nenhum incidente reportado"
+        );
+
+        TermoPiloto atualizado = serv.registrarEntrega(termoId, req, auth);
+
+        assertNotNull(atualizado);
+        assertEquals("Algoritmo testado em 500 pacientes com sucesso", atualizado.getResumoEntrega());
+        assertEquals("https://drive.google.com/evidencias", atualizado.getLinksEvidencias());
+        assertEquals("Nenhum incidente reportado", atualizado.getObservacoesEntrega());
+        assertNotNull(atualizado.getDataEntrega());
+    }
+
+    @Test
+    @DisplayName("RF18 - registrarEntrega deve lancar FORBIDDEN quando startup nao for dona do termo")
+    @SuppressWarnings("unchecked")
+    void deveLancarForbiddenAoRegistrarEntregaStartupDiferente() {
+        StartupService startService = mock(StartupService.class);
+        ObjectProvider<StartupService> startProvider = mock(ObjectProvider.class);
+        when(startProvider.getIfAvailable()).thenReturn(startService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, null, startProvider, null);
+
+        UUID termoId = UUID.randomUUID();
+        UUID startupId = UUID.randomUUID();
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setStartupId(startupId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(startService.buscarPorEmail("outro@startup.com")).thenReturn(null);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "outro@startup.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        EntregaPilotoRequestDTO req = new EntregaPilotoRequestDTO("Resumo", null, null);
+
+        ResponseStatusException ex = assertThrows(ResponseStatusException.class,
+                () -> serv.registrarEntrega(termoId, req, auth));
+        assertEquals(HttpStatus.FORBIDDEN, ex.getStatusCode());
+    }
+
+    @Test
+    @DisplayName("RF18 - registrarEntrega deve lancar BAD_REQUEST quando status nao for EM_TESTE ou resumo nulo")
+    void deveLancarBadRequestRegistrarEntregaStatusInvalido() {
+        UUID termoId = UUID.randomUUID();
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setStatus(StatusProposta.POC_CONCLUIDA);
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+
+        Authentication adminAuth = new UsernamePasswordAuthenticationToken(
+                "admin@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        EntregaPilotoRequestDTO reqValido = new EntregaPilotoRequestDTO("Resumo", null, null);
+        assertThrows(ResponseStatusException.class, () -> service.registrarEntrega(termoId, reqValido, adminAuth));
+
+        assertThrows(ResponseStatusException.class, () -> service.registrarEntrega(termoId, null, adminAuth));
+        EntregaPilotoRequestDTO reqVazio = new EntregaPilotoRequestDTO("  ", null, null);
+        assertThrows(ResponseStatusException.class, () -> service.registrarEntrega(termoId, reqVazio, adminAuth));
+    }
+
+    @Test
+    @DisplayName("RF19 - confirmarExecucao com sucesso quando pilotoExecutado=true")
+    @SuppressWarnings("unchecked")
+    void deveConfirmarExecucaoComSucessoExecutado() {
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        PropostaPocService propService = mock(PropostaPocService.class);
+
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        ObjectProvider<PropostaPocService> propProvider = mock(ObjectProvider.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+        when(propProvider.getIfAvailable()).thenReturn(propService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, ambProvider, null, propProvider);
+
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setPropostaPocId(propostaId);
+        termo.setAmbienteValidacaoId(ambienteId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(repository.save(any(TermoPiloto.class))).thenAnswer(i -> i.getArgument(0));
+
+        AmbienteValidacaoResponseDTO ambDTO = new AmbienteValidacaoResponseDTO(
+                ambienteId, "Clinica Sul S.A.", "Clinica Sul", "Saude", PorteOrganizacao.MEDIO,
+                "2611606", "Recife", "diretoria@clinicasul.com", "81999991111", null, true, LocalDateTime.now()
+        );
+        when(ambService.buscarPorEmail("diretoria@clinicasul.com")).thenReturn(ambDTO);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                "diretoria@clinicasul.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ConfirmacaoExecucaoRequestDTO req = new ConfirmacaoExecucaoRequestDTO(
+                true,
+                AvaliacaoMetrica.ATENDEU_TOTALMENTE,
+                "Atingiu o tempo de resposta medio abaixo de 200ms",
+                ModoPrivacidadePoc.EXIBICAO_NOMINAL,
+                "Interesse em contratacao imediata",
+                null
+        );
+
+        TermoPiloto confirmado = serv.confirmarExecucao(termoId, req, auth);
+
+        assertNotNull(confirmado);
+        assertEquals(StatusProposta.POC_CONCLUIDA, confirmado.getStatus());
+        assertTrue(confirmado.getPilotoExecutado());
+        assertEquals(AvaliacaoMetrica.ATENDEU_TOTALMENTE, confirmado.getAvaliacaoMetrica());
+        assertEquals("Atingiu o tempo de resposta medio abaixo de 200ms", confirmado.getParecer());
+        assertEquals(ModoPrivacidadePoc.EXIBICAO_NOMINAL, confirmado.getModoPrivacidade());
+        assertFalse(confirmado.getCertificadoEmitido());
+        verify(propService).atualizarStatus(propostaId, StatusProposta.POC_CONCLUIDA);
+    }
+
+    @Test
+    @DisplayName("RF19 - confirmarExecucao quando teste nao aconteceu (pilotoExecutado=false) -> POC_NAO_CONFIRMADA")
+    @SuppressWarnings("unchecked")
+    void deveConfirmarExecucaoQuandoPilotoNaoAconteceu() {
+        PropostaPocService propService = mock(PropostaPocService.class);
+        ObjectProvider<PropostaPocService> propProvider = mock(ObjectProvider.class);
+        when(propProvider.getIfAvailable()).thenReturn(propService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, null, null, propProvider);
+
+        UUID termoId = UUID.randomUUID();
+        UUID propostaId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setPropostaPocId(propostaId);
+        termo.setAmbienteValidacaoId(ambienteId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+        when(repository.save(any(TermoPiloto.class))).thenAnswer(i -> i.getArgument(0));
+
+        Authentication adminAuth = new UsernamePasswordAuthenticationToken(
+                "admin@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        ConfirmacaoExecucaoRequestDTO req = new ConfirmacaoExecucaoRequestDTO(
+                false,
+                null,
+                null,
+                null,
+                null,
+                "Piloto nao iniciado por incompatibilidade operacional"
+        );
+
+        TermoPiloto confirmado = serv.confirmarExecucao(termoId, req, adminAuth);
+
+        assertNotNull(confirmado);
+        assertEquals(StatusProposta.POC_NAO_CONFIRMADA, confirmado.getStatus());
+        assertFalse(confirmado.getPilotoExecutado());
+        assertFalse(confirmado.getCertificadoEmitido());
+        assertEquals("Piloto nao iniciado por incompatibilidade operacional",
+                confirmado.getJustificativaNaoExecucao());
+        verify(propService).atualizarStatus(propostaId, StatusProposta.POC_NAO_CONFIRMADA);
+    }
+
+    @Test
+    @DisplayName("RF19 - confirmarExecucao validacoes de campos e permissao")
+    @SuppressWarnings("unchecked")
+    void deveValidarCamposEPermissaoConfirmacao() {
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+
+        TermoPilotoService serv = new TermoPilotoService(repositoryProvider, ambProvider, null, null);
+
+        UUID termoId = UUID.randomUUID();
+        UUID ambienteId = UUID.randomUUID();
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(termoId);
+        termo.setAmbienteValidacaoId(ambienteId);
+        termo.setStatus(StatusProposta.EM_TESTE);
+        when(repository.findById(termoId)).thenReturn(Optional.of(termo));
+
+        Authentication authEstranho = new UsernamePasswordAuthenticationToken(
+                "outro@parceiro.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+        when(ambService.buscarPorEmail("outro@parceiro.com")).thenReturn(null);
+
+        ConfirmacaoExecucaoRequestDTO reqValido = new ConfirmacaoExecucaoRequestDTO(
+                true, AvaliacaoMetrica.ATENDEU_PARCIALMENTE, "Parecer", ModoPrivacidadePoc.ANONIMO_QUALIFICADO, null, null
+        );
+
+        ResponseStatusException exForbidden = assertThrows(ResponseStatusException.class,
+                () -> serv.confirmarExecucao(termoId, reqValido, authEstranho));
+        assertEquals(HttpStatus.FORBIDDEN, exForbidden.getStatusCode());
+
+        Authentication adminAuth = new UsernamePasswordAuthenticationToken(
+                "admin@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        // pilotoExecutado nulo
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, null, adminAuth));
+        ConfirmacaoExecucaoRequestDTO reqSemExecutado = new ConfirmacaoExecucaoRequestDTO(null, null, null, null, null, null);
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqSemExecutado, adminAuth));
+
+        // pilotoExecutado=true sem metrica
+        ConfirmacaoExecucaoRequestDTO reqSemMetrica = new ConfirmacaoExecucaoRequestDTO(
+                true, null, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null);
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqSemMetrica, adminAuth));
+
+        // pilotoExecutado=true sem parecer
+        ConfirmacaoExecucaoRequestDTO reqSemParecer = new ConfirmacaoExecucaoRequestDTO(
+                true, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "   ", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null);
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqSemParecer, adminAuth));
+
+        // pilotoExecutado=true sem modo privacidade
+        ConfirmacaoExecucaoRequestDTO reqSemPrivacidade = new ConfirmacaoExecucaoRequestDTO(
+                true, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "Parecer", null, null, null);
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqSemPrivacidade, adminAuth));
+
+        // status invalido
+        termo.setStatus(StatusProposta.POC_CONCLUIDA);
+        assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqValido, adminAuth));
     }
 }
