@@ -160,30 +160,58 @@ public class TermoPiloto {
         this.dataConfirmacao = LocalDateTime.now(ZoneId.systemDefault());
 
         if (Boolean.FALSE.equals(pilotoExecutado)) {
-            this.status = StatusProposta.POC_NAO_CONFIRMADA;
-            this.certificadoEmitido = false;
-            this.avaliacaoMetrica = null;
-            this.modoPrivacidade = null;
-            this.justificativaNaoExecucao = (justificativaNaoExecucao != null && !justificativaNaoExecucao.isBlank())
-                    ? justificativaNaoExecucao.trim()
-                    : (parecer != null ? parecer.trim() : null);
+            aplicarExecucaoNaoConfirmada(justificativaNaoExecucao, parecer);
         } else {
-            if (avaliacaoMetrica == null) {
-                throw new IllegalArgumentException("Avaliacao da metrica e obrigatoria quando o piloto foi executado");
-            }
-            if (parecer == null || parecer.isBlank()) {
-                throw new IllegalArgumentException("Parecer avaliativo e obrigatorio quando o piloto foi executado");
-            }
-            if (modoPrivacidade == null) {
-                throw new IllegalArgumentException("Modo de privacidade e obrigatorio quando o piloto foi executado");
-            }
-            this.status = StatusProposta.POC_CONCLUIDA;
-            this.avaliacaoMetrica = avaliacaoMetrica;
-            this.parecer = parecer.trim();
-            this.modoPrivacidade = modoPrivacidade;
-            this.direcionamentoPosPoc = direcionamentoPosPoc != null ? direcionamentoPosPoc.trim() : null;
-            this.justificativaNaoExecucao = null;
-            this.certificadoEmitido = false;
+            aplicarExecucaoConfirmada(avaliacaoMetrica, parecer, modoPrivacidade, direcionamentoPosPoc);
+        }
+    }
+
+    private void aplicarExecucaoNaoConfirmada(String justificativa, String parecer) {
+        this.status = StatusProposta.POC_NAO_CONFIRMADA;
+        this.certificadoEmitido = false;
+        this.avaliacaoMetrica = null;
+        this.modoPrivacidade = null;
+        this.justificativaNaoExecucao = resolverJustificativa(justificativa, parecer);
+    }
+
+    private String resolverJustificativa(String justificativa, String parecer) {
+        if (justificativa != null && !justificativa.isBlank()) {
+            return justificativa.trim();
+        }
+        if (parecer != null && !parecer.isBlank()) {
+            return parecer.trim();
+        }
+        return null;
+    }
+
+    private void aplicarExecucaoConfirmada(
+            AvaliacaoMetrica avaliacaoMetrica,
+            String parecer,
+            ModoPrivacidadePoc modoPrivacidade,
+            String direcionamentoPosPoc) {
+        validarParametrosConfirmacao(avaliacaoMetrica, parecer, modoPrivacidade);
+
+        this.status = StatusProposta.POC_CONCLUIDA;
+        this.avaliacaoMetrica = avaliacaoMetrica;
+        this.parecer = parecer.trim();
+        this.modoPrivacidade = modoPrivacidade;
+        this.direcionamentoPosPoc = direcionamentoPosPoc != null ? direcionamentoPosPoc.trim() : null;
+        this.justificativaNaoExecucao = null;
+        this.certificadoEmitido = false;
+    }
+
+    private void validarParametrosConfirmacao(
+            AvaliacaoMetrica avaliacaoMetrica,
+            String parecer,
+            ModoPrivacidadePoc modoPrivacidade) {
+        if (avaliacaoMetrica == null) {
+            throw new IllegalArgumentException("Avaliacao da metrica e obrigatoria quando o piloto foi executado");
+        }
+        if (parecer == null || parecer.isBlank()) {
+            throw new IllegalArgumentException("Parecer avaliativo e obrigatorio quando o piloto foi executado");
+        }
+        if (modoPrivacidade == null) {
+            throw new IllegalArgumentException("Modo de privacidade e obrigatorio quando o piloto foi executado");
         }
     }
 
