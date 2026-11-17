@@ -316,7 +316,8 @@ class TermoPilotoServiceTest {
         assertEquals(propostaId, service.buscarPorIdOuPropostaId(propostaId).getPropostaPocId());
 
         assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(null));
-        assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(UUID.randomUUID()));
+        UUID inexistenteId = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(inexistenteId));
     }
 
     @Test
