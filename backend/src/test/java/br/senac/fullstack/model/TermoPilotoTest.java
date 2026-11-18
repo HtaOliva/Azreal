@@ -1,5 +1,6 @@
 package br.senac.fullstack.model;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDateTime;
@@ -9,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -20,6 +22,8 @@ class TermoPilotoTest {
 
         assertNotNull(termo.getId());
         assertNotNull(termo.getDataCriacao());
+        assertEquals(StatusProposta.EM_TESTE, termo.getStatus());
+        assertFalse(termo.getCertificadoEmitido());
     }
 
     @Test
@@ -85,12 +89,130 @@ class TermoPilotoTest {
         assertEquals("Deploy em cluster de teste", termo.getResponsabilidadesStartup());
         assertEquals("Fornecer massa de dados", termo.getResponsabilidadesAmbiente());
         assertEquals("F1-score >= 0.88", termo.getMetricaValidacao());
+        assertEquals(StatusProposta.EM_TESTE, termo.getStatus());
     }
 
     @Test
     void congelarComPropostaNulaDeveLancarExcecao() {
         UUID ambienteId = UUID.randomUUID();
         assertThrows(IllegalArgumentException.class, () -> TermoPiloto.congelar(null, ambienteId));
+    }
+
+    @Test
+    @DisplayName("RF18 - Registrar entrega com sucesso quando em teste")
+    void registrarEntregaComSucesso() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        termo.registrarEntrega(
+                "Modelo implantado em 3 servidores com 94% de acuracia",
+                "https://github.com/teste/demo",
+                "Testes rodados durante 15 dias sem falhas"
+        );
+
+        assertEquals("Modelo implantado em 3 servidores com 94% de acuracia", termo.getResumoEntrega());
+        assertEquals("https://github.com/teste/demo", termo.getLinksEvidencias());
+        assertEquals("Testes rodados durante 15 dias sem falhas", termo.getObservacoesEntrega());
+        assertNotNull(termo.getDataEntrega());
+        assertEquals(StatusProposta.EM_TESTE, termo.getStatus());
+    }
+
+    @Test
+    @DisplayName("RF18 - Registrar entrega com resumo em branco deve lancar IllegalArgumentException")
+    void registrarEntregaComResumoEmBrancoDeveFalhar() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        assertThrows(IllegalArgumentException.class, () -> termo.registrarEntrega("  ", null, null));
+        assertThrows(IllegalArgumentException.class, () -> termo.registrarEntrega(null, null, null));
+    }
+
+    @Test
+    @DisplayName("RF18 - Registrar entrega quando piloto nao esta EM_TESTE deve lancar IllegalStateException")
+    void registrarEntregaQuandoStatusInvalidoDeveFalhar() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.POC_CONCLUIDA);
+
+        assertThrows(IllegalStateException.class, () -> termo.registrarEntrega("Resumo", null, null));
+    }
+
+    @Test
+    @DisplayName("RF19 - Confirmar execucao com sucesso (pilotoExecutado=true)")
+    void confirmarExecucaoComSucessoExecutado() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        termo.confirmarExecucao(
+                true,
+                AvaliacaoMetrica.ATENDEU_TOTALMENTE,
+                "A solucao atingiu todos os KPIs estabelecidos",
+                ModoPrivacidadePoc.EXIBICAO_NOMINAL,
+                "Interesse em contratacao comercial",
+                null
+        );
+
+        assertEquals(StatusProposta.POC_CONCLUIDA, termo.getStatus());
+        assertTrue(termo.getPilotoExecutado());
+        assertEquals(AvaliacaoMetrica.ATENDEU_TOTALMENTE, termo.getAvaliacaoMetrica());
+        assertEquals("A solucao atingiu todos os KPIs estabelecidos", termo.getParecer());
+        assertEquals(ModoPrivacidadePoc.EXIBICAO_NOMINAL, termo.getModoPrivacidade());
+        assertEquals("Interesse em contratacao comercial", termo.getDirecionamentoPosPoc());
+        assertNull(termo.getJustificativaNaoExecucao());
+        assertNotNull(termo.getDataConfirmacao());
+        assertFalse(termo.getCertificadoEmitido());
+    }
+
+    @Test
+    @DisplayName("RF19 - Confirmar quando piloto NAO foi executado (pilotoExecutado=false)")
+    void confirmarExecucaoQuandoNaoExecutado() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        termo.confirmarExecucao(
+                false,
+                null,
+                "A startup nao disponibilizou a infraestrutura a tempo",
+                null,
+                null,
+                "Cancelamento por inviabilidade tecnica"
+        );
+
+        assertEquals(StatusProposta.POC_NAO_CONFIRMADA, termo.getStatus());
+        assertFalse(termo.getPilotoExecutado());
+        assertFalse(termo.getCertificadoEmitido());
+        assertNull(termo.getAvaliacaoMetrica());
+        assertNull(termo.getModoPrivacidade());
+        assertEquals("Cancelamento por inviabilidade tecnica", termo.getJustificativaNaoExecucao());
+        assertNotNull(termo.getDataConfirmacao());
+    }
+
+    @Test
+    @DisplayName("RF19 - Validacoes de confirmacao quando pilotoExecutado=true e faltam campos")
+    void confirmarExecucaoValidacoesCamposFaltantes() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.EM_TESTE);
+
+        assertThrows(IllegalArgumentException.class, () -> termo.confirmarExecucao(
+                null, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null));
+
+        assertThrows(IllegalArgumentException.class, () -> termo.confirmarExecucao(
+                true, null, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null));
+
+        assertThrows(IllegalArgumentException.class, () -> termo.confirmarExecucao(
+                true, AvaliacaoMetrica.ATENDEU_PARCIALMENTE, "  ", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null));
+
+        assertThrows(IllegalArgumentException.class, () -> termo.confirmarExecucao(
+                true, AvaliacaoMetrica.NAO_ATINGIU_METRICA, "Parecer", null, null, null));
+    }
+
+    @Test
+    @DisplayName("RF19 - Confirmar execucao quando status nao e EM_TESTE deve lancar excecao")
+    void confirmarExecucaoQuandoStatusInvalido() {
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.POC_NAO_CONFIRMADA);
+
+        assertThrows(IllegalStateException.class, () -> termo.confirmarExecucao(
+                true, AvaliacaoMetrica.ATENDEU_TOTALMENTE, "Parecer", ModoPrivacidadePoc.EXIBICAO_NOMINAL, null, null));
     }
 
     @Test

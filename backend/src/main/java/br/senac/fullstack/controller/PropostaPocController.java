@@ -1,7 +1,10 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
+import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
+import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
@@ -164,6 +167,37 @@ public class PropostaPocController {
         TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
+    }
+
+    @PostMapping("/{id}/entrega")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
+    public ResponseEntity<TermoPilotoResponseDTO> registrarEntrega(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody EntregaPilotoRequestDTO request,
+            Authentication authentication) {
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
+        }
+        TermoPiloto termo = termoService.registrarEntrega(id, request, authentication);
+        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado));
+    }
+
+    @PostMapping("/{id}/confirmacao-resultado")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<ConfirmacaoExecucaoResponseDTO> confirmarResultado(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody ConfirmacaoExecucaoRequestDTO request,
+            Authentication authentication) {
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
+        }
+        TermoPiloto termo = termoService.confirmarExecucao(id, request, authentication);
+        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(termo));
     }
 
     private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
