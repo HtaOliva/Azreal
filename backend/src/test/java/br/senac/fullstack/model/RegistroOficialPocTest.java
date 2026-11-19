@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -183,11 +182,11 @@ class RegistroOficialPocTest {
         RegistroOficialPoc r3 = new RegistroOficialPoc();
         r3.setId(UUID.randomUUID());
 
-        assertTrue(r1.equals(r1));
-        assertTrue(r1.equals(r2));
-        assertFalse(r1.equals(r3));
-        assertFalse(r1.equals(null));
-        assertFalse(r1.equals("outro"));
+        assertEquals(r1, r1);
+        assertEquals(r1, r2);
+        assertNotEquals(r1, r3);
+        assertNotEquals(r1, null);
+        assertNotEquals(r1, "outro");
         assertEquals(r1.hashCode(), r2.hashCode());
         assertEquals(r1.hashCode(), r3.hashCode());
     }

@@ -99,7 +99,7 @@ public class RegistroOficialPoc {
 
     public static String gerarCodigoVerificador() {
         String randomPart = UUID.randomUUID().toString().replace("-", "").substring(0, 8).toUpperCase();
-        return "POC-" + Year.now().getValue() + "-" + randomPart;
+        return "POC-" + Year.now(ZoneId.systemDefault()).getValue() + "-" + randomPart;
     }
 
     public static RegistroOficialPoc emitir(
