@@ -30,6 +30,7 @@ public class TermoPilotoService {
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<PropostaPocService> propostaServiceProvider;
+    private final ObjectProvider<RegistroOficialPocService> registroServiceProvider;
     private final Map<UUID, TermoPiloto> memory = new ConcurrentHashMap<>();
 
     @Autowired
@@ -37,22 +38,32 @@ public class TermoPilotoService {
             ObjectProvider<TermoPilotoRepository> repositoryProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
             ObjectProvider<StartupService> startupServiceProvider,
-            ObjectProvider<PropostaPocService> propostaServiceProvider) {
+            ObjectProvider<PropostaPocService> propostaServiceProvider,
+            ObjectProvider<RegistroOficialPocService> registroServiceProvider) {
         this.repositoryProvider = repositoryProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.startupServiceProvider = startupServiceProvider;
         this.propostaServiceProvider = propostaServiceProvider;
+        this.registroServiceProvider = registroServiceProvider;
+    }
+
+    public TermoPilotoService(
+            ObjectProvider<TermoPilotoRepository> repositoryProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<PropostaPocService> propostaServiceProvider) {
+        this(repositoryProvider, ambienteServiceProvider, startupServiceProvider, propostaServiceProvider, null);
     }
 
     public TermoPilotoService(
             ObjectProvider<TermoPilotoRepository> repositoryProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
             ObjectProvider<StartupService> startupServiceProvider) {
-        this(repositoryProvider, ambienteServiceProvider, startupServiceProvider, null);
+        this(repositoryProvider, ambienteServiceProvider, startupServiceProvider, null, null);
     }
 
     public TermoPilotoService(ObjectProvider<TermoPilotoRepository> repositoryProvider) {
-        this(repositoryProvider, null, null, null);
+        this(repositoryProvider, null, null, null, null);
     }
 
     public TermoPiloto salvar(TermoPiloto termo) {
@@ -227,6 +238,20 @@ public class TermoPilotoService {
                 ? propostaServiceProvider.getIfAvailable() : null;
         if (propostaService != null) {
             propostaService.atualizarStatus(termo.getPropostaPocId(), termo.getStatus());
+        }
+
+        if (salvo.getStatus() == StatusProposta.POC_CONCLUIDA) {
+            RegistroOficialPocService registroService = registroServiceProvider != null
+                    ? registroServiceProvider.getIfAvailable() : null;
+            if (registroService != null) {
+                try {
+                    registroService.emitir(salvo);
+                    salvo.setCertificadoEmitido(true);
+                    salvo = salvar(salvo);
+                } catch (Exception ignored) {
+                    // segue em caso de falha controlada
+                }
+            }
         }
 
         return salvo;
