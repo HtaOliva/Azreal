@@ -202,10 +202,12 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody EntregaPilotoRequestDTO request,
             Authentication authentication) {
-        if (termoPilotoServiceProvider == null || termoPilotoServiceProvider.getIfAvailable() == null) {
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
-        TermoPiloto piloto = termoPilotoServiceProvider.getIfAvailable().registrarEntrega(id, request, authentication);
+        TermoPiloto piloto = termoService.registrarEntrega(id, request, authentication);
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
                 piloto, piloto.getStatus(), buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
     }
@@ -216,11 +218,13 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody ConfirmacaoExecucaoRequestDTO request,
             Authentication authentication) {
-        if (termoPilotoServiceProvider == null || termoPilotoServiceProvider.getIfAvailable() == null) {
+        TermoPilotoService termoService = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (termoService == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
         return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(
-                termoPilotoServiceProvider.getIfAvailable().confirmarExecucao(id, request, authentication)));
+                termoService.confirmarExecucao(id, request, authentication)));
     }
 
     private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
@@ -493,29 +497,34 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody AvaliacaoMatchRequestDTO request,
             Authentication authentication) {
-        if (avaliacaoMatchServiceProvider == null || avaliacaoMatchServiceProvider.getIfAvailable() == null) {
+        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
+        if (matchService == null) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(avaliacaoMatchServiceProvider.getIfAvailable().avaliar(id, request, authentication));
+                .body(matchService.avaliar(id, request, authentication));
     }
 
     @GetMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match", "/{id}/avaliacoes-match"})
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<AvaliacaoMatchResponseDTO>> listarAvaliacoesMatch(@PathVariable("id") UUID id) {
-        if (avaliacaoMatchServiceProvider == null || avaliacaoMatchServiceProvider.getIfAvailable() == null) {
+        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
+        if (matchService == null) {
             return ResponseEntity.ok(Collections.emptyList());
         }
-        return ResponseEntity.ok(avaliacaoMatchServiceProvider.getIfAvailable().listarPorPropostaOuTermo(id));
+        return ResponseEntity.ok(matchService.listarPorPropostaOuTermo(id));
     }
 
     @GetMapping("/{id}/auditoria")
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<RegistroAuditoriaResponseDTO>> consultarAuditoria(@PathVariable("id") UUID id) {
-        if (auditoriaServiceProvider == null || auditoriaServiceProvider.getIfAvailable() == null) {
+        AuditoriaService auditSvc = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditSvc == null) {
             return ResponseEntity.ok(Collections.emptyList());
         }
-        AuditoriaService auditSvc = auditoriaServiceProvider.getIfAvailable();
         List<RegistroAuditoriaResponseDTO> audit = auditSvc.listarPorProposta(id);
         return ResponseEntity.ok(!audit.isEmpty() ? audit : auditSvc.listarPorTermo(id));
     }
