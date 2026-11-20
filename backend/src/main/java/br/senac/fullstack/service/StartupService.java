@@ -3,9 +3,14 @@ package br.senac.fullstack.service;
 import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
+import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.repository.StartupRepository;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -108,6 +113,32 @@ public class StartupService {
             items = new ArrayList<>(memory.values());
         }
         return items.stream().map(this::toResponse).toList();
+    }
+
+    public Page<StartupResponseDTO> listarPaginado(Estagio estagio, String termoBusca, Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        StartupRepository repo = repository();
+        Page<Startup> page;
+        if (repo != null) {
+            if (estagio != null || termoBusca != null) {
+                page = repo.buscarComFiltros(estagio, termoBusca, effectivePageable);
+            } else {
+                page = repo.findAll(effectivePageable);
+            }
+        } else {
+            List<Startup> filtrados = memory.values().stream()
+                    .filter(s -> estagio == null || estagio.equals(s.getEstagioAtual()))
+                    .filter(s -> termoBusca == null || termoBusca.isBlank()
+                            || (s.getNome() != null && s.getNome().toLowerCase().contains(termoBusca.toLowerCase()))
+                            || (s.getDescricao() != null && s.getDescricao().toLowerCase().contains(termoBusca.toLowerCase()))
+                            || (s.getAreaAtuacao() != null && s.getAreaAtuacao().toLowerCase().contains(termoBusca.toLowerCase())))
+                    .toList();
+            int start = (int) effectivePageable.getOffset();
+            int end = Math.min(start + effectivePageable.getPageSize(), filtrados.size());
+            List<Startup> sublist = start <= end ? filtrados.subList(start, end) : List.of();
+            page = new PageImpl<>(sublist, effectivePageable, filtrados.size());
+        }
+        return page.map(this::toResponse);
     }
 
     public StartupResponseDTO atualizar(UUID id, StartupUpdateDTO request) {

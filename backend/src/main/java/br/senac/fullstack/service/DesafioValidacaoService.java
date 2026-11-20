@@ -6,11 +6,16 @@ import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoUpdateDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
+import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.repository.AmbienteValidacaoRepository;
 import br.senac.fullstack.repository.DesafioValidacaoRepository;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -208,5 +213,35 @@ public class DesafioValidacaoService {
                     .toList();
         }
         return lista.stream().map(DesafioAnonimoResponseDTO::fromEntity).toList();
+    }
+
+    public Page<DesafioAnonimoResponseDTO> listarAtivosAnonimosPaginado(
+            String termoBusca,
+            ModalidadeTeste modalidade,
+            Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        DesafioValidacaoRepository repo = repository();
+        Page<DesafioValidacao> page;
+        if (repo != null) {
+            if (termoBusca != null || modalidade != null) {
+                page = repo.findByAtivoTrueComFiltros(modalidade, termoBusca, effectivePageable);
+            } else {
+                page = repo.findByAtivoTrue(effectivePageable);
+            }
+        } else {
+            List<DesafioValidacao> filtrados = memory.values().stream()
+                    .filter(DesafioValidacao::isAtivo)
+                    .filter(d -> modalidade == null || modalidade.equals(d.getModalidade()))
+                    .filter(d -> termoBusca == null || termoBusca.isBlank()
+                            || (d.getTitulo() != null && d.getTitulo().toLowerCase().contains(termoBusca.toLowerCase()))
+                            || (d.getDescricaoProblema() != null
+                            && d.getDescricaoProblema().toLowerCase().contains(termoBusca.toLowerCase())))
+                    .toList();
+            int start = (int) effectivePageable.getOffset();
+            int end = Math.min(start + effectivePageable.getPageSize(), filtrados.size());
+            List<DesafioValidacao> sublist = start <= end ? filtrados.subList(start, end) : List.of();
+            page = new PageImpl<>(sublist, effectivePageable, filtrados.size());
+        }
+        return page.map(DesafioAnonimoResponseDTO::fromEntity);
     }
 }

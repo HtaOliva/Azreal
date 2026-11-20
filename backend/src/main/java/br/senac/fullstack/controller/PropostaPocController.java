@@ -25,6 +25,11 @@ import br.senac.fullstack.service.TermoPilotoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -331,6 +336,49 @@ public class PropostaPocController {
         return ResponseEntity.ok(propostaPocService.listarPorStartup(targetStartupId));
     }
 
+    @GetMapping("/minhas/paginado")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
+    public ResponseEntity<Page<PropostaPocResponseDTO>> listarMinhasPaginado(
+            @RequestParam(name = "startupId", required = false) UUID startupIdParam,
+            @RequestParam(name = "status", required = false) StatusProposta status,
+            @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        UUID targetStartupId = startupIdParam;
+        StartupService startupService = startupServiceProvider.getIfAvailable();
+
+        if (targetStartupId == null && startupService != null) {
+            try {
+                StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
+                if (startup != null) {
+                    targetStartupId = startup.id();
+                }
+            } catch (Exception ignored) {
+                // Continua nulo
+            }
+        }
+
+        if (targetStartupId == null) {
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+
+        if (!isAdmin(authentication) && startupIdParam != null && startupService != null) {
+            try {
+                StartupResponseDTO startupAutenticada = startupService.buscarPorEmail(authentication.getName());
+                if (startupAutenticada != null && !targetStartupId.equals(startupAutenticada.id())) {
+                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                }
+            } catch (Exception ignored) {
+                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            }
+        }
+
+        return ResponseEntity.ok(propostaPocService.listarPorStartupPaginado(targetStartupId, status, pageable));
+    }
+
     @GetMapping("/fila")
     @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<PropostaPocResponseDTO>> consultarFila(
@@ -355,6 +403,34 @@ public class PropostaPocController {
         }
 
         return ResponseEntity.ok(propostaPocService.listarFilaAmbiente(desafioIds));
+    }
+
+    @GetMapping("/fila/paginado")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<Page<PropostaPocResponseDTO>> consultarFilaPaginado(
+            @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
+            @RequestParam(name = "status", required = false) StatusProposta status,
+            @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.ASC) Pageable pageable,
+            Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        if (isAcessoFilaNaoAutorizado(ambienteIdParam, authentication)) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+
+        UUID targetAmbienteId = resolverAmbienteIdFila(ambienteIdParam, authentication);
+        if (targetAmbienteId == null) {
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+
+        Set<UUID> desafioIds = obterDesafioIdsPorAmbiente(targetAmbienteId);
+        if (desafioIds.isEmpty()) {
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+
+        return ResponseEntity.ok(propostaPocService.listarFilaAmbientePaginado(desafioIds, status, pageable));
     }
 
     private boolean isAcessoFilaNaoAutorizado(UUID ambienteIdParam, Authentication authentication) {

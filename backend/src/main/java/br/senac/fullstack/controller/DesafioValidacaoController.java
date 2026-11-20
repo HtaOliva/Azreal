@@ -4,8 +4,13 @@ import br.senac.fullstack.dto.DesafioAnonimoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoRequestDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoUpdateDTO;
+import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import jakarta.validation.Valid;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -17,6 +22,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -43,6 +49,15 @@ public class DesafioValidacaoController {
     @GetMapping
     public ResponseEntity<List<DesafioAnonimoResponseDTO>> listarAtivosAnonimos() {
         return ResponseEntity.ok(desafioValidacaoService.listarAtivosAnonimos());
+    }
+
+    @GetMapping("/paginado")
+    public ResponseEntity<Page<DesafioAnonimoResponseDTO>> listarAtivosAnonimosPaginado(
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @RequestParam(name = "modalidade", required = false) ModalidadeTeste modalidade,
+            @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.DESC) Pageable pageable) {
+        return ResponseEntity.ok(desafioValidacaoService.listarAtivosAnonimosPaginado(
+                termoBusca, modalidade, pageable));
     }
 
     @GetMapping("/{id}")
