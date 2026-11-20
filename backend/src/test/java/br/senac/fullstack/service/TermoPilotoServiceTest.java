@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -35,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -631,5 +633,43 @@ class TermoPilotoServiceTest {
         // status invalido
         termo.setStatus(StatusProposta.POC_CONCLUIDA);
         assertThrows(ResponseStatusException.class, () -> serv.confirmarExecucao(termoId, reqValido, adminAuth));
+    }
+
+    @Test
+    @DisplayName("gravarAuditoria deve engolir excecao quando auditoria falhar")
+    @SuppressWarnings("unchecked")
+    void testGravarAuditoriaComFalha() {
+        br.senac.fullstack.service.AuditoriaService auditMock = mock(br.senac.fullstack.service.AuditoriaService.class);
+        doThrow(new RuntimeException("Auditoria indisponivel"))
+                .when(auditMock).registrar(any(), any(), any(), any(), any(), any(), any());
+
+        ObjectProvider<br.senac.fullstack.service.AuditoriaService> auditProvider = mock(ObjectProvider.class);
+        when(auditProvider.getIfAvailable()).thenReturn(auditMock);
+
+        TermoPilotoService serviceComAudit = new TermoPilotoService(
+                new NullObjectProvider<>(), new NullObjectProvider<>(),
+                new NullObjectProvider<>(), new NullObjectProvider<>(),
+                new NullObjectProvider<>(), auditProvider);
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setId(UUID.randomUUID());
+        termo.setPropostaPocId(UUID.randomUUID());
+        termo.setStatus(StatusProposta.EM_TESTE);
+        serviceComAudit.salvar(termo);
+
+        EntregaPilotoRequestDTO entregaDTO = new EntregaPilotoRequestDTO(
+                "Link", "Evidencias", "Relatorio");
+        Authentication adminAuth = new UsernamePasswordAuthenticationToken(
+                "admin@email.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+
+        assertDoesNotThrow(() -> serviceComAudit.registrarEntrega(termo.getId(), entregaDTO, adminAuth));
+    }
+
+    @Test
+    @DisplayName("buscarPorIdOuPropostaId deve lancar NotFound se nao encontrar termo")
+    void testBuscarPorIdOuPropostaIdInexistente() {
+        UUID randomId = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorIdOuPropostaId(randomId));
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorId(randomId));
     }
 }
