@@ -30,10 +30,7 @@ public class AvaliacaoMatchService {
 
     private final ObjectProvider<AvaliacaoMatchRepository> repositoryProvider;
     private final ObjectProvider<TermoPilotoService> termoServiceProvider;
-    private final ObjectProvider<PropostaPocService> propostaServiceProvider;
     private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
-    private final ObjectProvider<StartupService> startupServiceProvider;
-    private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
 
     private final Map<UUID, AvaliacaoMatch> memory = new ConcurrentHashMap<>();
 
@@ -41,24 +38,18 @@ public class AvaliacaoMatchService {
     public AvaliacaoMatchService(
             ObjectProvider<AvaliacaoMatchRepository> repositoryProvider,
             ObjectProvider<TermoPilotoService> termoServiceProvider,
-            ObjectProvider<PropostaPocService> propostaServiceProvider,
-            ObjectProvider<AuditoriaService> auditoriaServiceProvider,
-            ObjectProvider<StartupService> startupServiceProvider,
-            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider) {
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.repositoryProvider = repositoryProvider;
         this.termoServiceProvider = termoServiceProvider;
-        this.propostaServiceProvider = propostaServiceProvider;
         this.auditoriaServiceProvider = auditoriaServiceProvider;
-        this.startupServiceProvider = startupServiceProvider;
-        this.ambienteServiceProvider = ambienteServiceProvider;
     }
 
     public AvaliacaoMatchService(ObjectProvider<AvaliacaoMatchRepository> repositoryProvider) {
-        this(repositoryProvider, null, null, null, null, null);
+        this(repositoryProvider, null, null);
     }
 
     public AvaliacaoMatchService() {
-        this(null, null, null, null, null, null);
+        this(null, null, null);
     }
 
     public AvaliacaoMatchResponseDTO avaliar(
@@ -83,7 +74,7 @@ public class AvaliacaoMatchService {
         UUID propostaId = termo != null ? termo.getPropostaPocId() : id;
         UUID termoId = termo != null ? termo.getId() : null;
 
-        TipoAvaliadorMatch papelAvaliador = determinarPapelAvaliador(request, authentication, termo);
+        TipoAvaliadorMatch papelAvaliador = determinarPapelAvaliador(request, authentication);
         String usuario = authentication != null ? authentication.getName() : "SISTEMA";
 
         // Verifica se ja existe avaliacao deste tipo para a proposta
@@ -136,8 +127,7 @@ public class AvaliacaoMatchService {
 
     private TipoAvaliadorMatch determinarPapelAvaliador(
             AvaliacaoMatchRequestDTO request,
-            Authentication authentication,
-            TermoPiloto termo) {
+            Authentication authentication) {
         if (request.tipoAvaliador() != null) {
             return request.tipoAvaliador();
         }

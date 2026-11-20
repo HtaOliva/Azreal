@@ -58,23 +58,21 @@ class AvaliacaoMatchTest {
     @Test
     @DisplayName("Validacao de equals e hashCode baseados em ID")
     void validacaoEqualsEHashCode() {
-        UUID id1 = UUID.randomUUID();
-        UUID id2 = UUID.randomUUID();
+        AvaliacaoMatch avaliacaoBase = new AvaliacaoMatch();
+        UUID identificador = UUID.randomUUID();
+        avaliacaoBase.setId(identificador);
 
-        AvaliacaoMatch a1 = new AvaliacaoMatch();
-        a1.setId(id1);
+        AvaliacaoMatch avaliacaoMesmoId = new AvaliacaoMatch();
+        avaliacaoMesmoId.setId(identificador);
 
-        AvaliacaoMatch a2 = new AvaliacaoMatch();
-        a2.setId(id1);
+        AvaliacaoMatch avaliacaoOutroId = new AvaliacaoMatch();
+        avaliacaoOutroId.setId(UUID.randomUUID());
 
-        AvaliacaoMatch a3 = new AvaliacaoMatch();
-        a3.setId(id2);
-
-        assertEquals(a1, a1);
-        assertEquals(a1, a2);
-        assertNotEquals(a1, a3);
-        assertNotEquals(a1, null);
-        assertNotEquals(a1, "outra_classe");
-        assertEquals(a1.hashCode(), a2.hashCode());
+        assertEquals(avaliacaoBase, avaliacaoBase);
+        assertEquals(avaliacaoBase, avaliacaoMesmoId);
+        assertNotEquals(avaliacaoBase, avaliacaoOutroId);
+        assertNotEquals(null, avaliacaoBase);
+        assertNotEquals(new Object(), avaliacaoBase);
+        assertEquals(avaliacaoBase.hashCode(), avaliacaoMesmoId.hashCode());
     }
 }

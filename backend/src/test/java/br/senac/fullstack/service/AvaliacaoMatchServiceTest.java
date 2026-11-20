@@ -49,12 +49,6 @@ class AvaliacaoMatchServiceTest {
     private ObjectProvider<TermoPilotoService> termoServiceProvider;
 
     @Mock
-    private PropostaPocService propostaService;
-
-    @Mock
-    private ObjectProvider<PropostaPocService> propostaServiceProvider;
-
-    @Mock
     private AuditoriaService auditoriaService;
 
     @Mock
@@ -70,10 +64,7 @@ class AvaliacaoMatchServiceTest {
         avaliacaoMatchService = new AvaliacaoMatchService(
                 repositoryProvider,
                 termoServiceProvider,
-                propostaServiceProvider,
-                auditoriaServiceProvider,
-                null,
-                null
+                auditoriaServiceProvider
         );
     }
 
@@ -286,6 +277,23 @@ class AvaliacaoMatchServiceTest {
         List<AvaliacaoMatchResponseDTO> lista = avaliacaoMatchService.listarPorPropostaOuTermo(termoId);
         assertEquals(1, lista.size());
         assertEquals(4, lista.get(0).notaQualidade());
+    }
+
+    @Test
+    @DisplayName("Construtores de AvaliacaoMatchService e fallback em memoria")
+    void construtoresEFallbacksEmMemoria() {
+        AvaliacaoMatchService svcSemProviders = new AvaliacaoMatchService();
+        assertNotNull(svcSemProviders);
+
+        AvaliacaoMatchService svcComRepo = new AvaliacaoMatchService(repositoryProvider);
+        assertNotNull(svcComRepo);
+
+        UUID idProp = UUID.randomUUID();
+        AvaliacaoMatchRequestDTO reqDTO = new AvaliacaoMatchRequestDTO(
+                true, 5, "ok", OrigemMatch.IA, TipoAvaliadorMatch.STARTUP);
+        svcSemProviders.avaliar(idProp, reqDTO, null);
+
+        assertEquals(1, svcSemProviders.listarPorPropostaOuTermo(idProp).size());
     }
 
     @SuppressWarnings("unchecked")

@@ -208,4 +208,54 @@ class RegistroOficialPocServiceTest {
         when(repository.findByTermoPilotoId(termoId)).thenThrow(new RuntimeException());
         assertTrue(service.buscarPorTermoPilotoId(termoId).isPresent());
     }
+
+    @Test
+    @DisplayName("Fallbacks em memoria para busca por ID e por codigo verificador")
+    void fallbacksBuscaEmMemoria() {
+        UUID idSalvo = UUID.randomUUID();
+        String codigoSalvo = "POC-2026-MEM12345";
+        RegistroOficialPoc r = new RegistroOficialPoc();
+        r.setId(idSalvo);
+        r.setCodigoVerificador(codigoSalvo);
+        service.salvar(r);
+
+        when(repository.findById(idSalvo)).thenThrow(new RuntimeException("DB offline"));
+        RegistroOficialPocResponseDTO porId = service.buscarPorId(idSalvo);
+        assertEquals(idSalvo, porId.id());
+
+        when(repository.findByCodigoVerificador(codigoSalvo)).thenThrow(new RuntimeException("DB offline"));
+        RegistroOficialPocResponseDTO porCodigo = service.buscarPorCodigoVerificador(codigoSalvo);
+        assertEquals(codigoSalvo, porCodigo.codigoVerificador());
+
+        when(repository.findById(any())).thenThrow(new RuntimeException("DB offline"));
+        UUID idNaoExiste = UUID.randomUUID();
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorId(idNaoExiste));
+
+        when(repository.findByCodigoVerificador(any())).thenThrow(new RuntimeException("DB offline"));
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorCodigoVerificador("INEXISTENTE_MEM"));
+    }
+
+    @Test
+    @DisplayName("Emissao e busca com repositoryProvider e ambienteServiceProvider nulos")
+    void servicoSemProviders() {
+        RegistroOficialPocService serviceSemProviders = new RegistroOficialPocService();
+        assertThrows(ResponseStatusException.class, () -> serviceSemProviders.salvar(null));
+
+        RegistroOficialPoc registro = new RegistroOficialPoc();
+        RegistroOficialPoc salvo = serviceSemProviders.salvar(registro);
+        assertNotNull(salvo);
+
+        assertNotNull(serviceSemProviders.buscarPorId(salvo.getId()));
+        assertNotNull(serviceSemProviders.buscarPorCodigoVerificador(salvo.getCodigoVerificador()));
+
+        TermoPiloto termo = new TermoPiloto();
+        termo.setStatus(StatusProposta.POC_CONCLUIDA);
+        termo.setAvaliacaoMetrica(AvaliacaoMetrica.ATENDEU_TOTALMENTE);
+        termo.setParecer("Piloto executado com sucesso e metrica atingida");
+        RegistroOficialPocResponseDTO emitido = serviceSemProviders.emitir(termo);
+        assertNotNull(emitido);
+
+        RegistroOficialPocService serviceComRepo = new RegistroOficialPocService(repositoryProvider);
+        assertNotNull(serviceComRepo);
+    }
 }

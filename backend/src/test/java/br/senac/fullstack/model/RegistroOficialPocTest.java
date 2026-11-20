@@ -172,22 +172,22 @@ class RegistroOficialPocTest {
     @Test
     @DisplayName("Equals e hashCode baseados no ID")
     void equalsEHashCode() {
-        UUID id = UUID.randomUUID();
-        RegistroOficialPoc r1 = new RegistroOficialPoc();
-        r1.setId(id);
+        UUID idPoc = UUID.randomUUID();
+        RegistroOficialPoc registroPrincipal = new RegistroOficialPoc();
+        registroPrincipal.setId(idPoc);
 
-        RegistroOficialPoc r2 = new RegistroOficialPoc();
-        r2.setId(id);
+        RegistroOficialPoc registroClone = new RegistroOficialPoc();
+        registroClone.setId(idPoc);
 
-        RegistroOficialPoc r3 = new RegistroOficialPoc();
-        r3.setId(UUID.randomUUID());
+        RegistroOficialPoc registroDistinto = new RegistroOficialPoc();
+        registroDistinto.setId(UUID.randomUUID());
 
-        assertEquals(r1, r1);
-        assertEquals(r1, r2);
-        assertNotEquals(r1, r3);
-        assertNotEquals(r1, null);
-        assertNotEquals(r1, "outro");
-        assertEquals(r1.hashCode(), r2.hashCode());
-        assertEquals(r1.hashCode(), r3.hashCode());
+        assertEquals(registroPrincipal, registroPrincipal);
+        assertEquals(registroPrincipal, registroClone);
+        assertNotEquals(registroPrincipal, registroDistinto);
+        assertNotEquals(null, registroPrincipal);
+        assertNotEquals(Double.valueOf(3.14), registroPrincipal);
+        assertEquals(registroPrincipal.hashCode(), registroClone.hashCode());
+        assertEquals(registroPrincipal.hashCode(), registroDistinto.hashCode());
     }
 }

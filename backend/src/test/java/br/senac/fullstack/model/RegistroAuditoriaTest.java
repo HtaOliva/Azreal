@@ -104,23 +104,21 @@ class RegistroAuditoriaTest {
     @Test
     @DisplayName("Validacao de equals e hashCode")
     void validacaoEqualsEHashCode() {
-        UUID id1 = UUID.randomUUID();
-        UUID id2 = UUID.randomUUID();
+        UUID idAudit = UUID.randomUUID();
+        RegistroAuditoria auditA = new RegistroAuditoria(idAudit, null, null, null, "sys", "ACT", "det");
+        auditA.setId(idAudit);
 
-        RegistroAuditoria r1 = new RegistroAuditoria();
-        r1.setId(id1);
+        RegistroAuditoria auditB = new RegistroAuditoria();
+        auditB.setId(idAudit);
 
-        RegistroAuditoria r2 = new RegistroAuditoria();
-        r2.setId(id1);
+        RegistroAuditoria auditC = new RegistroAuditoria();
+        auditC.setId(UUID.randomUUID());
 
-        RegistroAuditoria r3 = new RegistroAuditoria();
-        r3.setId(id2);
-
-        assertEquals(r1, r1);
-        assertEquals(r1, r2);
-        assertNotEquals(r1, r3);
-        assertNotEquals(r1, null);
-        assertNotEquals(r1, "outra_classe");
-        assertEquals(r1.hashCode(), r2.hashCode());
+        assertEquals(auditA, auditA);
+        assertEquals(auditA, auditB);
+        assertNotEquals(auditA, auditC);
+        assertNotEquals(null, auditA);
+        assertNotEquals(Integer.valueOf(42), auditA);
+        assertEquals(auditA.hashCode(), auditB.hashCode());
     }
 }
