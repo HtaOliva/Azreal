@@ -110,20 +110,61 @@ class PaginationAndFilteringTest {
         DesafioValidacaoService service = new DesafioValidacaoService(null, null, null);
         Pageable pageable = PageRequest.of(0, 5);
 
-        Page<DesafioAnonimoResponseDTO> page = service.listarAtivosAnonimosPaginado("teste", ModalidadeTeste.REMOTO, pageable);
-        assertNotNull(page);
-        assertTrue(page.isEmpty());
+        Page<DesafioAnonimoResponseDTO> pageVazia = service.listarAtivosAnonimosPaginado("teste", ModalidadeTeste.REMOTO, pageable);
+        assertNotNull(pageVazia);
+        assertTrue(pageVazia.isEmpty());
+
+        UUID ambId = UUID.randomUUID();
+        service.criar(new br.senac.fullstack.dto.DesafioValidacaoRequestDTO(
+                ambId, "Desafio Saude Telemedicina", "Problema em telemedicina", "Medicos", 100, ModalidadeTeste.REMOTO, 30));
+        service.criar(new br.senac.fullstack.dto.DesafioValidacaoRequestDTO(
+                ambId, "Desafio Agro IoT", "Problema com sensores de solo", "Produtores", 50, ModalidadeTeste.PRESENCIAL, 60));
+
+        Page<DesafioAnonimoResponseDTO> pageComFiltro = service.listarAtivosAnonimosPaginado(
+                "saude", ModalidadeTeste.REMOTO, pageable);
+        assertEquals(1, pageComFiltro.getTotalElements());
+        assertEquals("Desafio Saude Telemedicina", pageComFiltro.getContent().get(0).titulo());
+
+        Page<DesafioAnonimoResponseDTO> pageSemFiltro = service.listarAtivosAnonimosPaginado(
+                null, null, null);
+        assertEquals(2, pageSemFiltro.getTotalElements());
+
+        Page<DesafioAnonimoResponseDTO> pageDescricao = service.listarAtivosAnonimosPaginado(
+                "sensores", null, pageable);
+        assertEquals(1, pageDescricao.getTotalElements());
     }
 
     @Test
     @DisplayName("StartupService deve filtrar e paginar em memoria quando repo e nulo")
     void testStartupServicePaginacaoMemoria() {
-        StartupService service = new StartupService(null, null);
+        br.senac.fullstack.service.AceiteTermoService aceiteTermoService = mock(br.senac.fullstack.service.AceiteTermoService.class);
+        when(aceiteTermoService.existe(any())).thenReturn(true);
+        StartupService service = new StartupService(null, aceiteTermoService);
         Pageable pageable = PageRequest.of(0, 5);
 
-        Page<StartupResponseDTO> page = service.listarPaginado(Estagio.PROTOTIPO_INICIAL, "bio", pageable);
-        assertNotNull(page);
-        assertTrue(page.isEmpty());
+        Page<StartupResponseDTO> pageVazia = service.listarPaginado(Estagio.PROTOTIPO_INICIAL, "bio", pageable);
+        assertNotNull(pageVazia);
+        assertTrue(pageVazia.isEmpty());
+
+        service.criar(new br.senac.fullstack.dto.StartupRequestDTO(
+                "BioHealth Tech", "bio@health.com", "senha123", "Descricao bio", "Biotecnologia",
+                java.time.LocalDate.now(), Estagio.PROTOTIPO_INICIAL, List.of(), "SP", "SP",
+                false, null, UUID.randomUUID(), "35", "3550308", "Validar bio", List.of(), List.of()));
+        service.criar(new br.senac.fullstack.dto.StartupRequestDTO(
+                "AgroData", "agro@data.com", "senha123", "Analise de solo", "Agronegocio",
+                java.time.LocalDate.now(), Estagio.MVP_FUNCIONAL, List.of(), "MG", "MG",
+                false, null, UUID.randomUUID(), "31", "3106200", "Validar agro", List.of(), List.of()));
+
+        Page<StartupResponseDTO> pageEstagio = service.listarPaginado(Estagio.PROTOTIPO_INICIAL, null, pageable);
+        assertEquals(1, pageEstagio.getTotalElements());
+        assertEquals("BioHealth Tech", pageEstagio.getContent().get(0).nome());
+
+        Page<StartupResponseDTO> pageBusca = service.listarPaginado(null, "solo", pageable);
+        assertEquals(1, pageBusca.getTotalElements());
+        assertEquals("AgroData", pageBusca.getContent().get(0).nome());
+
+        Page<StartupResponseDTO> pageSemFiltro = service.listarPaginado(null, "", null);
+        assertEquals(2, pageSemFiltro.getTotalElements());
     }
 
     @Test

@@ -118,27 +118,50 @@ public class StartupService {
     public Page<StartupResponseDTO> listarPaginado(Estagio estagio, String termoBusca, Pageable pageable) {
         Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
         StartupRepository repo = repository();
-        Page<Startup> page;
         if (repo != null) {
-            if (estagio != null || termoBusca != null) {
-                page = repo.buscarComFiltros(estagio, termoBusca, effectivePageable);
-            } else {
-                page = repo.findAll(effectivePageable);
-            }
-        } else {
-            List<Startup> filtrados = memory.values().stream()
-                    .filter(s -> estagio == null || estagio.equals(s.getEstagioAtual()))
-                    .filter(s -> termoBusca == null || termoBusca.isBlank()
-                            || (s.getNome() != null && s.getNome().toLowerCase().contains(termoBusca.toLowerCase()))
-                            || (s.getDescricao() != null && s.getDescricao().toLowerCase().contains(termoBusca.toLowerCase()))
-                            || (s.getAreaAtuacao() != null && s.getAreaAtuacao().toLowerCase().contains(termoBusca.toLowerCase())))
-                    .toList();
-            int start = (int) effectivePageable.getOffset();
-            int end = Math.min(start + effectivePageable.getPageSize(), filtrados.size());
-            List<Startup> sublist = start <= end ? filtrados.subList(start, end) : List.of();
-            page = new PageImpl<>(sublist, effectivePageable, filtrados.size());
+            return buscarPaginadoNoBanco(repo, estagio, termoBusca, effectivePageable);
         }
+        return buscarPaginadoEmMemoria(estagio, termoBusca, effectivePageable);
+    }
+
+    private Page<StartupResponseDTO> buscarPaginadoNoBanco(
+            StartupRepository repo,
+            Estagio estagio,
+            String termoBusca,
+            Pageable pageable) {
+        Page<Startup> page = (estagio != null || termoBusca != null)
+                ? repo.buscarComFiltros(estagio, termoBusca, pageable)
+                : repo.findAll(pageable);
         return page.map(this::toResponse);
+    }
+
+    private Page<StartupResponseDTO> buscarPaginadoEmMemoria(
+            Estagio estagio,
+            String termoBusca,
+            Pageable pageable) {
+        List<Startup> filtrados = memory.values().stream()
+                .filter(s -> atendeFiltroEstagio(s, estagio))
+                .filter(s -> atendeFiltroTermo(s, termoBusca))
+                .toList();
+
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtrados.size());
+        List<Startup> sublist = start <= end ? filtrados.subList(start, end) : List.of();
+        return new PageImpl<>(sublist, pageable, filtrados.size()).map(this::toResponse);
+    }
+
+    private boolean atendeFiltroEstagio(Startup s, Estagio estagio) {
+        return estagio == null || estagio.equals(s.getEstagioAtual());
+    }
+
+    private boolean atendeFiltroTermo(Startup s, String termo) {
+        if (termo == null || termo.isBlank()) {
+            return true;
+        }
+        String busca = termo.toLowerCase();
+        return (s.getNome() != null && s.getNome().toLowerCase().contains(busca))
+                || (s.getDescricao() != null && s.getDescricao().toLowerCase().contains(busca))
+                || (s.getAreaAtuacao() != null && s.getAreaAtuacao().toLowerCase().contains(busca));
     }
 
     public StartupResponseDTO atualizar(UUID id, StartupUpdateDTO request) {
