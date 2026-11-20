@@ -139,7 +139,7 @@ public class PropostaPocController {
                 try {
                     StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
                     PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
-                    if (startup != null && !proposta.startupId().equals(startup.id())) {
+                    if (startup != null && proposta != null && !startup.id().equals(proposta.startupId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                     }
                 } catch (Exception ignored) {
@@ -193,6 +193,9 @@ public class PropostaPocController {
             return ResponseEntity.ok(termoService.obterTermoComIdentidadeRevelada(id, authentication));
         }
         TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
+        if (termo == null) {
+            return ResponseEntity.notFound().build();
+        }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
     }
@@ -205,6 +208,9 @@ public class PropostaPocController {
             Authentication authentication) {
         TermoPilotoService service = obterTermoPilotoService();
         TermoPiloto piloto = service.registrarEntrega(id, request, authentication);
+        if (piloto == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
                 piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
     }
@@ -225,9 +231,9 @@ public class PropostaPocController {
     public ResponseEntity<List<PropostaPocResponseDTO>> listarMinhas(
             @RequestParam(name = "startupId", required = false) UUID startupIdParam,
             Authentication authentication) {
-        ResponseEntity<?> erro = validarAcessoStartupMinhas(startupIdParam, authentication);
+        HttpStatus erro = validarAcessoStartupMinhas(startupIdParam, authentication);
         if (erro != null) {
-            return ResponseEntity.status(erro.getStatusCode()).build();
+            return ResponseEntity.status(erro).build();
         }
         UUID targetStartupId = extrairStartupId(startupIdParam, authentication);
         if (targetStartupId == null) {
@@ -243,9 +249,9 @@ public class PropostaPocController {
             @RequestParam(name = "status", required = false) StatusProposta status,
             @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.DESC) Pageable pageable,
             Authentication authentication) {
-        ResponseEntity<?> erro = validarAcessoStartupMinhas(startupIdParam, authentication);
+        HttpStatus erro = validarAcessoStartupMinhas(startupIdParam, authentication);
         if (erro != null) {
-            return ResponseEntity.status(erro.getStatusCode()).build();
+            return ResponseEntity.status(erro).build();
         }
         UUID targetStartupId = extrairStartupId(startupIdParam, authentication);
         if (targetStartupId == null) {
@@ -259,9 +265,9 @@ public class PropostaPocController {
     public ResponseEntity<List<PropostaPocResponseDTO>> consultarFila(
             @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
             Authentication authentication) {
-        ResponseEntity<?> erro = validarAcessoFila(ambienteIdParam, authentication);
+        HttpStatus erro = validarAcessoFila(ambienteIdParam, authentication);
         if (erro != null) {
-            return ResponseEntity.status(erro.getStatusCode()).build();
+            return ResponseEntity.status(erro).build();
         }
         Set<UUID> desafioIds = extrairDesafiosFila(ambienteIdParam, authentication);
         if (desafioIds.isEmpty()) {
@@ -277,9 +283,9 @@ public class PropostaPocController {
             @RequestParam(name = "status", required = false) StatusProposta status,
             @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.ASC) Pageable pageable,
             Authentication authentication) {
-        ResponseEntity<?> erro = validarAcessoFila(ambienteIdParam, authentication);
+        HttpStatus erro = validarAcessoFila(ambienteIdParam, authentication);
         if (erro != null) {
-            return ResponseEntity.status(erro.getStatusCode()).build();
+            return ResponseEntity.status(erro).build();
         }
         Set<UUID> desafioIds = extrairDesafiosFila(ambienteIdParam, authentication);
         if (desafioIds.isEmpty()) {
@@ -327,9 +333,9 @@ public class PropostaPocController {
         return ResponseEntity.ok(!audit.isEmpty() ? audit : auditSvc.listarPorTermo(id));
     }
 
-    private ResponseEntity<?> validarAcessoStartupMinhas(UUID startupIdParam, Authentication authentication) {
+    private HttpStatus validarAcessoStartupMinhas(UUID startupIdParam, Authentication authentication) {
         if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return HttpStatus.UNAUTHORIZED;
         }
         if (!isAdmin(authentication) && startupIdParam != null) {
             StartupService startupService = startupServiceProvider != null
@@ -338,10 +344,10 @@ public class PropostaPocController {
                 try {
                     StartupResponseDTO startupAutenticada = startupService.buscarPorEmail(authentication.getName());
                     if (startupAutenticada != null && !startupIdParam.equals(startupAutenticada.id())) {
-                        return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                        return HttpStatus.FORBIDDEN;
                     }
                 } catch (Exception ignored) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+                    return HttpStatus.FORBIDDEN;
                 }
             }
         }
@@ -367,12 +373,12 @@ public class PropostaPocController {
         return null;
     }
 
-    private ResponseEntity<?> validarAcessoFila(UUID ambienteIdParam, Authentication authentication) {
+    private HttpStatus validarAcessoFila(UUID ambienteIdParam, Authentication authentication) {
         if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+            return HttpStatus.UNAUTHORIZED;
         }
         if (isAcessoFilaNaoAutorizado(ambienteIdParam, authentication)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+            return HttpStatus.FORBIDDEN;
         }
         return null;
     }
@@ -426,7 +432,7 @@ public class PropostaPocController {
             return Set.of();
         }
         List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
-        if (desafios.isEmpty()) {
+        if (desafios == null || desafios.isEmpty()) {
             return Set.of();
         }
         return desafios.stream()
@@ -450,6 +456,9 @@ public class PropostaPocController {
         try {
             AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
             PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
+            if (proposta == null || proposta.desafioValidacaoId() == null) {
+                return true;
+            }
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id());
         } catch (ResponseStatusException e) {
@@ -483,6 +492,9 @@ public class PropostaPocController {
         }
         try {
             PropostaPocResponseDTO proposta = propostaPocService.buscar(propostaId);
+            if (proposta == null || proposta.desafioValidacaoId() == null) {
+                return null;
+            }
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return desafio != null ? desafio.ambienteValidacaoId() : null;
         } catch (Exception ignored) {
