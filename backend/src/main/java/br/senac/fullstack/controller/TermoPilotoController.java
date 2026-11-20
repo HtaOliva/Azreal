@@ -65,10 +65,9 @@ public class TermoPilotoController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody EntregaPilotoRequestDTO request,
             Authentication authentication) {
-        TermoPiloto termo = termoPilotoService.registrarEntrega(id, request, authentication);
-        AmbienteValidacaoResponseDTO ambienteRevelado =
-                termoPilotoService.buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado));
+        TermoPiloto tp = termoPilotoService.registrarEntrega(id, request, authentication);
+        AmbienteValidacaoResponseDTO amb = termoPilotoService.buscarAmbienteRevelado(tp.getAmbienteValidacaoId());
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(tp, tp.getStatus(), amb));
     }
 
     @PostMapping("/{id}/confirmar-execucao")
@@ -77,8 +76,9 @@ public class TermoPilotoController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody ConfirmacaoExecucaoRequestDTO request,
             Authentication authentication) {
-        TermoPiloto termo = termoPilotoService.confirmarExecucao(id, request, authentication);
-        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(termo));
+        return ResponseEntity.ok(
+                ConfirmacaoExecucaoResponseDTO.fromEntity(termoPilotoService.confirmarExecucao(id, request, authentication))
+        );
     }
 
     @PostMapping(path = {"/{id}/avaliar-match", "/{id}/avaliacao-match"})
@@ -87,38 +87,32 @@ public class TermoPilotoController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody AvaliacaoMatchRequestDTO request,
             Authentication authentication) {
-        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+        AvaliacaoMatchService svc = avaliacaoMatchServiceProvider != null
                 ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
-        if (matchService == null) {
+        if (svc == null) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
-        AvaliacaoMatchResponseDTO response = matchService.avaliar(id, request, authentication);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        AvaliacaoMatchResponseDTO dto = svc.avaliar(id, request, authentication);
+        return ResponseEntity.status(HttpStatus.CREATED).body(dto);
     }
 
     @GetMapping(path = {"/{id}/avaliar-match", "/{id}/avaliacoes-match", "/{id}/avaliacao-match"})
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<AvaliacaoMatchResponseDTO>> listarAvaliacoesMatch(@PathVariable("id") UUID id) {
-        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
+        AvaliacaoMatchService svc = avaliacaoMatchServiceProvider != null
                 ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
-        if (matchService == null) {
-            return ResponseEntity.ok(List.of());
-        }
-        return ResponseEntity.ok(matchService.listarPorPropostaOuTermo(id));
+        return ResponseEntity.ok(svc != null ? svc.listarPorPropostaOuTermo(id) : List.of());
     }
 
     @GetMapping("/{id}/auditoria")
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<RegistroAuditoriaResponseDTO>> consultarAuditoria(@PathVariable("id") UUID id) {
-        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+        AuditoriaService auditoria = auditoriaServiceProvider != null
                 ? auditoriaServiceProvider.getIfAvailable() : null;
-        if (auditoriaService == null) {
+        if (auditoria == null) {
             return ResponseEntity.ok(List.of());
         }
-        List<RegistroAuditoriaResponseDTO> audit = auditoriaService.listarPorTermo(id);
-        if (audit.isEmpty()) {
-            audit = auditoriaService.listarPorProposta(id);
-        }
-        return ResponseEntity.ok(audit);
+        List<RegistroAuditoriaResponseDTO> audit = auditoria.listarPorTermo(id);
+        return ResponseEntity.ok(audit.isEmpty() ? auditoria.listarPorProposta(id) : audit);
     }
 }

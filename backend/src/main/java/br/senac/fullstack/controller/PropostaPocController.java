@@ -38,6 +38,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -196,14 +197,12 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody EntregaPilotoRequestDTO request,
             Authentication authentication) {
-        TermoPilotoService termoService = termoPilotoServiceProvider != null
-                ? termoPilotoServiceProvider.getIfAvailable() : null;
-        if (termoService == null) {
+        if (termoPilotoServiceProvider == null || termoPilotoServiceProvider.getIfAvailable() == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
-        TermoPiloto termo = termoService.registrarEntrega(id, request, authentication);
-        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado));
+        TermoPiloto piloto = termoPilotoServiceProvider.getIfAvailable().registrarEntrega(id, request, authentication);
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
+                piloto, piloto.getStatus(), buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
     }
 
     @PostMapping("/{id}/confirmacao-resultado")
@@ -212,13 +211,11 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody ConfirmacaoExecucaoRequestDTO request,
             Authentication authentication) {
-        TermoPilotoService termoService = termoPilotoServiceProvider != null
-                ? termoPilotoServiceProvider.getIfAvailable() : null;
-        if (termoService == null) {
+        if (termoPilotoServiceProvider == null || termoPilotoServiceProvider.getIfAvailable() == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
-        TermoPiloto termo = termoService.confirmarExecucao(id, request, authentication);
-        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(termo));
+        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(
+                termoPilotoServiceProvider.getIfAvailable().confirmarExecucao(id, request, authentication)));
     }
 
     private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
@@ -420,39 +417,31 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody AvaliacaoMatchRequestDTO request,
             Authentication authentication) {
-        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
-                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
-        if (matchService == null) {
+        if (avaliacaoMatchServiceProvider == null || avaliacaoMatchServiceProvider.getIfAvailable() == null) {
             return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
         }
-        AvaliacaoMatchResponseDTO response = matchService.avaliar(id, request, authentication);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(avaliacaoMatchServiceProvider.getIfAvailable().avaliar(id, request, authentication));
     }
 
     @GetMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match", "/{id}/avaliacoes-match"})
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<AvaliacaoMatchResponseDTO>> listarAvaliacoesMatch(@PathVariable("id") UUID id) {
-        AvaliacaoMatchService matchService = avaliacaoMatchServiceProvider != null
-                ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
-        if (matchService == null) {
-            return ResponseEntity.ok(List.of());
+        if (avaliacaoMatchServiceProvider == null || avaliacaoMatchServiceProvider.getIfAvailable() == null) {
+            return ResponseEntity.ok(Collections.emptyList());
         }
-        return ResponseEntity.ok(matchService.listarPorPropostaOuTermo(id));
+        return ResponseEntity.ok(avaliacaoMatchServiceProvider.getIfAvailable().listarPorPropostaOuTermo(id));
     }
 
     @GetMapping("/{id}/auditoria")
     @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
     public ResponseEntity<List<RegistroAuditoriaResponseDTO>> consultarAuditoria(@PathVariable("id") UUID id) {
-        AuditoriaService auditoriaService = auditoriaServiceProvider != null
-                ? auditoriaServiceProvider.getIfAvailable() : null;
-        if (auditoriaService == null) {
-            return ResponseEntity.ok(List.of());
+        if (auditoriaServiceProvider == null || auditoriaServiceProvider.getIfAvailable() == null) {
+            return ResponseEntity.ok(Collections.emptyList());
         }
-        List<RegistroAuditoriaResponseDTO> audit = auditoriaService.listarPorProposta(id);
-        if (audit.isEmpty()) {
-            audit = auditoriaService.listarPorTermo(id);
-        }
-        return ResponseEntity.ok(audit);
+        AuditoriaService auditSvc = auditoriaServiceProvider.getIfAvailable();
+        List<RegistroAuditoriaResponseDTO> audit = auditSvc.listarPorProposta(id);
+        return ResponseEntity.ok(!audit.isEmpty() ? audit : auditSvc.listarPorTermo(id));
     }
 
     private boolean isAdmin(Authentication authentication) {
