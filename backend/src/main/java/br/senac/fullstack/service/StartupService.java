@@ -36,7 +36,7 @@ public class StartupService {
     }
 
     private StartupRepository repository() {
-        return repositoryProvider.getIfAvailable();
+        return repositoryProvider != null ? repositoryProvider.getIfAvailable() : null;
     }
 
     public StartupResponseDTO criar(StartupRequestDTO request) {

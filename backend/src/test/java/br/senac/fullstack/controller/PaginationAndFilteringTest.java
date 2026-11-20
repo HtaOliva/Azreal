@@ -8,6 +8,7 @@ import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.service.DesafioValidacaoService;
+import br.senac.fullstack.service.NullObjectProvider;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
 import org.junit.jupiter.api.DisplayName;
@@ -81,9 +82,9 @@ class PaginationAndFilteringTest {
         UUID desafioId2 = UUID.randomUUID();
 
         PropostaPocRequestDTO req1 = new PropostaPocRequestDTO(
-                startupId, desafioId1, "Escopo 1", "Metrica 1", 30, ModalidadeTeste.REMOTO, true, true);
+                startupId, desafioId1, "Escopo 1", 30, "Resp Startup", "Resp Ambiente", "Metrica 1", true);
         PropostaPocRequestDTO req2 = new PropostaPocRequestDTO(
-                startupId, desafioId2, "Escopo 2", "Metrica 2", 15, ModalidadeTeste.PRESENCIAL, true, true);
+                startupId, desafioId2, "Escopo 2", 15, "Resp Startup", "Resp Ambiente", "Metrica 2", true);
 
         service.criar(req1);
         service.criar(req2);
@@ -129,7 +130,7 @@ class PaginationAndFilteringTest {
     @DisplayName("PropostaPocController deve validar autenticacao em minhas paginado")
     void testPropostaPocControllerMinhasPaginadoSemAuth() {
         PropostaPocService service = new PropostaPocService();
-        PropostaPocController controller = new PropostaPocController(service);
+        PropostaPocController controller = new PropostaPocController(service, new NullObjectProvider<>());
 
         ResponseEntity<Page<PropostaPocResponseDTO>> respSemAuth =
                 controller.listarMinhasPaginado(UUID.randomUUID(), null, PageRequest.of(0, 10), null);

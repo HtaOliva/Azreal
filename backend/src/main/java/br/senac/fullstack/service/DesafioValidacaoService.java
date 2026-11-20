@@ -45,7 +45,7 @@ public class DesafioValidacaoService {
     }
 
     private DesafioValidacaoRepository repository() {
-        return repositoryProvider.getIfAvailable();
+        return repositoryProvider != null ? repositoryProvider.getIfAvailable() : null;
     }
 
     private AmbienteValidacao obterAmbienteValidacao(UUID ambienteId) {
