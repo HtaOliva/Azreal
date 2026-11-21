@@ -13,7 +13,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.ObjectProvider;
-import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDateTime;
@@ -24,12 +23,10 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class RegistroOficialPocServiceTest {
@@ -189,8 +186,9 @@ class RegistroOficialPocServiceTest {
         RegistroOficialPocResponseDTO porCodigo = service.buscarPorCodigoVerificador(codigo);
         assertEquals(codigo, porCodigo.codigoVerificador());
 
+        UUID inexistentId = UUID.randomUUID();
         assertThrows(ResponseStatusException.class, () -> service.buscarPorId(null));
-        assertThrows(ResponseStatusException.class, () -> service.buscarPorId(UUID.randomUUID()));
+        assertThrows(ResponseStatusException.class, () -> service.buscarPorId(inexistentId));
 
         assertThrows(ResponseStatusException.class, () -> service.buscarPorCodigoVerificador(null));
         assertThrows(ResponseStatusException.class, () -> service.buscarPorCodigoVerificador("  "));
