@@ -132,7 +132,7 @@ public class PropostaPocController {
                 try {
                     StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
                     PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
-                    if (startup != null && !proposta.startupId().equals(startup.id())) {
+                    if (startup != null && proposta != null && !startup.id().equals(proposta.startupId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                     }
                 } catch (Exception ignored) {
@@ -187,6 +187,9 @@ public class PropostaPocController {
             return ResponseEntity.ok(termoService.obterTermoComIdentidadeRevelada(id, authentication));
         }
         TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
+        if (termo == null) {
+            return ResponseEntity.notFound().build();
+        }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
     }
@@ -203,6 +206,9 @@ public class PropostaPocController {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
         TermoPiloto piloto = termoService.registrarEntrega(id, request, authentication);
+        if (piloto == null) {
+            return ResponseEntity.notFound().build();
+        }
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
                 piloto, piloto.getStatus(), buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
     }
