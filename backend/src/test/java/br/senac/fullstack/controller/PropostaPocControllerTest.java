@@ -1353,4 +1353,267 @@ class PropostaPocControllerTest {
                 .andExpect(jsonPath("$.length()").value(1))
                 .andExpect(jsonPath("$[0].acao").value("ACEITE_TERMO_PILOTO"));
     }
+
+    @Test
+    @WithMockUser(username = STARTUP_EMAIL, roles = "STARTUP")
+    void listarAvaliacoesMatchEndpointPropostaPoc() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        AvaliacaoMatchResponseDTO dto = new AvaliacaoMatchResponseDTO(
+                UUID.randomUUID(),
+                propostaId,
+                null,
+                TipoAvaliadorMatch.STARTUP,
+                STARTUP_EMAIL,
+                true,
+                5,
+                "Encaixe excelente",
+                OrigemMatch.REGRAS,
+                LocalDateTime.now()
+        );
+
+        when(avaliacaoMatchService.listarPorPropostaOuTermo(propostaId)).thenReturn(List.of(dto));
+
+        mockMvc.perform(get("/propostas-poc/{id}/avaliacao-match", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].comentario").value("Encaixe excelente"));
+
+        mockMvc.perform(get("/propostas-poc/{id}/avaliar-match", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+
+        mockMvc.perform(get("/propostas-poc/{id}/avaliacoes-match", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    @WithMockUser(username = STARTUP_EMAIL, roles = "STARTUP")
+    void listarAvaliacoesMatchQuandoServicoRetornaVazio() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        when(avaliacaoMatchService.listarPorPropostaOuTermo(propostaId)).thenReturn(List.of());
+
+        mockMvc.perform(get("/propostas-poc/{id}/avaliacao-match", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+    }
+
+    @Test
+    @WithMockUser(username = ADMIN_EMAIL, roles = "ADMIN")
+    void consultarAuditoriaQuandoListaPropostaVaziaBuscaPorTermo() throws Exception {
+        UUID propostaId = UUID.randomUUID();
+        RegistroAuditoriaResponseDTO auditDTO = new RegistroAuditoriaResponseDTO(
+                UUID.randomUUID(),
+                null,
+                propostaId,
+                StatusProposta.EM_TESTE,
+                StatusProposta.POC_CONCLUIDA,
+                ADMIN_EMAIL,
+                "CONFIRMACAO_EXECUCAO",
+                "Piloto concluido com sucesso",
+                LocalDateTime.now()
+        );
+
+        when(auditoriaService.listarPorProposta(propostaId)).thenReturn(List.of());
+        when(auditoriaService.listarPorTermo(propostaId)).thenReturn(List.of(auditDTO));
+
+        mockMvc.perform(get("/propostas-poc/{id}/auditoria", propostaId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].acao").value("CONFIRMACAO_EXECUCAO"));
+    }
+
+    @Test
+    void controllerDiretoAvaliacaoMatchEAuditoriaQuandoProvidersNulos() {
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, null, null, null, null, null);
+        UUID id = UUID.randomUUID();
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                STARTUP_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        AvaliacaoMatchRequestDTO req = new AvaliacaoMatchRequestDTO(
+                true, 5, "Comentario", OrigemMatch.REGRAS);
+
+        ResponseEntity<AvaliacaoMatchResponseDTO> respAvaliar = controller.avaliarMatch(id, req, auth);
+        assertEquals(HttpStatus.NOT_IMPLEMENTED, respAvaliar.getStatusCode());
+
+        ResponseEntity<List<AvaliacaoMatchResponseDTO>> respListar = controller.listarAvaliacoesMatch(id);
+        assertEquals(HttpStatus.OK, respListar.getStatusCode());
+        assertTrue(respListar.getBody() != null && respListar.getBody().isEmpty());
+
+        ResponseEntity<List<RegistroAuditoriaResponseDTO>> respAudit = controller.consultarAuditoria(id);
+        assertEquals(HttpStatus.OK, respAudit.getStatusCode());
+        assertTrue(respAudit.getBody() != null && respAudit.getBody().isEmpty());
+    }
+
+    @Test
+    void controllerDiretoBuscarTermoNaoEncontradoRetorna404() {
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, null, null, null);
+        UUID id = UUID.randomUUID();
+        when(propostaPocService.obterTermoPorPropostaId(id)).thenReturn(null);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                STARTUP_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        ResponseEntity<TermoPilotoResponseDTO> resp = controller.buscarTermoDaProposta(id, auth);
+        assertEquals(HttpStatus.NOT_FOUND, resp.getStatusCode());
+    }
+
+    @Test
+    void controllerDiretoRegistrarEntregaRetornaNuloRetorna404() {
+        ObjectProvider<TermoPilotoService> termoProvider = mock(ObjectProvider.class);
+        TermoPilotoService termoService = mock(TermoPilotoService.class);
+        when(termoProvider.getIfAvailable()).thenReturn(termoService);
+
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, null, null, termoProvider);
+
+        UUID id = UUID.randomUUID();
+        EntregaPilotoRequestDTO entregaReq = new EntregaPilotoRequestDTO("Resumo", null, null);
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                STARTUP_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_STARTUP")));
+
+        when(termoService.registrarEntrega(eq(id), eq(entregaReq), any())).thenReturn(null);
+
+        ResponseEntity<TermoPilotoResponseDTO> resp = controller.registrarEntrega(id, entregaReq, auth);
+        assertEquals(HttpStatus.NOT_FOUND, resp.getStatusCode());
+    }
+
+    @Test
+    void controllerDiretoValidacoesDeAcessoComPropostaNulaOuDesafioNulo() {
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+
+        ObjectProvider<DesafioValidacaoService> desProvider = mock(ObjectProvider.class);
+        DesafioValidacaoService desService = mock(DesafioValidacaoService.class);
+        when(desProvider.getIfAvailable()).thenReturn(desService);
+
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, ambProvider, desProvider, null);
+
+        UUID id = UUID.randomUUID();
+        UUID ambId = UUID.randomUUID();
+        when(ambService.buscarPorEmail(AMBIENTE_EMAIL)).thenReturn(criarAmbienteDTO(ambId, AMBIENTE_EMAIL));
+
+        when(propostaPocService.buscar(id)).thenReturn(null);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                AMBIENTE_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        RecusaPropostaRequestDTO recusaDTO = new RecusaPropostaRequestDTO("Motivo qualquer");
+        ResponseEntity<PropostaPocResponseDTO> respRecusa = controller.recusar(id, recusaDTO, auth);
+        assertEquals(HttpStatus.FORBIDDEN, respRecusa.getStatusCode());
+
+        PropostaPocResponseDTO propSemDesafio = new PropostaPocResponseDTO(
+                id, UUID.randomUUID(), null, ESCOPO_TESTE, 30, RESP_STARTUP, RESP_AMBIENTE,
+                TAXA_SUPERIOR_90, true, StatusProposta.PENDENTE, LocalDateTime.now()
+        );
+        when(propostaPocService.buscar(id)).thenReturn(propSemDesafio);
+
+        ResponseEntity<PropostaPocResponseDTO> respRecusa2 = controller.recusar(id, recusaDTO, auth);
+        assertEquals(HttpStatus.FORBIDDEN, respRecusa2.getStatusCode());
+    }
+
+    @Test
+    void controllerDiretoFilaComDesafiosNulosRetornaListaVazia() {
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        AmbienteValidacaoService ambService = mock(AmbienteValidacaoService.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambService);
+
+        ObjectProvider<DesafioValidacaoService> desProvider = mock(ObjectProvider.class);
+        DesafioValidacaoService desService = mock(DesafioValidacaoService.class);
+        when(desProvider.getIfAvailable()).thenReturn(desService);
+
+        PropostaPocController controller = new PropostaPocController(
+                propostaPocService, null, ambProvider, desProvider);
+
+        UUID ambId = UUID.randomUUID();
+        when(ambService.buscarPorEmail(AMBIENTE_EMAIL)).thenReturn(criarAmbienteDTO(ambId, AMBIENTE_EMAIL));
+        when(desService.listarPorAmbiente(ambId)).thenReturn(null);
+
+        Authentication auth = new UsernamePasswordAuthenticationToken(
+                AMBIENTE_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_AMBIENTE_VALIDACAO")));
+
+        ResponseEntity<List<PropostaPocResponseDTO>> resp = controller.consultarFila(null, auth);
+        assertEquals(HttpStatus.OK, resp.getStatusCode());
+        assertTrue(resp.getBody() != null && resp.getBody().isEmpty());
+    }
+
+    @Test
+    void coberturaTotalCasosDeBordaEExcecoesControladas() {
+        ObjectProvider<StartupService> startupProvider = mock(ObjectProvider.class);
+        StartupService startupServiceMock = mock(StartupService.class);
+        when(startupProvider.getIfAvailable()).thenReturn(startupServiceMock);
+
+        ObjectProvider<AmbienteValidacaoService> ambProvider = mock(ObjectProvider.class);
+        AmbienteValidacaoService ambServiceMock = mock(AmbienteValidacaoService.class);
+        when(ambProvider.getIfAvailable()).thenReturn(ambServiceMock);
+
+        ObjectProvider<DesafioValidacaoService> desProvider = mock(ObjectProvider.class);
+        DesafioValidacaoService desServiceMock = mock(DesafioValidacaoService.class);
+        when(desProvider.getIfAvailable()).thenReturn(desServiceMock);
+
+        ObjectProvider<TermoPilotoService> termoProvider = mock(ObjectProvider.class);
+        TermoPilotoService termoServiceMock = mock(TermoPilotoService.class);
+        when(termoProvider.getIfAvailable()).thenReturn(termoServiceMock);
+
+        ObjectProvider<AvaliacaoMatchService> matchProvider = mock(ObjectProvider.class);
+        AvaliacaoMatchService matchServiceMock = mock(AvaliacaoMatchService.class);
+        when(matchProvider.getIfAvailable()).thenReturn(matchServiceMock);
+
+        ObjectProvider<AuditoriaService> auditProvider = mock(ObjectProvider.class);
+        AuditoriaService auditServiceMock = mock(AuditoriaService.class);
+        when(auditProvider.getIfAvailable()).thenReturn(auditServiceMock);
+
+        PropostaPocController controllerFull = new PropostaPocController(
+                propostaPocService, startupProvider, ambProvider, desProvider, termoProvider, matchProvider, auditProvider);
+
+        PropostaPocController controllerNull = new PropostaPocController(
+                propostaPocService, null, null, null, null, null, null);
+
+        UUID id = UUID.randomUUID();
+        Authentication authAdmin = new UsernamePasswordAuthenticationToken(
+                ADMIN_EMAIL, "pass", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
+        Authentication authUser = new UsernamePasswordAuthenticationToken(
+                "user@teste.com", "pass", List.of(new SimpleGrantedAuthority("ROLE_USER")));
+
+        PropostaPocRequestDTO req = new PropostaPocRequestDTO(
+                UUID.randomUUID(), UUID.randomUUID(), ESCOPO_TESTE, 30, RESP_STARTUP, RESP_AMBIENTE, TAXA_SUPERIOR_90, true);
+        when(propostaPocService.criar(any())).thenReturn(criarPropostaResponseDTO(id, req.startupId(), req.desafioValidacaoId(), StatusProposta.PENDENTE));
+        ResponseEntity<PropostaPocResponseDTO> respCriar = controllerNull.criar(req, authUser);
+        assertEquals(HttpStatus.CREATED, respCriar.getStatusCode());
+
+        when(propostaPocService.cancelar(id)).thenReturn(criarPropostaResponseDTO(id, req.startupId(), req.desafioValidacaoId(), StatusProposta.CANCELADA));
+        ResponseEntity<PropostaPocResponseDTO> respCancelar = controllerNull.cancelar(id, authUser);
+        assertEquals(HttpStatus.OK, respCancelar.getStatusCode());
+
+        when(ambServiceMock.buscar(any())).thenThrow(new RuntimeException("Falha banco"));
+        when(propostaPocService.aceitar(eq(id), any())).thenReturn(
+                criarTermoPiloto(UUID.randomUUID(), id, UUID.randomUUID(), UUID.randomUUID(), UUID.randomUUID()));
+        when(ambServiceMock.buscarPorEmail(any())).thenThrow(new RuntimeException("Falha amb"));
+        ResponseEntity<TermoPilotoResponseDTO> respAceitar = controllerFull.aceitar(id, authAdmin);
+        assertEquals(HttpStatus.OK, respAceitar.getStatusCode());
+
+        when(propostaPocService.buscar(id)).thenThrow(new RuntimeException("Proposta erro"));
+        ResponseEntity<TermoPilotoResponseDTO> respAceitar2 = controllerFull.aceitar(id, authAdmin);
+        assertEquals(HttpStatus.OK, respAceitar2.getStatusCode());
+
+        // Quando buscarPorEmail falha na verificacao de acesso a fila, retorna 403 FORBIDDEN
+        ResponseEntity<List<PropostaPocResponseDTO>> respFilaErro = controllerFull.consultarFila(null, authUser);
+        assertEquals(HttpStatus.FORBIDDEN, respFilaErro.getStatusCode());
+
+        // Quando buscarPorEmail sucede na verificacao mas falha na resolucao, retorna lista vazia
+        org.mockito.Mockito.reset(ambServiceMock);
+        when(ambServiceMock.buscarPorEmail(any()))
+                .thenReturn(criarAmbienteDTO(UUID.randomUUID(), "amb@teste.com"))
+                .thenThrow(new RuntimeException("Falha resolucao"));
+        ResponseEntity<List<PropostaPocResponseDTO>> respFilaResolucaoErro = controllerFull.consultarFila(null, authUser);
+        assertEquals(HttpStatus.OK, respFilaResolucaoErro.getStatusCode());
+        assertTrue(respFilaResolucaoErro.getBody() != null && respFilaResolucaoErro.getBody().isEmpty());
+
+        ResponseEntity<TermoPilotoResponseDTO> respTermoNull = controllerNull.buscarTermoDaProposta(id, null);
+        assertEquals(HttpStatus.NOT_FOUND, respTermoNull.getStatusCode());
+    }
 }
