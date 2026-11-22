@@ -28,28 +28,35 @@ public class RegistroOficialPocService {
 
     private final ObjectProvider<RegistroOficialPocRepository> repositoryProvider;
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
     private final Map<UUID, RegistroOficialPoc> memory = new ConcurrentHashMap<>();
 
     @Autowired
     public RegistroOficialPocService(
             ObjectProvider<RegistroOficialPocRepository> repositoryProvider,
-            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider) {
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.repositoryProvider = repositoryProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public RegistroOficialPocService(
+            ObjectProvider<RegistroOficialPocRepository> repositoryProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider) {
+        this(repositoryProvider, ambienteServiceProvider, null);
     }
 
     public RegistroOficialPocService(ObjectProvider<RegistroOficialPocRepository> repositoryProvider) {
-        this(repositoryProvider, null);
+        this(repositoryProvider, null, null);
+    }
+
+    public RegistroOficialPocService() {
+        this(null, null, null);
     }
 
     public RegistroOficialPocResponseDTO emitir(TermoPiloto termo) {
-        if (termo == null) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Termo de piloto e obrigatorio");
-        }
-        if (termo.getStatus() != StatusProposta.POC_CONCLUIDA) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "Apenas pilotos concluidos podem emitir Registro Oficial de POC");
-        }
+        validarTermoParaEmissao(termo);
 
         // Evita emissao duplicada para o mesmo termo de piloto
         Optional<RegistroOficialPoc> existente = buscarPorTermoPilotoId(termo.getId());
@@ -57,30 +64,70 @@ public class RegistroOficialPocService {
             return RegistroOficialPocResponseDTO.fromEntity(existente.get());
         }
 
-        String nomeOrg = null;
-        String setorOrg = null;
-        PorteOrganizacao porteOrg = null;
-
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService != null && termo.getAmbienteValidacaoId() != null) {
-            try {
-                AmbienteValidacaoResponseDTO ambiente = ambienteService.buscar(termo.getAmbienteValidacaoId());
-                if (ambiente != null) {
-                    nomeOrg = ambiente.razaoSocial() != null ? ambiente.razaoSocial() : ambiente.nomeFantasia();
-                    setorOrg = ambiente.setor();
-                    porteOrg = ambiente.porte();
-                }
-            } catch (Exception ignored) {
-                // segue com valores padrão
-            }
-        }
+        AmbienteValidacaoResponseDTO ambiente = resolverAmbiente(termo.getAmbienteValidacaoId());
+        String nomeOrg = extrairNomeOrganizacao(ambiente);
+        String setorOrg = ambiente != null ? ambiente.setor() : null;
+        PorteOrganizacao porteOrg = ambiente != null ? ambiente.porte() : null;
 
         RegistroOficialPoc registro = RegistroOficialPoc.emitir(termo, nomeOrg, setorOrg, porteOrg);
         salvar(registro);
         termo.setCertificadoEmitido(true);
 
+        registrarAuditoriaEmissao(termo, registro);
+
         return RegistroOficialPocResponseDTO.fromEntity(registro);
+    }
+
+    private void validarTermoParaEmissao(TermoPiloto termo) {
+        if (termo == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Termo de piloto e obrigatorio");
+        }
+        if (termo.getStatus() != StatusProposta.POC_CONCLUIDA) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                    "Apenas pilotos concluidos podem emitir Registro Oficial de POC");
+        }
+    }
+
+    private AmbienteValidacaoResponseDTO resolverAmbiente(UUID ambienteId) {
+        if (ambienteId == null || ambienteServiceProvider == null) {
+            return null;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider.getIfAvailable();
+        if (ambienteService == null) {
+            return null;
+        }
+        try {
+            return ambienteService.buscar(ambienteId);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String extrairNomeOrganizacao(AmbienteValidacaoResponseDTO ambiente) {
+        if (ambiente == null) {
+            return null;
+        }
+        return ambiente.razaoSocial() != null ? ambiente.razaoSocial() : ambiente.nomeFantasia();
+    }
+
+    private void registrarAuditoriaEmissao(TermoPiloto termo, RegistroOficialPoc registro) {
+        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditoriaService != null) {
+            try {
+                auditoriaService.registrar(
+                        termo.getPropostaPocId(),
+                        termo.getId(),
+                        StatusProposta.POC_CONCLUIDA,
+                        StatusProposta.POC_CONCLUIDA,
+                        "SISTEMA",
+                        "EMISSAO_REGISTRO_POC",
+                        "Registro Oficial de POC emitido com codigo: " + registro.getCodigoVerificador()
+                );
+            } catch (Exception ignored) {
+                // segue sem erro se falhar auditoria
+            }
+        }
     }
 
     public RegistroOficialPoc salvar(RegistroOficialPoc registro) {
