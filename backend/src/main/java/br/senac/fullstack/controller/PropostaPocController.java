@@ -392,7 +392,7 @@ public class PropostaPocController {
     }
 
     private boolean isAcessoFilaNaoAutorizado(UUID ambienteIdParam, Authentication authentication) {
-        if (isAdmin(authentication)) {
+        if (authentication == null || isAdmin(authentication)) {
             return false;
         }
         AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
@@ -409,7 +409,7 @@ public class PropostaPocController {
     }
 
     private UUID resolverAmbienteIdFila(UUID ambienteIdParam, Authentication authentication) {
-        if (isAdmin(authentication)) {
+        if (authentication == null || isAdmin(authentication)) {
             return ambienteIdParam;
         }
         AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
@@ -471,7 +471,7 @@ public class PropostaPocController {
     private UUID resolverAmbienteIdPorProposta(UUID propostaId, Authentication authentication) {
         AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
                 ? ambienteServiceProvider.getIfAvailable() : null;
-        if (!isAdmin(authentication) && ambienteService != null) {
+        if (authentication != null && !isAdmin(authentication) && ambienteService != null) {
             try {
                 AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
                 if (ambiente != null) {
