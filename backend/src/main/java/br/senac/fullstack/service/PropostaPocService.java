@@ -8,6 +8,10 @@ import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.util.CalendarioPernambucoUtil;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -115,6 +119,27 @@ public class PropostaPocService {
                 .toList();
     }
 
+    public Page<PropostaPocResponseDTO> listarFilaAmbientePaginado(
+            Collection<UUID> desafioIds,
+            StatusProposta status,
+            Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        if (desafioIds == null || desafioIds.isEmpty()) {
+            return new PageImpl<>(List.of(), effectivePageable, 0);
+        }
+        StatusProposta filtroStatus = status != null ? status : StatusProposta.PENDENTE;
+        List<PropostaPoc> filtradas = memory.values().stream()
+                .filter(p -> p.getStatus() == filtroStatus && desafioIds.contains(p.getDesafioValidacaoId()))
+                .sorted(Comparator.comparing(PropostaPoc::getDataCriacao))
+                .toList();
+
+        int start = (int) effectivePageable.getOffset();
+        int end = Math.min(start + effectivePageable.getPageSize(), filtradas.size());
+        List<PropostaPoc> sublist = start <= end ? filtradas.subList(start, end) : List.of();
+        return new PageImpl<>(sublist.stream().map(PropostaPocResponseDTO::fromEntity).toList(),
+                effectivePageable, filtradas.size());
+    }
+
     public PropostaPocResponseDTO buscar(UUID id) {
         return PropostaPocResponseDTO.fromEntity(obterPorId(id));
     }
@@ -138,6 +163,27 @@ public class PropostaPocService {
                 .filter(p -> startupId.equals(p.getStartupId()))
                 .map(PropostaPocResponseDTO::fromEntity)
                 .toList();
+    }
+
+    public Page<PropostaPocResponseDTO> listarPorStartupPaginado(
+            UUID startupId,
+            StatusProposta status,
+            Pageable pageable) {
+        if (startupId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
+        }
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        List<PropostaPoc> filtradas = memory.values().stream()
+                .filter(p -> startupId.equals(p.getStartupId()))
+                .filter(p -> status == null || status.equals(p.getStatus()))
+                .sorted(Comparator.comparing(PropostaPoc::getDataCriacao).reversed())
+                .toList();
+
+        int start = (int) effectivePageable.getOffset();
+        int end = Math.min(start + effectivePageable.getPageSize(), filtradas.size());
+        List<PropostaPoc> sublist = start <= end ? filtradas.subList(start, end) : List.of();
+        return new PageImpl<>(sublist.stream().map(PropostaPocResponseDTO::fromEntity).toList(),
+                effectivePageable, filtradas.size());
     }
 
     public List<PropostaPocResponseDTO> listarPorDesafio(UUID desafioId) {

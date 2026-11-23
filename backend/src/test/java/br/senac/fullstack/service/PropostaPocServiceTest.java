@@ -15,11 +15,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -662,5 +664,40 @@ class PropostaPocServiceTest {
         TermoPiloto resultadoBusca = serviceComProvider.obterTermoPorPropostaId(propostaId);
         assertEquals(termoMock, resultadoBusca);
         verify(termoServiceMock).buscarPorPropostaId(propostaId);
+    }
+
+    @Test
+    @DisplayName("atualizarStatus deve atualizar status de proposta existente e ignorar entradas nulas ou inexistentes")
+    void testAtualizarStatus() {
+        UUID startupId = UUID.randomUUID();
+        UUID desafioId = UUID.randomUUID();
+        PropostaPocResponseDTO criada = service.criar(criarRequestValido(startupId, desafioId));
+
+        service.atualizarStatus(null, null);
+        service.atualizarStatus(criada.id(), null);
+        service.atualizarStatus(null, StatusProposta.EM_TESTE);
+        service.atualizarStatus(UUID.randomUUID(), StatusProposta.EM_TESTE);
+
+        service.atualizarStatus(criada.id(), StatusProposta.POC_CONCLUIDA);
+        PropostaPocResponseDTO atualizada = service.buscar(criada.id());
+        assertEquals(StatusProposta.POC_CONCLUIDA, atualizada.status());
+    }
+
+    @Test
+    @DisplayName("gravarAuditoria deve engolir excecao quando auditoria falhar")
+    @SuppressWarnings("unchecked")
+    void testGravarAuditoriaComFalha() {
+        br.senac.fullstack.service.AuditoriaService auditMock = mock(br.senac.fullstack.service.AuditoriaService.class);
+        doThrow(new RuntimeException("Auditoria indisponivel"))
+                .when(auditMock).registrar(any(), any(), any(), any(), any(), any(), any());
+
+        ObjectProvider<br.senac.fullstack.service.AuditoriaService> auditProvider = mock(ObjectProvider.class);
+        when(auditProvider.getIfAvailable()).thenReturn(auditMock);
+
+        PropostaPocService serviceComAudit = new PropostaPocService(
+                new NullObjectProvider<>(), auditProvider);
+
+        PropostaPocResponseDTO p = serviceComAudit.criar(criarRequestValido(UUID.randomUUID(), UUID.randomUUID()));
+        assertDoesNotThrow(() -> serviceComAudit.cancelar(p.id()));
     }
 }

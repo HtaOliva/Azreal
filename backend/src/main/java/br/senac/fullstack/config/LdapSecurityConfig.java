@@ -77,19 +77,19 @@ public class LdapSecurityConfig {
                                 "/api/v1/hello",
                                 "/v3/api-docs/**",
                                 "/swagger-ui/**",
-                                "/swagger-ui.html").permitAll()
-                        .requestMatchers(request -> request.getRequestURI().startsWith("/usuarios")).permitAll()
-                        .requestMatchers(request -> request.getRequestURI().startsWith("/auth/login")
-                                || request.getRequestURI().startsWith("/startups")
-                                || request.getRequestURI().startsWith("/ambientes-validacao")
-                                || request.getRequestURI().startsWith("/termos")
-                                || request.getRequestURI().startsWith("/temas")
-                                || request.getRequestURI().startsWith("/desafios")
-                                || request.getRequestURI().startsWith("/matchmaking")
-                                || request.getRequestURI().startsWith("/propostas-poc")
-                                || request.getRequestURI().startsWith("/pocs")
-                                || request.getRequestURI().startsWith("/registros-poc")
-                                || request.getRequestURI().startsWith("/regras")).permitAll()
+                                "/swagger-ui.html",
+                                "/usuarios/**",
+                                "/auth/login/**",
+                                "/startups/**",
+                                "/ambientes-validacao/**",
+                                "/termos/**",
+                                "/temas/**",
+                                "/desafios/**",
+                                "/matchmaking/**",
+                                "/propostas-poc/**",
+                                "/pocs/**",
+                                "/registros-poc/**",
+                                "/regras/**").permitAll()
                         .anyRequest().authenticated())
                 .httpBasic(Customizer.withDefaults());
         return http.build();
