@@ -4,8 +4,8 @@ import { AcessoNegadoComponent } from './pages/acesso-negado.component';
 import { DashboardAmbienteComponent } from './pages/dashboard-ambiente.component';
 import { DashboardStartupComponent } from './pages/dashboard-startup.component';
 import { LoginComponent } from './pages/login.component';
+import { PocsTrajetoriaComponent } from './pages/pocs-trajetoria.component';
 import { PropostaPocComponent } from './pages/proposta-poc.component';
-import { PocsTrajetoriaPageComponent } from './pages/sprint-stubs';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
@@ -23,7 +23,7 @@ export const routes: Routes = [
   },
   {
     path: 'pocs',
-    component: PocsTrajetoriaPageComponent,
+    component: PocsTrajetoriaComponent,
     canActivate: [authGuard]
   },
   {
