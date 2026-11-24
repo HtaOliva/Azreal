@@ -1,21 +1,21 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './guards/auth.guard';
 import { AcessoNegadoComponent } from './pages/acesso-negado.component';
+import { DashboardStartupComponent } from './pages/dashboard-startup.component';
+import { LoginComponent } from './pages/login.component';
 import {
   DashboardAmbientePageComponent,
-  DashboardStartupPageComponent,
-  LoginPageComponent,
   PocsTrajetoriaPageComponent,
   PropostaPocPageComponent
 } from './pages/sprint-stubs';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: 'login', component: LoginPageComponent },
+  { path: 'login', component: LoginComponent },
   { path: 'acesso-negado', component: AcessoNegadoComponent },
   {
     path: 'startup/dashboard',
-    component: DashboardStartupPageComponent,
+    component: DashboardStartupComponent,
     canActivate: [roleGuard(['STARTUP'])]
   },
   {
