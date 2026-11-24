@@ -1,0 +1,251 @@
+<app-sidebar-layout>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Olá, {{ displayName() }}!</h1>
+      <p class="page-subtitle">
+        Gerencie seus desafios anônimos publicados e avalie as propostas de POC recebidas.
+      </p>
+    </div>
+    <button type="button" class="btn btn-primary" (click)="openNovoDesafio()">
+      + NOVO DESAFIO
+    </button>
+  </header>
+
+  <div class="section-divider">
+    <span class="section-label">Seus Desafios Publicados (RF05)</span>
+    <div class="section-line"></div>
+  </div>
+
+  <section class="card">
+    @if (loading() && desafios().length === 0) {
+      <p class="page-subtitle">Carregando desafios...</p>
+    } @else if (desafios().length === 0) {
+      <p class="page-subtitle">Nenhum desafio publicado ainda. Clique em "+ NOVO DESAFIO" para começar.</p>
+    } @else {
+      @for (desafio of desafios(); track desafio.id; let idx = $index) {
+        <div class="challenge-list-item">
+          <div>
+            <strong>{{ idx + 1 }}. {{ desafio.titulo }}</strong>
+            <span style="display: block; font-size: 12px; color: var(--color-text-muted);">
+              Modalidade: {{ desafio.modalidade }}
+              @if (desafio.duracaoMaxima) {
+                • Duração máx.: {{ desafio.duracaoMaxima }} dias
+              }
+            </span>
+          </div>
+          @if (desafio.ativo) {
+            <span class="badge badge-success">Ativo (Anônimo)</span>
+          } @else {
+            <span class="badge badge-neutral">Inativo</span>
+          }
+        </div>
+      }
+    }
+  </section>
+
+  <div class="section-divider">
+    <span class="section-label">Fila de Propostas Recebidas (RF14)</span>
+    <div class="section-line"></div>
+  </div>
+
+  @if (fila().length === 0) {
+    <section class="card">
+      <p class="page-subtitle">Nenhuma proposta de POC recebida até o momento.</p>
+    </section>
+  } @else {
+    @for (proposta of fila(); track proposta.id) {
+      <section class="card" style="margin-bottom: 16px;">
+        <div class="poc-card-header">
+          @if (proposta.status === 'PENDENTE') {
+            <span class="badge badge-warning">PENDENTE</span>
+          } @else if (proposta.status === 'EM_TESTE') {
+            <span class="badge badge-success">EM TESTE — Termo de Piloto Assinado</span>
+          } @else {
+            <span class="badge badge-neutral">{{ proposta.status }}</span>
+          }
+          <span class="badge badge-lavender">{{ proposta.duracaoSugeridaDias }} dias</span>
+        </div>
+
+        <h2 class="poc-partner-highlight">
+          Proposta para: {{ desafioTituloPorId(proposta.desafioValidacaoId) }}
+        </h2>
+
+        <div class="poc-meta-row">
+          <span><strong>Escopo:</strong> {{ proposta.escopoTeste }}</span>
+          <span><strong>Métrica:</strong> {{ proposta.metricaValidacao }}</span>
+          <span><strong>Sigilo:</strong> {{ proposta.aceitePrevioTermoSigilo ? 'Assinado pela Startup' : 'Pendente' }}</span>
+        </div>
+
+        @if (proposta.status === 'PENDENTE') {
+          <div class="card-actions-bar">
+            <button
+              type="button"
+              class="btn btn-danger-outline"
+              (click)="openRecusarModal(proposta)"
+            >
+              RECUSAR COM MOTIVO
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="openAceitarModal(proposta)"
+            >
+              ACEITAR E GERAR TERMO
+            </button>
+          </div>
+        }
+      </section>
+    }
+  }
+</app-sidebar-layout>
+
+<!-- Modal: Novo Desafio -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'novoDesafio'">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="novoDesafioModalTitle">
+    <div class="modal-header">
+      <h3 id="novoDesafioModalTitle" class="modal-title">
+        Publicar Novo Desafio de Validação (RF05 / RF06)
+      </h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    <form (ngSubmit)="publicarDesafio()">
+      <div class="form-group">
+        <label class="form-label" for="novoDesafioTitulo">Título do Problema Operacional</label>
+        <input
+          id="novoDesafioTitulo"
+          name="titulo"
+          type="text"
+          class="form-control"
+          required
+          placeholder="Ex: Ruptura de gôndola nos horários de pico"
+          [ngModel]="novoTitulo()"
+          (ngModelChange)="novoTitulo.set($event)"
+        />
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="novoDesafioDesc">Descrição do Problema e Ambiente Disponível</label>
+        <textarea
+          id="novoDesafioDesc"
+          name="descricaoProblema"
+          class="form-control"
+          rows="3"
+          required
+          placeholder="Ex: 2 lojas piloto, acesso a dados anonimizados de PDV"
+          [ngModel]="novaDescricao()"
+          (ngModelChange)="novaDescricao.set($event)"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="novoDesafioModalidade">Modalidade</label>
+        <select
+          id="novoDesafioModalidade"
+          name="modalidade"
+          class="form-control"
+          [ngModel]="novaModalidade()"
+          (ngModelChange)="novaModalidade.set($event)"
+        >
+          <option value="REMOTO">Remoto</option>
+          <option value="HIBRIDO">Híbrido</option>
+          <option value="PRESENCIAL">Presencial</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="novoDesafioDuracao">Duração Máxima (dias)</label>
+        <input
+          id="novoDesafioDuracao"
+          name="duracaoMaxima"
+          type="number"
+          min="5"
+          max="90"
+          class="form-control"
+          [ngModel]="novaDuracao()"
+          (ngModelChange)="novaDuracao.set($event)"
+        />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Publicando...' : 'Publicar Desafio Anônimo' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Recusar com Motivo -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'recusar'">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="recusarModalTitle">
+    <div class="modal-header">
+      <h3 id="recusarModalTitle" class="modal-title">Recusar Proposta com Motivo (RF16)</h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    <form (ngSubmit)="confirmarRecusa()">
+      <div class="form-group">
+        <label class="form-label" for="recusarMotivoSelect">Selecione ou informe um motivo curto:</label>
+        <select
+          id="recusarMotivoSelect"
+          name="motivo"
+          class="form-control"
+          style="margin-bottom: 10px;"
+          [ngModel]="motivoSelecionado()"
+          (ngModelChange)="motivoSelecionado.set($event)"
+        >
+          <option value="Fora de prioridade operacional no trimestre">
+            Fora de prioridade operacional no trimestre
+          </option>
+          <option value="Prazo ou escopo incompatível com o ambiente atual">
+            Prazo ou escopo incompatível com o ambiente atual
+          </option>
+          <option value="Outro motivo técnico">Outro motivo técnico</option>
+        </select>
+        <textarea
+          name="observacao"
+          aria-label="Observação opcional para a startup"
+          class="form-control"
+          rows="2"
+          placeholder="Observação opcional para a startup..."
+          [ngModel]="motivoObservacao()"
+          (ngModelChange)="motivoObservacao.set($event)"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-danger-outline" [disabled]="submitting()">
+          {{ submitting() ? 'Recusando...' : 'Confirmar Recusa' }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Modal: Aceitar e Gerar Termo -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'aceitar'">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="aceitarModalTitle">
+    <div class="modal-header">
+      <h3 id="aceitarModalTitle" class="modal-title">
+        Aceitar Proposta e Gerar Termo de Piloto (RF15)
+      </h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    <p style="margin-bottom: 12px;">Ao confirmar o aceite:</p>
+    <ul style="padding-left: 20px; margin-bottom: 16px; color: var(--color-text-muted);">
+      <li>
+        Os campos de escopo ({{ selectedProposta()?.duracaoSugeridaDias }} dias) e métrica
+        ({{ selectedProposta()?.metricaValidacao }}) serão congelados no <strong>Termo de Piloto</strong>;
+      </li>
+      <li>A identidade do ambiente será revelada à startup;</li>
+      <li>Os canais de contato mútuos serão liberados imediatamente.</li>
+    </ul>
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+      <button
+        type="button"
+        class="btn btn-primary"
+        [disabled]="submitting()"
+        (click)="confirmarAceite()"
+      >
+        {{ submitting() ? 'Gerando Termo...' : 'Assinar Termo e Revelar Identidade' }}
+      </button>
+    </div>
+  </div>
+</div>
