@@ -190,7 +190,7 @@ describe('Sprint 2 — Login, Registration & Startup Matchmaking', () => {
     expect(comp.formatPorte('MEDIO')).toBe('Médio Porte');
 
     comp.atualizarMatchIa();
-    expect(toast.toasts().some((t) => t.message.includes('RF10'))).toBe(true);
+    expect(toast.toasts().some((t) => t.message.includes('Matchmaking semântico atualizado'))).toBe(true);
   });
 
   it('should handle matchmaking error gracefully in DashboardStartupComponent', () => {

@@ -82,6 +82,17 @@ describe('Azreal App Shell & Core Services', () => {
     const sidebar = runInInjectionContext(injector, () => new SidebarLayoutComponent());
     expect(sidebar['homeRoute']()).toBe('/ambiente/dashboard');
     expect(sidebar['roleLabel']()).toBe('Ambiente de Validação');
+    expect(sidebar['showAmbienteNav']()).toBe(false);
+
+    auth.setCurrentUser({
+      id: 'u-1',
+      username: 'startup@techpulse.com.br',
+      email: 'startup@techpulse.com.br',
+      roles: ['ROLE_STARTUP'],
+      perfil: 'STARTUP'
+    });
+    expect(sidebar['homeRoute']()).toBe('/startup/dashboard');
+    expect(sidebar['showAmbienteNav']()).toBe(false);
 
     sidebar.logout();
     expect(auth.isAuthenticated()).toBe(false);

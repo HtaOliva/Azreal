@@ -99,7 +99,7 @@
 <div class="modal-backdrop" [class.open]="activeModal() === 'startup'">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalStartupTitle">
     <div class="modal-header">
-      <h3 id="modalStartupTitle" class="modal-title">Cadastrar Startup (RF01 / RF02)</h3>
+      <h3 id="modalStartupTitle" class="modal-title">Cadastrar Startup</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
     </div>
     <form (ngSubmit)="onRegisterStartup()">
@@ -158,6 +158,35 @@
         </select>
       </div>
       <div class="form-group">
+        <span class="form-label">Modalidades de Teste Suportadas</span>
+        <div class="duration-radios">
+          <label class="duration-pill">
+            <input
+              type="checkbox"
+              [checked]="startupModalidades().includes('REMOTO')"
+              (change)="toggleStartupModalidade('REMOTO')"
+            />
+            <span>Remoto</span>
+          </label>
+          <label class="duration-pill">
+            <input
+              type="checkbox"
+              [checked]="startupModalidades().includes('HIBRIDO')"
+              (change)="toggleStartupModalidade('HIBRIDO')"
+            />
+            <span>Híbrido</span>
+          </label>
+          <label class="duration-pill">
+            <input
+              type="checkbox"
+              [checked]="startupModalidades().includes('PRESENCIAL')"
+              (change)="toggleStartupModalidade('PRESENCIAL')"
+            />
+            <span>Presencial</span>
+          </label>
+        </div>
+      </div>
+      <div class="form-group">
         <label class="form-label" for="regStartupValidacao">O que precisa validar em ambiente real?</label>
         <textarea
           id="regStartupValidacao"
@@ -184,7 +213,7 @@
 <div class="modal-backdrop" [class.open]="activeModal() === 'ambiente'">
   <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalAmbienteTitle">
     <div class="modal-header">
-      <h3 id="modalAmbienteTitle" class="modal-title">Cadastrar Ambiente de Validação (RF03)</h3>
+      <h3 id="modalAmbienteTitle" class="modal-title">Cadastrar Ambiente de Validação</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
     </div>
     <form (ngSubmit)="onRegisterAmbiente()">

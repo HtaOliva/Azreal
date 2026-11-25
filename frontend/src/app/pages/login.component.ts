@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, inject, signal } from '@angular/cor
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { catchError, of, switchMap } from 'rxjs';
-import { Estagio, PorteOrganizacao } from '../models/azreal.model';
+import { Estagio, ModalidadeTeste, PorteOrganizacao } from '../models/azreal.model';
 import { AmbienteValidacaoService } from '../services/ambiente-validacao.service';
 import { AuthApiService } from '../services/auth-api.service';
 import { AuthService } from '../services/auth.service';
@@ -39,6 +39,7 @@ export class LoginComponent {
   protected readonly startupSenha = signal('');
   protected readonly startupEstagio = signal<Estagio>('MVP_FUNCIONAL');
   protected readonly startupValidacao = signal('');
+  protected readonly startupModalidades = signal<ModalidadeTeste[]>(['REMOTO']);
 
   // Ambiente registration signals
   protected readonly ambienteRazaoSocial = signal('');
@@ -52,6 +53,12 @@ export class LoginComponent {
 
   openModal(modal: 'startup' | 'ambiente'): void {
     this.activeModal.set(modal);
+  }
+
+  toggleStartupModalidade(modalidade: ModalidadeTeste): void {
+    this.startupModalidades.update((list) =>
+      list.includes(modalidade) ? list.filter((m) => m !== modalidade) : [...list, modalidade]
+    );
   }
 
   closeModal(): void {
@@ -107,6 +114,18 @@ export class LoginComponent {
               })
             );
           }
+          if (this.authService.perfil() === 'AMBIENTE_VALIDACAO') {
+            return this.ambienteService.meuAmbiente().pipe(
+              catchError(() => of(null)),
+              switchMap((ambiente) => {
+                this.authService.setEntityContext(
+                  ambiente?.id ?? null,
+                  ambiente?.nomeFantasia ?? ambiente?.razaoSocial ?? username
+                );
+                return of(me);
+              })
+            );
+          }
           this.authService.setEntityContext(null, me.username);
           return of(me);
         })
@@ -141,6 +160,12 @@ export class LoginComponent {
       return;
     }
 
+    const modalidades = this.startupModalidades();
+    if (modalidades.length === 0) {
+      this.toastService.show('Selecione pelo menos uma modalidade suportada.');
+      return;
+    }
+
     this.registering.set(true);
     this.authApi
       .aceitarTermo({ versaoTermo: 'LGPD-2026.1', consentimentoIaAnonimizado: true })
@@ -152,6 +177,7 @@ export class LoginComponent {
             senha,
             estagioAtual: this.startupEstagio(),
             oQuePrecisaValidar,
+            modalidadesSuportadas: modalidades,
             aceiteTermoId: aceite.id
           })
         )

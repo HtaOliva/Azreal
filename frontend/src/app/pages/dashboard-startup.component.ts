@@ -86,7 +86,7 @@ export class DashboardStartupComponent implements OnInit {
       next: (desafios) => {
         this.desafios.set(desafios);
         this.loading.set(false);
-        this.toastService.show('Matchmaking semântico atualizado via IA (RF10).');
+        this.toastService.show('Matchmaking semântico atualizado via IA.');
       },
       error: (err: Error) => {
         this.loading.set(false);

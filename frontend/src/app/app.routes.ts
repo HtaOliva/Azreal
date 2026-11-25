@@ -4,6 +4,7 @@ import { AcessoNegadoComponent } from './pages/acesso-negado.component';
 import { DashboardAmbienteComponent } from './pages/dashboard-ambiente.component';
 import { DashboardStartupComponent } from './pages/dashboard-startup.component';
 import { LoginComponent } from './pages/login.component';
+import { PerfilComponent } from './pages/perfil.component';
 import { PocsTrajetoriaComponent } from './pages/pocs-trajetoria.component';
 import { PropostaPocComponent } from './pages/proposta-poc.component';
 
@@ -24,6 +25,11 @@ export const routes: Routes = [
   {
     path: 'pocs',
     component: PocsTrajetoriaComponent,
+    canActivate: [authGuard]
+  },
+  {
+    path: 'perfil',
+    component: PerfilComponent,
     canActivate: [authGuard]
   },
   {

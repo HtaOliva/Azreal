@@ -34,13 +34,22 @@ import { AuthService } from '../services/auth.service';
               </svg>
               <span>POCs</span>
             </a>
-            <a routerLink="/ambiente/dashboard" routerLinkActive="active" class="nav-item">
+            <a routerLink="/perfil" routerLinkActive="active" class="nav-item">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                 <circle cx="12" cy="7" r="4" />
               </svg>
-              <span>AMBIENTE</span>
+              <span>PERFIL</span>
             </a>
+            @if (showAmbienteNav()) {
+              <a routerLink="/ambiente/dashboard" routerLinkActive="active" class="nav-item">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <path d="M9 3v18" />
+                </svg>
+                <span>AMBIENTE</span>
+              </a>
+            }
           </nav>
         </div>
 
@@ -76,6 +85,10 @@ export class SidebarLayoutComponent {
     this.authService.perfil() === 'AMBIENTE_VALIDACAO'
       ? '/ambiente/dashboard'
       : '/startup/dashboard'
+  );
+
+  protected readonly showAmbienteNav = computed(
+    () => this.authService.perfil() === 'ADMIN'
   );
 
   protected readonly roleLabel = computed(() => {
