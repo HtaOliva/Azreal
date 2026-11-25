@@ -332,7 +332,8 @@ public class TermoPilotoService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado);
+        String nomeStartup = resolverNomeStartup(termo.getStartupId());
+        return TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado, nomeStartup);
     }
 
     public boolean isAcessoTermoNaoAutorizado(TermoPiloto termo, Authentication authentication) {
@@ -394,10 +395,28 @@ public class TermoPilotoService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
+    public String resolverNomeStartup(UUID startupId) {
+        if (startupId == null) {
+            return null;
+        }
+        StartupService startupService = startupServiceProvider != null
+                ? startupServiceProvider.getIfAvailable() : null;
+        if (startupService == null) {
+            return null;
+        }
+        try {
+            StartupResponseDTO startup = startupService.buscar(startupId);
+            return startup != null ? startup.nome() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     public TermoPilotoResponseDTO construirResponseDTO(
             TermoPiloto termo,
             AmbienteValidacaoResponseDTO ambiente) {
+        String nomeStartup = termo != null ? resolverNomeStartup(termo.getStartupId()) : null;
         return TermoPilotoResponseDTO.fromEntity(termo, termo != null ? termo.getStatus() : StatusProposta.EM_TESTE,
-                ambiente);
+                ambiente, nomeStartup);
     }
 }

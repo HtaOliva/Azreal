@@ -37,17 +37,19 @@ describe('Sprint 3 — Proposta POC & Ambiente Dashboard', () => {
 
     const fakeHttp = {
       get: vi.fn((url: string) => {
-        if (url === '/desafios/d-1') {
-          return of({
-            id: 'd-1',
-            titulo: 'Alta taxa de abandono de carrinho',
-            descricaoProblema: 'Checkout web com 70% de abandono',
-            setor: 'Varejo',
-            modalidade: 'REMOTO',
-            duracaoMaxima: 30,
-            status: 'ABERTO',
-            ativo: true
-          });
+        if (url === '/desafios') {
+          return of([
+            {
+              id: 'd-1',
+              titulo: 'Alta taxa de abandono de carrinho',
+              descricaoProblema: 'Checkout web com 70% de abandono',
+              setor: 'Varejo',
+              modalidade: 'REMOTO',
+              duracaoMaxima: 30,
+              status: 'ABERTO',
+              ativo: true
+            }
+          ]);
         }
         return of([]);
       }),
@@ -75,7 +77,7 @@ describe('Sprint 3 — Proposta POC & Ambiente Dashboard', () => {
 
     expect(comp['desafio']()?.titulo).toBe('Alta taxa de abandono de carrinho');
     comp.preencherExemplo();
-    expect(comp['escopoTeste']()).toContain('widget inteligente');
+    expect(comp['escopoTeste']()).toContain('reposição de gôndola');
 
     comp.enviarProposta();
     expect(postSpy).toHaveBeenCalledWith(
@@ -83,7 +85,7 @@ describe('Sprint 3 — Proposta POC & Ambiente Dashboard', () => {
       expect.objectContaining({
         startupId: 's-1',
         desafioValidacaoId: 'd-1',
-        duracaoSugeridaDias: 30,
+        duracaoSugeridaDias: 20,
         aceitePrevioTermoSigilo: true
       })
     );

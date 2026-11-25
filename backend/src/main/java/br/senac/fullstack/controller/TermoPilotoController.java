@@ -67,7 +67,8 @@ public class TermoPilotoController {
             Authentication authentication) {
         TermoPiloto tp = termoPilotoService.registrarEntrega(id, request, authentication);
         AmbienteValidacaoResponseDTO amb = termoPilotoService.buscarAmbienteRevelado(tp.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(tp, tp.getStatus(), amb));
+        String nomeStartup = termoPilotoService.resolverNomeStartup(tp.getStartupId());
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(tp, tp.getStatus(), amb, nomeStartup));
     }
 
     @PostMapping("/{id}/confirmar-execucao")

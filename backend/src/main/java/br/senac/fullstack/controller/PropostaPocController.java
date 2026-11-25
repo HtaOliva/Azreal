@@ -178,7 +178,8 @@ public class PropostaPocController {
         TermoPilotoResponseDTO response = TermoPilotoResponseDTO.fromEntity(
                 termo,
                 StatusProposta.EM_TESTE,
-                ambienteRevelado
+                ambienteRevelado,
+                resolverNomeStartup(termo.getStartupId())
         );
         return ResponseEntity.ok(response);
     }
@@ -197,7 +198,8 @@ public class PropostaPocController {
             return ResponseEntity.notFound().build();
         }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
+                termo, StatusProposta.EM_TESTE, ambienteRevelado, resolverNomeStartup(termo.getStartupId())));
     }
 
     @PostMapping("/{id}/entrega")
@@ -212,7 +214,8 @@ public class PropostaPocController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
-                piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
+                piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId()),
+                resolverNomeStartup(piloto.getStartupId())));
     }
 
     @PostMapping("/{id}/confirmacao-resultado")
@@ -513,6 +516,23 @@ public class PropostaPocController {
         }
         try {
             return ambienteService.buscar(ambienteId);
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private String resolverNomeStartup(UUID startupId) {
+        if (startupId == null) {
+            return null;
+        }
+        StartupService startupService = startupServiceProvider != null
+                ? startupServiceProvider.getIfAvailable() : null;
+        if (startupService == null) {
+            return null;
+        }
+        try {
+            StartupResponseDTO startup = startupService.buscar(startupId);
+            return startup != null ? startup.nome() : null;
         } catch (Exception ignored) {
             return null;
         }

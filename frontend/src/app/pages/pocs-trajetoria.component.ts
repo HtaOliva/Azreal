@@ -214,7 +214,7 @@ export class PocsTrajetoriaComponent implements OnInit {
           );
           this.submitting.set(false);
           this.closeModal();
-          this.toastService.show('Execução confirmada e Registro Oficial emitido (RF19/RF20).');
+          this.toastService.show('Execução confirmada e Registro Oficial emitido.');
         },
         error: (err: Error) => {
           this.submitting.set(false);
@@ -242,5 +242,44 @@ export class PocsTrajetoriaComponent implements OnInit {
       default:
         return '-';
     }
+  }
+
+  formatData(dateStr?: string): string {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('pt-BR');
+    } catch {
+      return dateStr;
+    }
+  }
+
+  formatDataHora(dateStr?: string): string {
+    if (!dateStr) return '-';
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return dateStr;
+      return (
+        d.toLocaleDateString('pt-BR') +
+        ' às ' +
+        d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      );
+    } catch {
+      return dateStr;
+    }
+  }
+
+  obterDataFim(termo: TermoPilotoResponse): string {
+    if (termo.dataFim) {
+      return this.formatData(termo.dataFim);
+    }
+    if (termo.dataCriacao && termo.duracaoDias) {
+      const d = new Date(termo.dataCriacao);
+      if (!isNaN(d.getTime())) {
+        d.setDate(d.getDate() + termo.duracaoDias);
+        return d.toLocaleDateString('pt-BR');
+      }
+    }
+    return '-';
   }
 }
