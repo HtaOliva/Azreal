@@ -28,6 +28,12 @@ app:
   environment: development
   ldap:
     admin-group: ${LLDAP_ADMIN_GROUP:azrael_admin}
+  ai:
+    enabled: ${AI_ENABLED:false}
+    api-key: ${AI_API_KEY:}
+    model: ${AI_MODEL:gemini-flash-latest}
+    base-url: ${AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
+    timeout-ms: ${AI_TIMEOUT_MS:5000}
 
 management:
   endpoints:

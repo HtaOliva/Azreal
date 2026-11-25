@@ -38,3 +38,7 @@ yarn-error.log*
 .scannerwork/
 backend-runtime.log
 backend-runtime.err
+
+# Local Secrets & Profiles
+.env
+backend/src/main/resources/application-local.yml
