@@ -414,22 +414,14 @@ jobs:
   # =========================================================================
   # 9. PHASE 5B: DEPLOY PRODUCTION (Triggered on main branch / release tags)
   # =========================================================================
-  deploy-production:
-    name: 🏆 Deploy Production Environment
+  build-production:
+    name: 🏗️ Build Production Frontend (GitHub Pages)
     needs: [dast-production-zap]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
     runs-on: ubuntu-latest
 
-    # Publica o frontend no GitHub Pages. O link aparece no resumo do job.
-    # Requer: Settings -> Pages -> Source = "GitHub Actions".
     permissions:
       contents: read
-      pages: write
-      id-token: write
-
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -466,15 +458,42 @@ jobs:
           fi
           DIR=$(dirname "$INDEX")
           echo "Pasta publicada: $DIR"
+          ls -la "$DIR"
           echo "path=$DIR" >> "$GITHUB_OUTPUT"
           # Evita 404 ao recarregar rotas do Angular dentro do Pages.
           cp "$DIR/index.html" "$DIR/404.html"
 
       - name: 📤 Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        id: upload
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ${{ steps.dist.outputs.path }}
 
+      - name: ✅ Verificar Artifact do Pages
+        run: |
+          if [ -z "${{ steps.upload.outputs.artifact_id }}" ]; then
+            echo "::error::O artifact 'github-pages' não foi criado pelo upload-pages-artifact."
+            exit 1
+          fi
+          echo "Artifact github-pages criado com ID: ${{ steps.upload.outputs.artifact_id }}"
+
+  deploy-production:
+    name: 🏆 Deploy Production Environment
+    needs: [build-production]
+    if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+
+    # Publica o frontend no GitHub Pages. O link aparece no resumo do job.
+    # Requer: Settings -> Pages -> Source = "GitHub Actions".
+    permissions:
+      pages: write
+      id-token: write
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
       - name: 🚢 Production Deploy (GitHub Pages)
         id: deployment
         uses: actions/deploy-pages@v4
