@@ -6,11 +6,16 @@ import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoUpdateDTO;
 import br.senac.fullstack.model.AmbienteValidacao;
 import br.senac.fullstack.model.DesafioValidacao;
+import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.PorteOrganizacao;
 import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.repository.AmbienteValidacaoRepository;
 import br.senac.fullstack.repository.DesafioValidacaoRepository;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -40,7 +45,7 @@ public class DesafioValidacaoService {
     }
 
     private DesafioValidacaoRepository repository() {
-        return repositoryProvider.getIfAvailable();
+        return repositoryProvider != null ? repositoryProvider.getIfAvailable() : null;
     }
 
     private AmbienteValidacao obterAmbienteValidacao(UUID ambienteId) {
@@ -48,13 +53,15 @@ public class DesafioValidacaoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ID do ambiente de validacao e obrigatorio");
         }
 
-        AmbienteValidacaoRepository repo = ambienteRepositoryProvider.getIfAvailable();
+        AmbienteValidacaoRepository repo = ambienteRepositoryProvider != null
+                ? ambienteRepositoryProvider.getIfAvailable() : null;
         if (repo != null) {
             return repo.findById(ambienteId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Ambiente de validacao nao encontrado"));
         }
 
-        AmbienteValidacaoService service = ambienteServiceProvider.getIfAvailable();
+        AmbienteValidacaoService service = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
         if (service != null) {
             var dto = service.buscar(ambienteId);
             AmbienteValidacao ambiente = new AmbienteValidacao();
@@ -208,5 +215,52 @@ public class DesafioValidacaoService {
                     .toList();
         }
         return lista.stream().map(DesafioAnonimoResponseDTO::fromEntity).toList();
+    }
+
+    public Page<DesafioAnonimoResponseDTO> listarAtivosAnonimosPaginado(
+            String termoBusca,
+            ModalidadeTeste modalidade,
+            Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        DesafioValidacaoRepository repo = repository();
+        if (repo != null) {
+            return buscarAnonimosNoBanco(repo, termoBusca, modalidade, effectivePageable);
+        }
+        return buscarAnonimosEmMemoria(termoBusca, modalidade, effectivePageable);
+    }
+
+    private Page<DesafioAnonimoResponseDTO> buscarAnonimosNoBanco(
+            DesafioValidacaoRepository repo,
+            String termoBusca,
+            ModalidadeTeste modalidade,
+            Pageable pageable) {
+        Page<DesafioValidacao> page = (termoBusca != null || modalidade != null)
+                ? repo.findByAtivoTrueComFiltros(modalidade, termoBusca, pageable)
+                : repo.findByAtivoTrue(pageable);
+        return page.map(DesafioAnonimoResponseDTO::fromEntity);
+    }
+
+    private Page<DesafioAnonimoResponseDTO> buscarAnonimosEmMemoria(
+            String termoBusca,
+            ModalidadeTeste modalidade,
+            Pageable pageable) {
+        List<DesafioValidacao> filtrados = memory.values().stream()
+                .filter(DesafioValidacao::isAtivo)
+                .filter(d -> modalidade == null || modalidade.equals(d.getModalidade()))
+                .filter(d -> atendeFiltroDesafio(d, termoBusca))
+                .toList();
+        int start = (int) pageable.getOffset();
+        int end = Math.min(start + pageable.getPageSize(), filtrados.size());
+        List<DesafioValidacao> sublist = start <= end ? filtrados.subList(start, end) : List.of();
+        return new PageImpl<>(sublist, pageable, filtrados.size()).map(DesafioAnonimoResponseDTO::fromEntity);
+    }
+
+    private boolean atendeFiltroDesafio(DesafioValidacao d, String termoBusca) {
+        if (termoBusca == null || termoBusca.isBlank()) {
+            return true;
+        }
+        String busca = termoBusca.toLowerCase();
+        return (d.getTitulo() != null && d.getTitulo().toLowerCase().contains(busca))
+                || (d.getDescricaoProblema() != null && d.getDescricaoProblema().toLowerCase().contains(busca));
     }
 }

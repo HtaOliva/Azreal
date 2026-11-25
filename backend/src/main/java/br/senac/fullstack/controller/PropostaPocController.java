@@ -1,6 +1,8 @@
 package br.senac.fullstack.controller;
 
 import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchRequestDTO;
+import br.senac.fullstack.dto.AvaliacaoMatchResponseDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoRequestDTO;
 import br.senac.fullstack.dto.ConfirmacaoExecucaoResponseDTO;
 import br.senac.fullstack.dto.DesafioValidacaoResponseDTO;
@@ -8,11 +10,14 @@ import br.senac.fullstack.dto.EntregaPilotoRequestDTO;
 import br.senac.fullstack.dto.PropostaPocRequestDTO;
 import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.dto.RecusaPropostaRequestDTO;
+import br.senac.fullstack.dto.RegistroAuditoriaResponseDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.TermoPilotoResponseDTO;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.service.AmbienteValidacaoService;
+import br.senac.fullstack.service.AuditoriaService;
+import br.senac.fullstack.service.AvaliacaoMatchService;
 import br.senac.fullstack.service.DesafioValidacaoService;
 import br.senac.fullstack.service.PropostaPocService;
 import br.senac.fullstack.service.StartupService;
@@ -20,6 +25,11 @@ import br.senac.fullstack.service.TermoPilotoService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -33,6 +43,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
@@ -47,6 +58,8 @@ public class PropostaPocController {
     private final ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider;
     private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
+    private final ObjectProvider<AvaliacaoMatchService> avaliacaoMatchServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
 
     @Autowired
     public PropostaPocController(
@@ -54,12 +67,26 @@ public class PropostaPocController {
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
             ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
-            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider,
+            ObjectProvider<AvaliacaoMatchService> avaliacaoMatchServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.propostaPocService = propostaPocService;
         this.startupServiceProvider = startupServiceProvider;
         this.ambienteServiceProvider = ambienteServiceProvider;
         this.desafioServiceProvider = desafioServiceProvider;
         this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+        this.avaliacaoMatchServiceProvider = avaliacaoMatchServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public PropostaPocController(
+            PropostaPocService propostaPocService,
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<AmbienteValidacaoService> ambienteServiceProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+        this(propostaPocService, startupServiceProvider, ambienteServiceProvider, desafioServiceProvider,
+                termoPilotoServiceProvider, null, null);
     }
 
     public PropostaPocController(
@@ -82,7 +109,8 @@ public class PropostaPocController {
             @Valid @RequestBody PropostaPocRequestDTO request,
             Authentication authentication) {
         if (authentication != null && !isAdmin(authentication)) {
-            StartupService startupService = startupServiceProvider.getIfAvailable();
+            StartupService startupService = startupServiceProvider != null
+                    ? startupServiceProvider.getIfAvailable() : null;
             if (startupService != null) {
                 try {
                     StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
@@ -105,12 +133,13 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             Authentication authentication) {
         if (authentication != null && !isAdmin(authentication)) {
-            StartupService startupService = startupServiceProvider.getIfAvailable();
+            StartupService startupService = startupServiceProvider != null
+                    ? startupServiceProvider.getIfAvailable() : null;
             if (startupService != null) {
                 try {
                     StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
                     PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
-                    if (startup != null && !proposta.startupId().equals(startup.id())) {
+                    if (startup != null && proposta != null && !startup.id().equals(proposta.startupId())) {
                         return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
                     }
                 } catch (Exception ignored) {
@@ -159,12 +188,14 @@ public class PropostaPocController {
     public ResponseEntity<TermoPilotoResponseDTO> buscarTermoDaProposta(
             @PathVariable("id") UUID id,
             Authentication authentication) {
-        TermoPilotoService termoService = termoPilotoServiceProvider != null
-                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        TermoPilotoService termoService = obterTermoPilotoServiceOuNulo();
         if (termoService != null) {
             return ResponseEntity.ok(termoService.obterTermoComIdentidadeRevelada(id, authentication));
         }
         TermoPiloto termo = propostaPocService.obterTermoPorPropostaId(id);
+        if (termo == null) {
+            return ResponseEntity.notFound().build();
+        }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
     }
@@ -175,14 +206,13 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody EntregaPilotoRequestDTO request,
             Authentication authentication) {
-        TermoPilotoService termoService = termoPilotoServiceProvider != null
-                ? termoPilotoServiceProvider.getIfAvailable() : null;
-        if (termoService == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
+        TermoPilotoService service = obterTermoPilotoService();
+        TermoPiloto piloto = service.registrarEntrega(id, request, authentication);
+        if (piloto == null) {
+            return ResponseEntity.notFound().build();
         }
-        TermoPiloto termo = termoService.registrarEntrega(id, request, authentication);
-        AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado));
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
+                piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
     }
 
     @PostMapping("/{id}/confirmacao-resultado")
@@ -191,13 +221,223 @@ public class PropostaPocController {
             @PathVariable("id") UUID id,
             @Valid @RequestBody ConfirmacaoExecucaoRequestDTO request,
             Authentication authentication) {
-        TermoPilotoService termoService = termoPilotoServiceProvider != null
-                ? termoPilotoServiceProvider.getIfAvailable() : null;
-        if (termoService == null) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
+        TermoPilotoService service = obterTermoPilotoService();
+        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(
+                service.confirmarExecucao(id, request, authentication)));
+    }
+
+    @GetMapping("/minhas")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
+    public ResponseEntity<List<PropostaPocResponseDTO>> listarMinhas(
+            @RequestParam(name = "startupId", required = false) UUID startupIdParam,
+            Authentication authentication) {
+        HttpStatus erro = validarAcessoStartupMinhas(startupIdParam, authentication);
+        if (erro != null) {
+            return ResponseEntity.status(erro).build();
         }
-        TermoPiloto termo = termoService.confirmarExecucao(id, request, authentication);
-        return ResponseEntity.ok(ConfirmacaoExecucaoResponseDTO.fromEntity(termo));
+        UUID targetStartupId = extrairStartupId(startupIdParam, authentication);
+        if (targetStartupId == null) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(propostaPocService.listarPorStartup(targetStartupId));
+    }
+
+    @GetMapping("/minhas/paginado")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
+    public ResponseEntity<Page<PropostaPocResponseDTO>> listarMinhasPaginado(
+            @RequestParam(name = "startupId", required = false) UUID startupIdParam,
+            @RequestParam(name = "status", required = false) StatusProposta status,
+            @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.DESC) Pageable pageable,
+            Authentication authentication) {
+        HttpStatus erro = validarAcessoStartupMinhas(startupIdParam, authentication);
+        if (erro != null) {
+            return ResponseEntity.status(erro).build();
+        }
+        UUID targetStartupId = extrairStartupId(startupIdParam, authentication);
+        if (targetStartupId == null) {
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+        return ResponseEntity.ok(propostaPocService.listarPorStartupPaginado(targetStartupId, status, pageable));
+    }
+
+    @GetMapping("/fila")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<PropostaPocResponseDTO>> consultarFila(
+            @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
+            Authentication authentication) {
+        HttpStatus erro = validarAcessoFila(ambienteIdParam, authentication);
+        if (erro != null) {
+            return ResponseEntity.status(erro).build();
+        }
+        Set<UUID> desafioIds = extrairDesafiosFila(ambienteIdParam, authentication);
+        if (desafioIds.isEmpty()) {
+            return ResponseEntity.ok(List.of());
+        }
+        return ResponseEntity.ok(propostaPocService.listarFilaAmbiente(desafioIds));
+    }
+
+    @GetMapping("/fila/paginado")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<Page<PropostaPocResponseDTO>> consultarFilaPaginado(
+            @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
+            @RequestParam(name = "status", required = false) StatusProposta status,
+            @PageableDefault(size = 10, sort = "dataCriacao", direction = Sort.Direction.ASC) Pageable pageable,
+            Authentication authentication) {
+        HttpStatus erro = validarAcessoFila(ambienteIdParam, authentication);
+        if (erro != null) {
+            return ResponseEntity.status(erro).build();
+        }
+        Set<UUID> desafioIds = extrairDesafiosFila(ambienteIdParam, authentication);
+        if (desafioIds.isEmpty()) {
+            return ResponseEntity.ok(new PageImpl<>(List.of(), pageable, 0));
+        }
+        return ResponseEntity.ok(propostaPocService.listarFilaAmbientePaginado(desafioIds, status, pageable));
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<PropostaPocResponseDTO> buscar(@PathVariable("id") UUID id) {
+        return ResponseEntity.ok(propostaPocService.buscar(id));
+    }
+
+    @PostMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match"})
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<AvaliacaoMatchResponseDTO> avaliarMatch(
+            @PathVariable("id") UUID id,
+            @Valid @RequestBody AvaliacaoMatchRequestDTO request,
+            Authentication authentication) {
+        AvaliacaoMatchService matchService = obterAvaliacaoMatchService();
+        if (matchService == null) {
+            return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        }
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(matchService.avaliar(id, request, authentication));
+    }
+
+    @GetMapping(path = {"/{id}/avaliacao-match", "/{id}/avaliar-match", "/{id}/avaliacoes-match"})
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<AvaliacaoMatchResponseDTO>> listarAvaliacoesMatch(@PathVariable("id") UUID id) {
+        AvaliacaoMatchService matchService = obterAvaliacaoMatchService();
+        return ResponseEntity.ok(matchService != null
+                ? matchService.listarPorPropostaOuTermo(id)
+                : Collections.emptyList());
+    }
+
+    @GetMapping("/{id}/auditoria")
+    @PreAuthorize("hasRole('STARTUP') or hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<List<RegistroAuditoriaResponseDTO>> consultarAuditoria(@PathVariable("id") UUID id) {
+        AuditoriaService auditSvc = obterAuditoriaService();
+        if (auditSvc == null) {
+            return ResponseEntity.ok(Collections.emptyList());
+        }
+        List<RegistroAuditoriaResponseDTO> audit = auditSvc.listarPorProposta(id);
+        return ResponseEntity.ok(!audit.isEmpty() ? audit : auditSvc.listarPorTermo(id));
+    }
+
+    private HttpStatus validarAcessoStartupMinhas(UUID startupIdParam, Authentication authentication) {
+        if (authentication == null) {
+            return HttpStatus.UNAUTHORIZED;
+        }
+        if (!isAdmin(authentication) && startupIdParam != null) {
+            StartupService startupService = startupServiceProvider != null
+                    ? startupServiceProvider.getIfAvailable() : null;
+            if (startupService != null) {
+                try {
+                    StartupResponseDTO startupAutenticada = startupService.buscarPorEmail(authentication.getName());
+                    if (startupAutenticada != null && !startupIdParam.equals(startupAutenticada.id())) {
+                        return HttpStatus.FORBIDDEN;
+                    }
+                } catch (Exception ignored) {
+                    return HttpStatus.FORBIDDEN;
+                }
+            }
+        }
+        return null;
+    }
+
+    private UUID extrairStartupId(UUID startupIdParam, Authentication authentication) {
+        if (startupIdParam != null) {
+            return startupIdParam;
+        }
+        StartupService startupService = startupServiceProvider != null
+                ? startupServiceProvider.getIfAvailable() : null;
+        if (startupService != null && authentication != null) {
+            try {
+                StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
+                if (startup != null) {
+                    return startup.id();
+                }
+            } catch (Exception ignored) {
+                // Continua nulo
+            }
+        }
+        return null;
+    }
+
+    private HttpStatus validarAcessoFila(UUID ambienteIdParam, Authentication authentication) {
+        if (authentication == null) {
+            return HttpStatus.UNAUTHORIZED;
+        }
+        if (isAcessoFilaNaoAutorizado(ambienteIdParam, authentication)) {
+            return HttpStatus.FORBIDDEN;
+        }
+        return null;
+    }
+
+    private Set<UUID> extrairDesafiosFila(UUID ambienteIdParam, Authentication authentication) {
+        UUID targetAmbienteId = resolverAmbienteIdFila(ambienteIdParam, authentication);
+        if (targetAmbienteId == null) {
+            return Set.of();
+        }
+        return obterDesafioIdsPorAmbiente(targetAmbienteId);
+    }
+
+    private boolean isAcessoFilaNaoAutorizado(UUID ambienteIdParam, Authentication authentication) {
+        if (authentication == null || isAdmin(authentication)) {
+            return false;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return false;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null && ambienteIdParam != null && !ambienteIdParam.equals(ambiente.id());
+        } catch (Exception ignored) {
+            return true;
+        }
+    }
+
+    private UUID resolverAmbienteIdFila(UUID ambienteIdParam, Authentication authentication) {
+        if (authentication == null || isAdmin(authentication)) {
+            return ambienteIdParam;
+        }
+        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
+                ? ambienteServiceProvider.getIfAvailable() : null;
+        if (ambienteService == null) {
+            return ambienteIdParam;
+        }
+        try {
+            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
+            return ambiente != null ? ambiente.id() : ambienteIdParam;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
+    private Set<UUID> obterDesafioIdsPorAmbiente(UUID targetAmbienteId) {
+        DesafioValidacaoService desafioService = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+        if (desafioService == null) {
+            return Set.of();
+        }
+        List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
+        if (desafios == null || desafios.isEmpty()) {
+            return Set.of();
+        }
+        return desafios.stream()
+                .map(DesafioValidacaoResponseDTO::id)
+                .collect(Collectors.toSet());
     }
 
     private boolean isAcessoAmbienteDesafioNaoAutorizado(UUID id, Authentication authentication) {
@@ -216,6 +456,9 @@ public class PropostaPocController {
         try {
             AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
             PropostaPocResponseDTO proposta = propostaPocService.buscar(id);
+            if (proposta == null || proposta.desafioValidacaoId() == null) {
+                return true;
+            }
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return ambiente != null && desafio != null && !desafio.ambienteValidacaoId().equals(ambiente.id());
         } catch (ResponseStatusException e) {
@@ -228,7 +471,7 @@ public class PropostaPocController {
     private UUID resolverAmbienteIdPorProposta(UUID propostaId, Authentication authentication) {
         AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
                 ? ambienteServiceProvider.getIfAvailable() : null;
-        if (!isAdmin(authentication) && ambienteService != null) {
+        if (authentication != null && !isAdmin(authentication) && ambienteService != null) {
             try {
                 AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
                 if (ambiente != null) {
@@ -249,6 +492,9 @@ public class PropostaPocController {
         }
         try {
             PropostaPocResponseDTO proposta = propostaPocService.buscar(propostaId);
+            if (proposta == null || proposta.desafioValidacaoId() == null) {
+                return null;
+            }
             DesafioValidacaoResponseDTO desafio = desafioService.buscar(proposta.desafioValidacaoId());
             return desafio != null ? desafio.ambienteValidacaoId() : null;
         } catch (Exception ignored) {
@@ -272,129 +518,29 @@ public class PropostaPocController {
         }
     }
 
-    @GetMapping("/minhas")
-    @PreAuthorize("hasRole('STARTUP') or hasRole('ADMIN')")
-    public ResponseEntity<List<PropostaPocResponseDTO>> listarMinhas(
-            @RequestParam(name = "startupId", required = false) UUID startupIdParam,
-            Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+    private TermoPilotoService obterTermoPilotoService() {
+        TermoPilotoService service = termoPilotoServiceProvider != null
+                ? termoPilotoServiceProvider.getIfAvailable() : null;
+        if (service == null) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Servico de termo piloto indisponivel");
         }
-
-        UUID targetStartupId = startupIdParam;
-        StartupService startupService = startupServiceProvider.getIfAvailable();
-
-        if (targetStartupId == null && startupService != null) {
-            try {
-                StartupResponseDTO startup = startupService.buscarPorEmail(authentication.getName());
-                if (startup != null) {
-                    targetStartupId = startup.id();
-                }
-            } catch (Exception ignored) {
-                // Continua nulo
-            }
-        }
-
-        if (targetStartupId == null) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        if (!isAdmin(authentication) && startupIdParam != null && startupService != null) {
-            try {
-                StartupResponseDTO startupAutenticada = startupService.buscarPorEmail(authentication.getName());
-                if (startupAutenticada != null && !targetStartupId.equals(startupAutenticada.id())) {
-                    return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-                }
-            } catch (Exception ignored) {
-                return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-            }
-        }
-
-        return ResponseEntity.ok(propostaPocService.listarPorStartup(targetStartupId));
+        return service;
     }
 
-    @GetMapping("/fila")
-    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
-    public ResponseEntity<List<PropostaPocResponseDTO>> consultarFila(
-            @RequestParam(name = "ambienteId", required = false) UUID ambienteIdParam,
-            Authentication authentication) {
-        if (authentication == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        if (isAcessoFilaNaoAutorizado(ambienteIdParam, authentication)) {
-            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        }
-
-        UUID targetAmbienteId = resolverAmbienteIdFila(ambienteIdParam, authentication);
-        if (targetAmbienteId == null) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        Set<UUID> desafioIds = obterDesafioIdsPorAmbiente(targetAmbienteId);
-        if (desafioIds.isEmpty()) {
-            return ResponseEntity.ok(List.of());
-        }
-
-        return ResponseEntity.ok(propostaPocService.listarFilaAmbiente(desafioIds));
+    private TermoPilotoService obterTermoPilotoServiceOuNulo() {
+        return termoPilotoServiceProvider != null ? termoPilotoServiceProvider.getIfAvailable() : null;
     }
 
-    private boolean isAcessoFilaNaoAutorizado(UUID ambienteIdParam, Authentication authentication) {
-        if (isAdmin(authentication)) {
-            return false;
-        }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService == null) {
-            return false;
-        }
-        try {
-            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
-            return ambiente != null && ambienteIdParam != null && !ambienteIdParam.equals(ambiente.id());
-        } catch (Exception ignored) {
-            return true;
-        }
+    private AvaliacaoMatchService obterAvaliacaoMatchService() {
+        return avaliacaoMatchServiceProvider != null ? avaliacaoMatchServiceProvider.getIfAvailable() : null;
     }
 
-    private UUID resolverAmbienteIdFila(UUID ambienteIdParam, Authentication authentication) {
-        if (isAdmin(authentication)) {
-            return ambienteIdParam;
-        }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService == null) {
-            return ambienteIdParam;
-        }
-        try {
-            AmbienteValidacaoResponseDTO ambiente = ambienteService.buscarPorEmail(authentication.getName());
-            return ambiente != null ? ambiente.id() : ambienteIdParam;
-        } catch (Exception ignored) {
-            return null;
-        }
-    }
-
-    private Set<UUID> obterDesafioIdsPorAmbiente(UUID targetAmbienteId) {
-        DesafioValidacaoService desafioService = desafioServiceProvider != null
-                ? desafioServiceProvider.getIfAvailable() : null;
-        if (desafioService == null) {
-            return Set.of();
-        }
-        List<DesafioValidacaoResponseDTO> desafios = desafioService.listarPorAmbiente(targetAmbienteId);
-        if (desafios.isEmpty()) {
-            return Set.of();
-        }
-        return desafios.stream()
-                .map(DesafioValidacaoResponseDTO::id)
-                .collect(Collectors.toSet());
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<PropostaPocResponseDTO> buscar(@PathVariable("id") UUID id) {
-        return ResponseEntity.ok(propostaPocService.buscar(id));
+    private AuditoriaService obterAuditoriaService() {
+        return auditoriaServiceProvider != null ? auditoriaServiceProvider.getIfAvailable() : null;
     }
 
     private boolean isAdmin(Authentication authentication) {
-        return authentication.getAuthorities().stream()
+        return authentication != null && authentication.getAuthorities().stream()
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 }

@@ -14,7 +14,9 @@ import br.senac.fullstack.model.Startup;
 import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.repository.StartupRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
@@ -379,5 +381,50 @@ class MatchmakingServiceTest {
     void obterStartupInexistenteLanca404() {
         UUID idInexistente = UUID.randomUUID();
         assertThrows(ResponseStatusException.class, () -> matchmakingService.obterStartup(idInexistente));
+    }
+
+    @Test
+    @DisplayName("preFiltrarDesafiosParaStartup deve filtrar desafios para a startup")
+    @SuppressWarnings("unchecked")
+    void testPreFiltrarDesafiosParaStartup() {
+        UUID startupId = UUID.randomUUID();
+        StartupService startupService = mock(StartupService.class);
+        StartupResponseDTO startupDTO = new StartupResponseDTO(
+                startupId, "Startup Teste", "s@test.com", "Descricao", "Saude",
+                LocalDate.now(), Estagio.IDEACAO, List.of(), "PE", "Recife", false, null,
+                LocalDateTime.now(), "26", "2611606", "Validar", List.of(), List.of(ModalidadeTeste.REMOTO));
+        when(startupService.buscar(startupId)).thenReturn(startupDTO);
+
+        ObjectProvider<StartupService> startupProvider = mock(ObjectProvider.class);
+        when(startupProvider.getIfAvailable()).thenReturn(startupService);
+
+        MatchmakingService service = new MatchmakingService(
+                startupProvider, new NullObjectProvider<>(),
+                new NullObjectProvider<>(), new NullObjectProvider<>());
+
+        AmbienteValidacao amb = criarAmbiente("PE", "Recife");
+        DesafioValidacao d = criarDesafio(amb, ModalidadeTeste.REMOTO);
+        var filtrados = service.preFiltrarDesafiosParaStartup(startupId, List.of(d));
+        assertEquals(1, filtrados.size());
+
+        var recomendadosComPoolPadrao = service.recomendarDesafiosParaStartup(startupId, null);
+        assertNotNull(recomendadosComPoolPadrao);
+    }
+
+    @Test
+    @DisplayName("obterStartupPorEmail deve lancar 404 quando repositorio nao encontrar")
+    @SuppressWarnings("unchecked")
+    void testObterStartupPorEmailRepoNaoEncontrada() {
+        StartupRepository repo = mock(StartupRepository.class);
+        when(repo.findByEmail("naoexiste@test.com")).thenReturn(java.util.Optional.empty());
+
+        ObjectProvider<StartupRepository> repoProvider = mock(ObjectProvider.class);
+        when(repoProvider.getIfAvailable()).thenReturn(repo);
+
+        MatchmakingService service = new MatchmakingService(
+                new NullObjectProvider<>(), repoProvider,
+                new NullObjectProvider<>(), new NullObjectProvider<>());
+
+        assertThrows(ResponseStatusException.class, () -> service.obterStartupPorEmail("naoexiste@test.com"));
     }
 }

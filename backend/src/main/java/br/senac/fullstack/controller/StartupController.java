@@ -4,11 +4,16 @@ import br.senac.fullstack.dto.RegistroOficialPocResponseDTO;
 import br.senac.fullstack.dto.StartupRequestDTO;
 import br.senac.fullstack.dto.StartupResponseDTO;
 import br.senac.fullstack.dto.StartupUpdateDTO;
+import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.service.RegistroOficialPocService;
 import br.senac.fullstack.service.StartupService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +24,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -56,6 +62,14 @@ public class StartupController {
     @GetMapping
     public ResponseEntity<List<StartupResponseDTO>> listar() {
         return ResponseEntity.ok(startupService.listar());
+    }
+
+    @GetMapping("/paginado")
+    public ResponseEntity<Page<StartupResponseDTO>> listarPaginado(
+            @RequestParam(name = "estagio", required = false) Estagio estagio,
+            @RequestParam(name = "termoBusca", required = false) String termoBusca,
+            @PageableDefault(size = 10, sort = "nome", direction = Sort.Direction.ASC) Pageable pageable) {
+        return ResponseEntity.ok(startupService.listarPaginado(estagio, termoBusca, pageable));
     }
 
     @PutMapping("/{id}")

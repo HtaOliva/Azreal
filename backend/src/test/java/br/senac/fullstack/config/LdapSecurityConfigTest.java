@@ -26,4 +26,16 @@ class LdapSecurityConfigTest {
 
         assertNotNull(config.ldapAuthenticationProvider(contextSource));
     }
+
+    @Test
+    void contextSourceComBindDnNuloOuEmBranco() {
+        LdapSecurityConfig config = new LdapSecurityConfig();
+        ReflectionTestUtils.setField(config, "ldapUrls", "ldap://localhost:3890");
+        ReflectionTestUtils.setField(config, "ldapBase", "dc=example,dc=com");
+        ReflectionTestUtils.setField(config, "ldapBindDn", null);
+        assertNotNull(config.contextSource());
+
+        ReflectionTestUtils.setField(config, "ldapBindDn", "   ");
+        assertNotNull(config.contextSource());
+    }
 }

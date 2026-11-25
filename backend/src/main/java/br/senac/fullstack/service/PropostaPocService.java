@@ -8,6 +8,10 @@ import br.senac.fullstack.model.TermoPiloto;
 import br.senac.fullstack.util.CalendarioPernambucoUtil;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -30,14 +34,22 @@ public class PropostaPocService {
     private final Map<UUID, PropostaPoc> memory = new ConcurrentHashMap<>();
     private final Map<UUID, TermoPiloto> termosMemory = new ConcurrentHashMap<>();
     private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
+    private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
 
     @Autowired
-    public PropostaPocService(ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+    public PropostaPocService(
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
         this.termoPilotoServiceProvider = termoPilotoServiceProvider;
+        this.auditoriaServiceProvider = auditoriaServiceProvider;
+    }
+
+    public PropostaPocService(ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
+        this(termoPilotoServiceProvider, null);
     }
 
     public PropostaPocService() {
-        this(null);
+        this(null, null);
     }
 
     public PropostaPocResponseDTO criar(PropostaPocRequestDTO request) {
@@ -49,6 +61,8 @@ public class PropostaPocService {
             proposta.setPrazoRespostaAmbiente(CalendarioPernambucoUtil.calcularPrazo5DiasUteis(proposta.getDataCriacao()));
         }
         memory.put(proposta.getId(), proposta);
+        gravarAuditoria(proposta.getId(), null, null, StatusProposta.PENDENTE,
+                "STARTUP", "CRIACAO_PROPOSTA", "Criacao da proposta de POC");
         return PropostaPocResponseDTO.fromEntity(proposta);
     }
 
@@ -105,6 +119,27 @@ public class PropostaPocService {
                 .toList();
     }
 
+    public Page<PropostaPocResponseDTO> listarFilaAmbientePaginado(
+            Collection<UUID> desafioIds,
+            StatusProposta status,
+            Pageable pageable) {
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        if (desafioIds == null || desafioIds.isEmpty()) {
+            return new PageImpl<>(List.of(), effectivePageable, 0);
+        }
+        StatusProposta filtroStatus = status != null ? status : StatusProposta.PENDENTE;
+        List<PropostaPoc> filtradas = memory.values().stream()
+                .filter(p -> p.getStatus() == filtroStatus && desafioIds.contains(p.getDesafioValidacaoId()))
+                .sorted(Comparator.comparing(PropostaPoc::getDataCriacao))
+                .toList();
+
+        int start = (int) effectivePageable.getOffset();
+        int end = Math.min(start + effectivePageable.getPageSize(), filtradas.size());
+        List<PropostaPoc> sublist = start <= end ? filtradas.subList(start, end) : List.of();
+        return new PageImpl<>(sublist.stream().map(PropostaPocResponseDTO::fromEntity).toList(),
+                effectivePageable, filtradas.size());
+    }
+
     public PropostaPocResponseDTO buscar(UUID id) {
         return PropostaPocResponseDTO.fromEntity(obterPorId(id));
     }
@@ -128,6 +163,27 @@ public class PropostaPocService {
                 .filter(p -> startupId.equals(p.getStartupId()))
                 .map(PropostaPocResponseDTO::fromEntity)
                 .toList();
+    }
+
+    public Page<PropostaPocResponseDTO> listarPorStartupPaginado(
+            UUID startupId,
+            StatusProposta status,
+            Pageable pageable) {
+        if (startupId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
+        }
+        Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        List<PropostaPoc> filtradas = memory.values().stream()
+                .filter(p -> startupId.equals(p.getStartupId()))
+                .filter(p -> status == null || status.equals(p.getStatus()))
+                .sorted(Comparator.comparing(PropostaPoc::getDataCriacao).reversed())
+                .toList();
+
+        int start = (int) effectivePageable.getOffset();
+        int end = Math.min(start + effectivePageable.getPageSize(), filtradas.size());
+        List<PropostaPoc> sublist = start <= end ? filtradas.subList(start, end) : List.of();
+        return new PageImpl<>(sublist.stream().map(PropostaPocResponseDTO::fromEntity).toList(),
+                effectivePageable, filtradas.size());
     }
 
     public List<PropostaPocResponseDTO> listarPorDesafio(UUID desafioId) {
@@ -162,6 +218,8 @@ public class PropostaPocService {
                     "Apenas propostas pendentes podem ser canceladas");
         }
         proposta.setStatus(StatusProposta.CANCELADA);
+        gravarAuditoria(proposta.getId(), null, StatusProposta.PENDENTE, StatusProposta.CANCELADA,
+                "STARTUP", "CANCELAMENTO_PROPOSTA", "Proposta cancelada pela startup");
         return PropostaPocResponseDTO.fromEntity(proposta);
     }
 
@@ -181,6 +239,8 @@ public class PropostaPocService {
 
         proposta.setStatus(StatusProposta.RECUSADA);
         proposta.setMotivoRecusa(motivoRecusa.trim());
+        gravarAuditoria(proposta.getId(), null, StatusProposta.PENDENTE, StatusProposta.RECUSADA,
+                "AMBIENTE_VALIDACAO", "RECUSA_PROPOSTA", "Proposta recusada pelo parceiro: " + motivoRecusa.trim());
         return PropostaPocResponseDTO.fromEntity(proposta);
     }
 
@@ -208,6 +268,8 @@ public class PropostaPocService {
         } else {
             termosMemory.put(proposta.getId(), termo);
         }
+        gravarAuditoria(proposta.getId(), termo.getId(), StatusProposta.PENDENTE, StatusProposta.EM_TESTE,
+                "AMBIENTE_VALIDACAO", "ACEITE_TERMO_PILOTO", "Proposta aceita e termo de piloto congelado");
         return termo;
     }
 
@@ -234,6 +296,25 @@ public class PropostaPocService {
         PropostaPoc proposta = memory.get(propostaId);
         if (proposta != null) {
             proposta.setStatus(status);
+        }
+    }
+
+    private void gravarAuditoria(
+            UUID propostaId,
+            UUID termoId,
+            StatusProposta statusAnterior,
+            StatusProposta statusNovo,
+            String usuario,
+            String acao,
+            String detalhes) {
+        AuditoriaService auditoriaService = auditoriaServiceProvider != null
+                ? auditoriaServiceProvider.getIfAvailable() : null;
+        if (auditoriaService != null) {
+            try {
+                auditoriaService.registrar(propostaId, termoId, statusAnterior, statusNovo, usuario, acao, detalhes);
+            } catch (Exception ignored) {
+                // segue sem erro se falhar auditoria
+            }
         }
     }
 }

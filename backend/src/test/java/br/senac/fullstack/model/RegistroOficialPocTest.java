@@ -7,7 +7,6 @@ import java.time.LocalDateTime;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -173,22 +172,22 @@ class RegistroOficialPocTest {
     @Test
     @DisplayName("Equals e hashCode baseados no ID")
     void equalsEHashCode() {
-        UUID id = UUID.randomUUID();
-        RegistroOficialPoc r1 = new RegistroOficialPoc();
-        r1.setId(id);
+        UUID idPoc = UUID.randomUUID();
+        RegistroOficialPoc registroPrincipal = new RegistroOficialPoc();
+        registroPrincipal.setId(idPoc);
 
-        RegistroOficialPoc r2 = new RegistroOficialPoc();
-        r2.setId(id);
+        RegistroOficialPoc registroClone = new RegistroOficialPoc();
+        registroClone.setId(idPoc);
 
-        RegistroOficialPoc r3 = new RegistroOficialPoc();
-        r3.setId(UUID.randomUUID());
+        RegistroOficialPoc registroDistinto = new RegistroOficialPoc();
+        registroDistinto.setId(UUID.randomUUID());
 
-        assertTrue(r1.equals(r1));
-        assertTrue(r1.equals(r2));
-        assertFalse(r1.equals(r3));
-        assertFalse(r1.equals(null));
-        assertFalse(r1.equals("outro"));
-        assertEquals(r1.hashCode(), r2.hashCode());
-        assertEquals(r1.hashCode(), r3.hashCode());
+        assertEquals(registroPrincipal, registroPrincipal);
+        assertEquals(registroPrincipal, registroClone);
+        assertNotEquals(registroPrincipal, registroDistinto);
+        assertNotEquals(null, registroPrincipal);
+        assertNotEquals(Double.valueOf(3.14), registroPrincipal);
+        assertEquals(registroPrincipal.hashCode(), registroClone.hashCode());
+        assertEquals(registroPrincipal.hashCode(), registroDistinto.hashCode());
     }
 }
