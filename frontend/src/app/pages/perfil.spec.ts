@@ -156,4 +156,55 @@ describe('PerfilComponent', () => {
       })
     );
   });
+
+  it('should fallback to startup listing by email and guard missing entityId on save', () => {
+    const auth = new AuthService();
+    auth.setCurrentUser({
+      id: 'u-1',
+      username: 'contato@techpulse.com.br',
+      email: 'contato@techpulse.com.br',
+      roles: ['ROLE_STARTUP'],
+      perfil: 'STARTUP'
+    });
+    const toast = new ToastService();
+
+    const fakeHttp = {
+      get: vi.fn((url: string) => {
+        if (url === '/startups') {
+          return of([
+            {
+              id: 's-99',
+              nome: 'TechPulse Fallback',
+              email: 'contato@techpulse.com.br',
+              modalidadesSuportadas: []
+            }
+          ]);
+        }
+        return of({});
+      })
+    } as unknown as HttpClient;
+
+    const injector = createEnvironmentInjector(
+      [
+        { provide: HttpClient, useValue: fakeHttp },
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        StartupService,
+        AmbienteValidacaoService
+      ],
+      Injector.NULL
+    );
+
+    const comp = runInInjectionContext(injector, () => new PerfilComponent());
+    comp.ngOnInit();
+
+    expect(comp['entityId']()).toBe('s-99');
+    expect(comp['startupNome']()).toBe('TechPulse Fallback');
+    expect(comp['startupModalidades']()).toEqual(['REMOTO']);
+
+    comp['entityId'].set(null);
+    comp.salvarStartup();
+    comp.salvarAmbiente();
+    expect(toast.toasts().length).toBeGreaterThanOrEqual(2);
+  });
 });

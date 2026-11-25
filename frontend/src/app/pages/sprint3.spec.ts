@@ -192,5 +192,48 @@ describe('Sprint 3 — Proposta POC & Ambiente Dashboard', () => {
     comp.openRecusarModal(comp['fila']()[0]);
     comp.confirmarRecusa();
     expect(comp['fila']()[0].status).toBe('RECUSADA');
+    expect(comp.desafioTituloPorId('d-1')).toBe('Abandono de carrinho');
+    expect(comp.desafioTituloPorId('missing')).toBe('missing');
+  });
+
+  it('should cover duration options, validation guards, and DesafioService endpoints', () => {
+    const auth = new AuthService();
+    const toast = new ToastService();
+    const patchSpy = vi.fn(() => of({ id: 'd-1', ativo: false }));
+    const getSpy = vi.fn(() => of([]));
+
+    const injector = createEnvironmentInjector(
+      [
+        { provide: HttpClient, useValue: { get: getSpy, patch: patchSpy } as unknown as HttpClient },
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        { provide: Router, useValue: { navigate: vi.fn() } },
+        { provide: ActivatedRoute, useValue: { snapshot: { paramMap: { get: () => 'd-1' } } } },
+        DesafioService,
+        PropostaPocService
+      ],
+      Injector.NULL
+    );
+
+    const desafioSvc = injector.get(DesafioService);
+    desafioSvc.buscar('d-1').subscribe();
+    desafioSvc.inativar('d-1').subscribe();
+    expect(getSpy).toHaveBeenCalledWith('/desafios/d-1');
+    expect(patchSpy).toHaveBeenCalledWith('/desafios/d-1/inativar', {});
+
+    const comp = runInInjectionContext(injector, () => new PropostaPocComponent());
+    comp['duracaoOption'].set('15');
+    expect(comp['duracaoSugeridaDias']()).toBe(15);
+    comp['duracaoOption'].set('outro');
+    comp['duracaoCustom'].set(45);
+    expect(comp['duracaoSugeridaDias']()).toBe(30);
+
+    comp['aceitePrevioTermoSigilo'].set(false);
+    comp.enviarProposta();
+    expect(toast.toasts().some((t) => t.message.includes('aceite prévio'))).toBe(true);
+
+    comp['aceitePrevioTermoSigilo'].set(true);
+    comp.enviarProposta();
+    expect(toast.toasts().some((t) => t.message.includes('ausente'))).toBe(true);
   });
 });

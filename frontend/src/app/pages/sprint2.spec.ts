@@ -216,5 +216,84 @@ describe('Sprint 2 — Login, Registration & Startup Matchmaking', () => {
 
     expect(comp['error']()).toBe('Falha de rede');
     expect(comp['loading']()).toBe(false);
+
+    comp.atualizarMatchIa();
+    expect(toast.toasts().some((t) => t.message.includes('Falha ao atualizar'))).toBe(true);
+
+    expect(comp.formatModalidade('HIBRIDO')).toBe('Híbrido');
+    expect(comp.formatModalidade('PRESENCIAL')).toBe('Presencial');
+    expect(comp.formatPorte('PEQUENO')).toBe('Pequeno Porte');
+    expect(comp.formatPorte('GRANDE')).toBe('Grande Porte');
+    expect(comp.formatPorte('ORGAO_PUBLICO')).toBe('Órgão Público');
+    expect(comp.formatPorte('INSTITUICAO_ENSINO_SAUDE')).toBe('Ensino / Saúde');
+    expect(comp.formatPorte('COMUNIDADE')).toBe('Comunidade');
+  });
+
+  it('should register ambiente, toggle modalidades, and handle login errors in LoginComponent', () => {
+    const navigateSpy = vi.fn().mockResolvedValue(true);
+    const toast = new ToastService();
+    const auth = new AuthService();
+
+    const fakeHttp = {
+      post: vi.fn((url: string) => {
+        if (url === '/termos/aceite') {
+          return of({ id: 'aceite-2', versaoTermo: 'LGPD-2026.1', dataHora: '', consentimentoIaAnonimizado: true });
+        }
+        if (url === '/ambientes-validacao') {
+          return of({
+            id: 'amb-1',
+            razaoSocial: 'Nova Era Ltda',
+            nomeFantasia: 'Nova Era',
+            setor: 'Varejo',
+            porte: 'MEDIO',
+            ufIbge: 'PE',
+            municipioIbge: 'Recife',
+            emailContato: 'amb@novaera.com',
+            ativo: true
+          });
+        }
+        if (url === '/auth/login') {
+          return throwError(() => new Error('Unauthorized'));
+        }
+        return of({});
+      }),
+      get: vi.fn(() => of({}))
+    } as unknown as HttpClient;
+
+    const injector = createEnvironmentInjector(
+      [
+        { provide: HttpClient, useValue: fakeHttp },
+        { provide: Router, useValue: { navigate: navigateSpy } },
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        AuthApiService,
+        StartupService,
+        AmbienteValidacaoService
+      ],
+      Injector.NULL
+    );
+
+    const comp = runInInjectionContext(injector, () => new LoginComponent());
+
+    comp.toggleStartupModalidade('HIBRIDO');
+    expect(comp['startupModalidades']()).toEqual(['REMOTO', 'HIBRIDO']);
+    comp.toggleStartupModalidade('REMOTO');
+    expect(comp['startupModalidades']()).toEqual(['HIBRIDO']);
+
+    comp.openModal('ambiente');
+    comp['ambienteRazaoSocial'].set('Nova Era Ltda');
+    comp['ambienteSetor'].set('Varejo');
+    comp['ambienteEmail'].set('amb@novaera.com');
+    comp['ambienteSenha'].set('123456');
+    comp.onRegisterAmbiente();
+
+    expect(comp['activeModal']()).toBeNull();
+    expect(comp['email']()).toBe('amb@novaera.com');
+    expect(comp['accessRole']()).toBe('ambiente');
+
+    comp['password'].set('wrongpass');
+    comp.onLoginSubmit();
+    expect(auth.isAuthenticated()).toBe(false);
+    expect(toast.toasts().some((t) => t.message.includes('Credenciais inválidas'))).toBe(true);
   });
 });

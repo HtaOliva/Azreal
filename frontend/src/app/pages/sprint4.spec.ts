@@ -127,6 +127,21 @@ describe('Sprint 4 — POCs Trajectory, Pilot Terms, Delivery & Evidence', () =>
     comp.openEvidenciaModal(comp['registros']()[0]);
     comp.baixarComprovante();
     expect(toast.toasts().some((t) => t.message.includes('AZR-2026-9941-IMP'))).toBe(true);
+
+    comp.openTermoModal(comp['ativasEPendentes']()[0]);
+    expect(comp['activeModal']()).toBe('termo');
+    comp.closeModal();
+    expect(comp['activeModal']()).toBeNull();
+
+    expect(comp.formatAvaliacao('ATENDEU_PARCIALMENTE')).toBe('Atendeu parcialmente');
+    expect(comp.formatAvaliacao('NAO_ATINGIU_METRICA')).toBe('Não atingiu métrica');
+    expect(comp.formatAvaliacao(undefined)).toBe('-');
+
+    const regSvc = injector.get(RegistroPocService);
+    regSvc.buscar('reg-1').subscribe();
+    regSvc.verificarPorCodigo('AZR-2026-9941-IMP').subscribe();
+    expect(fakeHttp.get).toHaveBeenCalledWith('/registros-poc/reg-1');
+    expect(fakeHttp.get).toHaveBeenCalledWith('/registros-poc/verificar/AZR-2026-9941-IMP');
   });
 
   it('should confirm execution as Ambiente de Validação in PocsTrajetoriaComponent', () => {
