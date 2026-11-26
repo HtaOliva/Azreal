@@ -83,6 +83,30 @@ describe('Azreal App Shell & Core Services', () => {
     expect(sidebar['homeRoute']()).toBe('/ambiente/dashboard');
     expect(sidebar['roleLabel']()).toBe('Ambiente de Validação');
 
+    auth.setCurrentUser({
+      id: 'u-3',
+      username: 'admin@azreal.com',
+      email: 'admin@azreal.com',
+      roles: ['ROLE_ADMIN'],
+      perfil: 'NONE'
+    });
+    expect(auth.perfil()).toBe('ADMIN');
+    expect(sidebar['roleLabel']()).toBe('Administrador');
+    expect(sidebar['homeRoute']()).toBe('/startup/dashboard');
+
+    auth.setCurrentUser({
+      id: 'u-4',
+      username: 'startup@azreal.com',
+      email: 'startup@azreal.com',
+      roles: ['ROLE_STARTUP'],
+      perfil: 'NONE'
+    });
+    expect(auth.perfil()).toBe('STARTUP');
+    expect(sidebar['roleLabel']()).toBe('Startup');
+
+    auth.setEntityContext(null, null);
+    expect(auth.entityId()).toBeNull();
+
     sidebar.logout();
     expect(auth.isAuthenticated()).toBe(false);
   });

@@ -101,7 +101,7 @@
 
 <!-- Modal: Novo Desafio -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'novoDesafio'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="novoDesafioModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'novoDesafio'" aria-labelledby="novoDesafioModalTitle">
     <div class="modal-header">
       <h3 id="novoDesafioModalTitle" class="modal-title">
         Publicar Novo Desafio de Validação (RF05 / RF06)
@@ -169,12 +169,12 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal: Recusar com Motivo -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'recusar'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="recusarModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'recusar'" aria-labelledby="recusarModalTitle">
     <div class="modal-header">
       <h3 id="recusarModalTitle" class="modal-title">Recusar Proposta com Motivo (RF16)</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
@@ -215,12 +215,12 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal: Aceitar e Gerar Termo -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'aceitar'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="aceitarModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'aceitar'" aria-labelledby="aceitarModalTitle">
     <div class="modal-header">
       <h3 id="aceitarModalTitle" class="modal-title">
         Aceitar Proposta e Gerar Termo de Piloto (RF15)
@@ -247,5 +247,5 @@
         {{ submitting() ? 'Gerando Termo...' : 'Assinar Termo e Revelar Identidade' }}
       </button>
     </div>
-  </div>
+  </dialog>
 </div>

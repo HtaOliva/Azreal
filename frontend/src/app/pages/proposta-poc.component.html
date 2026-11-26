@@ -38,7 +38,7 @@
 </app-sidebar-layout>
 
 <div class="modal-backdrop" [class.open]="modalOpen()">
-  <div class="modal-box" style="max-width: 740px;" role="dialog" aria-modal="true" aria-labelledby="propostaModalTitle">
+  <dialog class="modal-box" style="max-width: 740px;" [open]="modalOpen()" aria-labelledby="propostaModalTitle">
     <div class="modal-header">
       <h3 id="propostaModalTitle" class="modal-title">NOVA PROPOSTA DE POC</h3>
       <div style="display: flex; gap: 8px;">
@@ -184,5 +184,5 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
