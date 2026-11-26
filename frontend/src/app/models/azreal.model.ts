@@ -102,6 +102,49 @@ export interface DesafioRecomendado {
   origemRecomendacao?: string;
 }
 
+export interface DesafioValidacaoRequest {
+  ambienteValidacaoId: string;
+  titulo: string;
+  descricaoProblema: string;
+  publicoAlvo?: string;
+  tamanhoAmostra?: number;
+  modalidade: ModalidadeTeste;
+  duracaoMaxima?: number;
+}
+
+export interface DesafioValidacaoResponse {
+  id: string;
+  ambienteValidacaoId?: string;
+  ambienteValidacaoNome?: string;
+  razaoSocial?: string;
+  emailContato?: string;
+  telefoneContato?: string;
+  setor?: string;
+  porte?: PorteOrganizacao;
+  ufIbge?: string;
+  municipioIbge?: string;
+  titulo: string;
+  descricaoProblema: string;
+  publicoAlvo?: string;
+  tamanhoAmostra?: number;
+  modalidade: ModalidadeTeste;
+  duracaoMaxima?: number;
+  status: StatusDesafio;
+  ativo: boolean;
+  dataCriacao?: string;
+}
+
+export interface PropostaPocRequest {
+  startupId: string;
+  desafioValidacaoId: string;
+  escopoTeste: string;
+  duracaoSugeridaDias: number;
+  responsabilidadesStartup?: string;
+  responsabilidadesAmbiente?: string;
+  metricaValidacao: string;
+  aceitePrevioTermoSigilo: boolean;
+}
+
 export interface PropostaPocResponse {
   id: string;
   startupId: string;
@@ -116,4 +159,92 @@ export interface PropostaPocResponse {
   dataCriacao?: string;
   prazoRespostaAmbiente?: string;
   motivoRecusa?: string;
+}
+
+export interface RecusaPropostaRequest {
+  motivoRecusa: string;
+}
+
+export interface TermoPilotoResponse {
+  id: string;
+  propostaPocId: string;
+  startupId: string;
+  desafioValidacaoId: string;
+  ambienteValidacaoId: string;
+  escopoTeste: string;
+  duracaoDias: number;
+  responsabilidadesStartup?: string;
+  responsabilidadesAmbiente?: string;
+  metricaValidacao: string;
+  dataCriacao?: string;
+  statusProposta: StatusProposta;
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  emailContato?: string;
+  telefoneContato?: string;
+  setor?: string;
+  porte?: PorteOrganizacao;
+  identidadeAmbienteRevelada?: AmbienteValidacaoResponse;
+  resumoEntrega?: string;
+  dataEntrega?: string;
+  pilotoExecutado?: boolean;
+  avaliacaoMetrica?: AvaliacaoMetrica;
+  parecer?: string;
+  modoPrivacidade?: ModoPrivacidadePoc;
+  certificadoEmitido?: boolean;
+  dataConfirmacao?: string;
+}
+
+export interface EntregaPilotoRequest {
+  resumoEntrega: string;
+  linksEvidencias?: string;
+  observacoes?: string;
+}
+
+export interface ConfirmacaoExecucaoRequest {
+  pilotoExecutado: boolean;
+  avaliacaoMetrica?: AvaliacaoMetrica;
+  parecer?: string;
+  modoPrivacidade?: ModoPrivacidadePoc;
+  direcionamentoPosPoc?: string;
+  justificativaNaoExecucao?: string;
+}
+
+export interface ConfirmacaoExecucaoResponse {
+  termoPilotoId: string;
+  propostaPocId: string;
+  startupId: string;
+  ambienteValidacaoId: string;
+  status: StatusProposta;
+  pilotoExecutado: boolean;
+  avaliacaoMetrica?: AvaliacaoMetrica;
+  parecer?: string;
+  modoPrivacidade?: ModoPrivacidadePoc;
+  direcionamentoPosPoc?: string;
+  justificativaNaoExecucao?: string;
+  certificadoEmitido?: boolean;
+  dataConfirmacao?: string;
+}
+
+export interface RegistroOficialPocResponse {
+  id: string;
+  codigoVerificador: string;
+  termoPilotoId: string;
+  propostaPocId: string;
+  startupId: string;
+  ambienteValidacaoId: string;
+  desafioValidacaoId: string;
+  escopoTestado: string;
+  duracaoDias: number;
+  avaliacaoMetrica: AvaliacaoMetrica;
+  parecer?: string;
+  modoPrivacidade: ModoPrivacidadePoc;
+  direcionamentoPosPoc?: string;
+  metricaValidacao: string;
+  resumoEntrega?: string;
+  nomeOrganizacao: string;
+  setorOrganizacao?: string;
+  porteOrganizacao?: PorteOrganizacao;
+  dataEmissao?: string;
+  anonimo: boolean;
 }
