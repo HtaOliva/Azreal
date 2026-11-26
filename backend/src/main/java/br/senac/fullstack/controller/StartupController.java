@@ -18,6 +18,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -36,22 +39,51 @@ public class StartupController {
 
     private final StartupService startupService;
     private final ObjectProvider<RegistroOficialPocService> registroServiceProvider;
+    private final ObjectProvider<UserDetailsManager> userDetailsManagerProvider;
+    private final ObjectProvider<PasswordEncoder> passwordEncoderProvider;
 
     @Autowired
     public StartupController(
             StartupService startupService,
-            ObjectProvider<RegistroOficialPocService> registroServiceProvider) {
+            ObjectProvider<RegistroOficialPocService> registroServiceProvider,
+            ObjectProvider<UserDetailsManager> userDetailsManagerProvider,
+            ObjectProvider<PasswordEncoder> passwordEncoderProvider) {
         this.startupService = startupService;
         this.registroServiceProvider = registroServiceProvider;
+        this.userDetailsManagerProvider = userDetailsManagerProvider;
+        this.passwordEncoderProvider = passwordEncoderProvider;
+    }
+
+    public StartupController(
+            StartupService startupService,
+            ObjectProvider<RegistroOficialPocService> registroServiceProvider) {
+        this(startupService, registroServiceProvider, null, null);
     }
 
     public StartupController(StartupService startupService) {
-        this(startupService, null);
+        this(startupService, null, null, null);
     }
 
     @PostMapping
     public ResponseEntity<StartupResponseDTO> criar(@Valid @RequestBody StartupRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(startupService.criar(request));
+        StartupResponseDTO created = startupService.criar(request);
+        registrarCredenciaisLocais(request.email(), request.senha());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    private void registrarCredenciaisLocais(String email, String senha) {
+        if (userDetailsManagerProvider == null || passwordEncoderProvider == null
+                || email == null || senha == null) {
+            return;
+        }
+        UserDetailsManager manager = userDetailsManagerProvider.getIfAvailable();
+        PasswordEncoder encoder = passwordEncoderProvider.getIfAvailable();
+        if (manager != null && encoder != null && !manager.userExists(email)) {
+            manager.createUser(User.withUsername(email)
+                    .password(encoder.encode(senha))
+                    .roles("STARTUP")
+                    .build());
+        }
     }
 
     @GetMapping("/{id}")

@@ -5,10 +5,15 @@ import br.senac.fullstack.dto.AmbienteValidacaoResponseDTO;
 import br.senac.fullstack.dto.AmbienteValidacaoUpdateDTO;
 import br.senac.fullstack.service.AmbienteValidacaoService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,15 +30,53 @@ import java.util.UUID;
 public class AmbienteValidacaoController {
 
     private final AmbienteValidacaoService ambienteValidacaoService;
+    private final ObjectProvider<UserDetailsManager> userDetailsManagerProvider;
+    private final ObjectProvider<PasswordEncoder> passwordEncoderProvider;
+
+    @Autowired
+    public AmbienteValidacaoController(
+            AmbienteValidacaoService ambienteValidacaoService,
+            ObjectProvider<UserDetailsManager> userDetailsManagerProvider,
+            ObjectProvider<PasswordEncoder> passwordEncoderProvider) {
+        this.ambienteValidacaoService = ambienteValidacaoService;
+        this.userDetailsManagerProvider = userDetailsManagerProvider;
+        this.passwordEncoderProvider = passwordEncoderProvider;
+    }
 
     public AmbienteValidacaoController(AmbienteValidacaoService ambienteValidacaoService) {
-        this.ambienteValidacaoService = ambienteValidacaoService;
+        this(ambienteValidacaoService, null, null);
     }
 
     @PostMapping
     public ResponseEntity<AmbienteValidacaoResponseDTO> criar(
             @Valid @RequestBody AmbienteValidacaoRequestDTO request) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(ambienteValidacaoService.criar(request));
+        AmbienteValidacaoResponseDTO created = ambienteValidacaoService.criar(request);
+        registrarCredenciaisLocais(request.emailContato(), request.senha());
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    @GetMapping("/me")
+    @PreAuthorize("hasRole('AMBIENTE_VALIDACAO') or hasRole('ADMIN')")
+    public ResponseEntity<AmbienteValidacaoResponseDTO> meuAmbiente(Authentication authentication) {
+        if (authentication == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        return ResponseEntity.ok(ambienteValidacaoService.buscarPorEmail(authentication.getName()));
+    }
+
+    private void registrarCredenciaisLocais(String email, String senha) {
+        if (userDetailsManagerProvider == null || passwordEncoderProvider == null
+                || email == null || senha == null) {
+            return;
+        }
+        UserDetailsManager manager = userDetailsManagerProvider.getIfAvailable();
+        PasswordEncoder encoder = passwordEncoderProvider.getIfAvailable();
+        if (manager != null && encoder != null && !manager.userExists(email)) {
+            manager.createUser(User.withUsername(email)
+                    .password(encoder.encode(senha))
+                    .roles("AMBIENTE_VALIDACAO")
+                    .build());
+        }
     }
 
     @GetMapping("/{id}")

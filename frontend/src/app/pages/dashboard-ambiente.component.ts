@@ -130,7 +130,7 @@ export class DashboardAmbienteComponent implements OnInit {
           this.submitting.set(false);
           this.closeModal();
           this.toastService.show(
-            'Novo Desafio de Validação publicado de forma anônima (RF05/RF06).'
+            'Novo Desafio de Validação publicado de forma anônima.'
           );
         },
         error: (err: Error) => {

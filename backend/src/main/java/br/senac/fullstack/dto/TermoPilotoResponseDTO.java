@@ -36,8 +36,52 @@ public record TermoPilotoResponseDTO(
         String parecer,
         ModoPrivacidadePoc modoPrivacidade,
         Boolean certificadoEmitido,
-        LocalDateTime dataConfirmacao
+        LocalDateTime dataConfirmacao,
+        String nomeStartup,
+        String codigoTermo,
+        LocalDateTime dataInicio,
+        LocalDateTime dataFim
 ) {
+
+    public TermoPilotoResponseDTO(
+            UUID id,
+            UUID propostaPocId,
+            UUID startupId,
+            UUID desafioValidacaoId,
+            UUID ambienteValidacaoId,
+            String escopoTeste,
+            Integer duracaoDias,
+            String responsabilidadesStartup,
+            String responsabilidadesAmbiente,
+            String metricaValidacao,
+            LocalDateTime dataCriacao,
+            StatusProposta statusProposta,
+            String razaoSocial,
+            String nomeFantasia,
+            String emailContato,
+            String telefoneContato,
+            String setor,
+            PorteOrganizacao porte,
+            AmbienteValidacaoResponseDTO identidadeAmbienteRevelada,
+            String resumoEntrega,
+            LocalDateTime dataEntrega,
+            Boolean pilotoExecutado,
+            AvaliacaoMetrica avaliacaoMetrica,
+            String parecer,
+            ModoPrivacidadePoc modoPrivacidade,
+            Boolean certificadoEmitido,
+            LocalDateTime dataConfirmacao
+    ) {
+        this(id, propostaPocId, startupId, desafioValidacaoId, ambienteValidacaoId, escopoTeste,
+                duracaoDias, responsabilidadesStartup, responsabilidadesAmbiente, metricaValidacao,
+                dataCriacao, statusProposta, razaoSocial, nomeFantasia, emailContato, telefoneContato,
+                setor, porte, identidadeAmbienteRevelada, resumoEntrega, dataEntrega, pilotoExecutado,
+                avaliacaoMetrica, parecer, modoPrivacidade, certificadoEmitido, dataConfirmacao,
+                null,
+                id != null ? "TP-" + id.toString().substring(0, 8).toUpperCase() : null,
+                dataCriacao,
+                dataCriacao != null && duracaoDias != null ? dataCriacao.plusDays(duracaoDias) : null);
+    }
 
     public TermoPilotoResponseDTO(
             UUID id,
@@ -95,12 +139,21 @@ public record TermoPilotoResponseDTO(
     public static TermoPilotoResponseDTO fromEntity(
             TermoPiloto termo,
             StatusProposta status,
-            AmbienteValidacaoResponseDTO ambiente) {
+            AmbienteValidacaoResponseDTO ambiente,
+            String nomeStartup) {
         if (termo == null) {
             return null;
         }
         StatusProposta statusEfetivo = status != null ? status
                 : (termo.getStatus() != null ? termo.getStatus() : StatusProposta.EM_TESTE);
+
+        String codigo = termo.getId() != null
+                ? "TP-" + termo.getId().toString().substring(0, 8).toUpperCase()
+                : null;
+        LocalDateTime inicio = termo.getDataCriacao();
+        LocalDateTime fim = (inicio != null && termo.getDuracaoDias() != null)
+                ? inicio.plusDays(termo.getDuracaoDias())
+                : null;
 
         return new TermoPilotoResponseDTO(
                 termo.getId(),
@@ -129,13 +182,24 @@ public record TermoPilotoResponseDTO(
                 termo.getParecer(),
                 termo.getModoPrivacidade(),
                 termo.getCertificadoEmitido() != null ? termo.getCertificadoEmitido() : false,
-                termo.getDataConfirmacao()
+                termo.getDataConfirmacao(),
+                nomeStartup,
+                codigo,
+                inicio,
+                fim
         );
     }
 
     public static TermoPilotoResponseDTO fromEntity(
             TermoPiloto termo,
+            StatusProposta status,
             AmbienteValidacaoResponseDTO ambiente) {
-        return fromEntity(termo, termo != null ? termo.getStatus() : StatusProposta.EM_TESTE, ambiente);
+        return fromEntity(termo, status, ambiente, null);
+    }
+
+    public static TermoPilotoResponseDTO fromEntity(
+            TermoPiloto termo,
+            AmbienteValidacaoResponseDTO ambiente) {
+        return fromEntity(termo, termo != null ? termo.getStatus() : StatusProposta.EM_TESTE, ambiente, null);
     }
 }

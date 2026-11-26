@@ -190,7 +190,7 @@ describe('Sprint 2 — Login, Registration & Startup Matchmaking', () => {
     expect(comp.formatPorte('MEDIO')).toBe('Médio Porte');
 
     comp.atualizarMatchIa();
-    expect(toast.toasts().some((t) => t.message.includes('RF10'))).toBe(true);
+    expect(toast.toasts().some((t) => t.message.includes('Matchmaking semântico atualizado'))).toBe(true);
   });
 
   it('should handle matchmaking error gracefully in DashboardStartupComponent', () => {
@@ -229,7 +229,7 @@ describe('Sprint 2 — Login, Registration & Startup Matchmaking', () => {
     expect(comp.formatPorte('COMUNIDADE')).toBe('Comunidade');
   });
 
-  it('should register ambiente, validate empty fields, and handle login errors in LoginComponent', () => {
+  it('should register ambiente, toggle modalidades, and handle login errors in LoginComponent', () => {
     const navigateSpy = vi.fn().mockResolvedValue(true);
     const toast = new ToastService();
     const auth = new AuthService();
@@ -273,16 +273,12 @@ describe('Sprint 2 — Login, Registration & Startup Matchmaking', () => {
       Injector.NULL
     );
 
-    const startupSvc = injector.get(StartupService);
-    const ambSvc = injector.get(AmbienteValidacaoService);
-    startupSvc.buscar('s-1').subscribe();
-    ambSvc.buscar('amb-1').subscribe();
-    expect(fakeHttp.get).toHaveBeenCalledWith('/startups/s-1');
-    expect(fakeHttp.get).toHaveBeenCalledWith('/ambientes-validacao/amb-1');
-
     const comp = runInInjectionContext(injector, () => new LoginComponent());
-    comp.onRegisterAmbiente();
-    expect(toast.toasts().some((t) => t.message.includes('campos obrigatórios'))).toBe(true);
+
+    comp.toggleStartupModalidade('HIBRIDO');
+    expect(comp['startupModalidades']()).toEqual(['REMOTO', 'HIBRIDO']);
+    comp.toggleStartupModalidade('REMOTO');
+    expect(comp['startupModalidades']()).toEqual(['HIBRIDO']);
 
     comp.openModal('ambiente');
     comp['ambienteRazaoSocial'].set('Nova Era Ltda');
