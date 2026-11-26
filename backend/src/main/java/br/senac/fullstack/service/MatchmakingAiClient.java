@@ -4,6 +4,7 @@ import br.senac.fullstack.dto.RankedDesafioAiResult;
 import br.senac.fullstack.exception.AiMatchmakingException;
 import br.senac.fullstack.model.DesafioValidacao;
 import br.senac.fullstack.model.Startup;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,14 +15,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 @Service
 public class MatchmakingAiClient {
@@ -200,7 +201,7 @@ public class MatchmakingAiClient {
 
     private List<RankedDesafioAiResult> extrairResultadosGemini(
             String responseJson,
-            List<DesafioValidacao> desafios) throws Exception {
+            List<DesafioValidacao> desafios) throws JsonProcessingException {
         if (responseJson == null || responseJson.isBlank()) {
             throw new AiMatchmakingException("Resposta vazia da API do Gemini");
         }
@@ -216,23 +217,19 @@ public class MatchmakingAiClient {
                 objectMapper.getTypeFactory().constructCollectionType(List.class, RankedDesafioAiResult.class)
         );
 
-        Set<UUID> idsValidos = new HashSet<>();
-        for (DesafioValidacao d : desafios) {
-            if (d != null && d.getId() != null) {
-                idsValidos.add(d.getId());
-            }
-        }
+        Set<UUID> idsValidos = desafios.stream()
+                .filter(Objects::nonNull)
+                .map(DesafioValidacao::getId)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toSet());
 
-        List<RankedDesafioAiResult> filtrados = new ArrayList<>();
-        for (RankedDesafioAiResult item : brutos) {
-            if (item != null
-                    && item.desafioId() != null
-                    && idsValidos.contains(item.desafioId())
-                    && item.motivo() != null
-                    && !item.motivo().isBlank()) {
-                filtrados.add(item);
-            }
-        }
+        List<RankedDesafioAiResult> filtrados = brutos.stream()
+                .filter(item -> item != null
+                        && item.desafioId() != null
+                        && idsValidos.contains(item.desafioId())
+                        && item.motivo() != null
+                        && !item.motivo().isBlank())
+                .toList();
 
         if (filtrados.isEmpty()) {
             throw new AiMatchmakingException("Nenhum desafio valido retornado pela API do Gemini");
