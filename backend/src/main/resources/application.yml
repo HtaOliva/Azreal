@@ -2,15 +2,18 @@ spring:
   application:
     name: fullstack-api
   datasource:
-    url: jdbc:postgresql://db.nulgjxgkykjmjloognzw.supabase.co:5432/postgres?sslmode=require
-    username: postgres
-    password: ${DB_PASSWORD}
+    url: ${DB_URL:jdbc:postgresql://db.nulgjxgkykjmjloognzw.supabase.co:5432/postgres?sslmode=require}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD:}
     driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: ${JPA_DDL_AUTO:update}
+    show-sql: ${SHOW_SQL:true}
     open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: true
   ldap:
     urls: ${LLDAP_URL:ldap://localhost:389}
     base: ${LLDAP_BASE_DN:dc=example,dc=com}
@@ -19,10 +22,10 @@ spring:
 logging:
   level:
     root: INFO
-    com.zaxxer.hikari: DEBUG
-    org.springframework.jdbc: DEBUG
+    com.zaxxer.hikari: ${HIKARI_LOG_LEVEL:DEBUG}
+    org.springframework.jdbc: ${JDBC_LOG_LEVEL:DEBUG}
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   environment: development
@@ -34,6 +37,9 @@ app:
     model: ${AI_MODEL:gemini-flash-latest}
     base-url: ${AI_BASE_URL:https://generativelanguage.googleapis.com/v1beta}
     timeout-ms: ${AI_TIMEOUT_MS:5000}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
 management:
   endpoints:
