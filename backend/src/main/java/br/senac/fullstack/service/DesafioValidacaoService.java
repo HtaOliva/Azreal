@@ -131,6 +131,16 @@ public class DesafioValidacaoService {
         return DesafioValidacaoResponseDTO.fromEntity(obterPorId(id));
     }
 
+    public List<DesafioValidacao> listarEntidadesAtivas() {
+        DesafioValidacaoRepository repo = repository();
+        if (repo != null) {
+            return repo.findByAtivoTrue();
+        }
+        return memory.values().stream()
+                .filter(DesafioValidacao::isAtivo)
+                .toList();
+    }
+
     public DesafioValidacaoResponseDTO atualizar(UUID id, DesafioValidacaoUpdateDTO request) {
         DesafioValidacao desafio = obterPorId(id);
 

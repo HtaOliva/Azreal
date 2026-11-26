@@ -1,0 +1,373 @@
+<app-sidebar-layout>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Perfil — {{ displayName() }}</h1>
+      <p class="page-subtitle">
+        Mantenha seus dados atualizados para melhorar a precisão do matchmaking e a comunicação após o aceite.
+      </p>
+    </div>
+  </header>
+
+  @if (loading()) {
+    <section class="card">
+      <p class="page-subtitle">Carregando dados do perfil...</p>
+    </section>
+  } @else if (perfil() === 'AMBIENTE_VALIDACAO') {
+    <form (ngSubmit)="salvarAmbiente()">
+      <div class="section-divider">
+        <span class="section-label">Dados da Organização</span>
+        <div class="section-line"></div>
+      </div>
+
+      <section class="card">
+        <div class="form-group">
+          <label class="form-label" for="ambRazao">Razão Social (Oculta até o aceite)</label>
+          <input
+            id="ambRazao"
+            name="razaoSocial"
+            type="text"
+            class="form-control"
+            [ngModel]="ambienteRazaoSocial()"
+            (ngModelChange)="ambienteRazaoSocial.set($event)"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ambFantasia">Nome Fantasia</label>
+          <input
+            id="ambFantasia"
+            name="nomeFantasia"
+            type="text"
+            class="form-control"
+            [ngModel]="ambienteNomeFantasia()"
+            (ngModelChange)="ambienteNomeFantasia.set($event)"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ambSetor">Setor de Atuação</label>
+          <input
+            id="ambSetor"
+            name="setor"
+            type="text"
+            class="form-control"
+            [ngModel]="ambienteSetor()"
+            (ngModelChange)="ambienteSetor.set($event)"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ambPorte">Porte da Organização</label>
+          <select
+            id="ambPorte"
+            name="porte"
+            class="form-control"
+            [ngModel]="ambientePorte()"
+            (ngModelChange)="ambientePorte.set($event)"
+          >
+            <option value="PEQUENO">Pequeno Porte</option>
+            <option value="MEDIO">Médio Porte</option>
+            <option value="GRANDE">Grande Porte</option>
+            <option value="ORGAO_PUBLICO">Órgão Público</option>
+            <option value="INSTITUICAO_ENSINO_SAUDE">Instituição de Ensino / Saúde</option>
+            <option value="COMUNIDADE">Comunidade</option>
+          </select>
+        </div>
+      </section>
+
+      <div class="section-divider">
+        <span class="section-label">Localização e Contato</span>
+        <div class="section-line"></div>
+      </div>
+
+      <section class="card">
+        <div class="register-buttons-grid" style="margin-top: 0;">
+          <div class="form-group">
+            <label class="form-label" for="ambUf">UF</label>
+            <input
+              id="ambUf"
+              name="ufIbge"
+              type="text"
+              class="form-control"
+              placeholder="Ex: PE"
+              [ngModel]="ambienteUf()"
+              (ngModelChange)="ambienteUf.set($event)"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ambMunicipio">Município</label>
+            <input
+              id="ambMunicipio"
+              name="municipioIbge"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Recife"
+              [ngModel]="ambienteMunicipio()"
+              (ngModelChange)="ambienteMunicipio.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="ambEmail">E-mail de Contato</label>
+          <input
+            id="ambEmail"
+            name="emailContato"
+            type="email"
+            class="form-control"
+            [ngModel]="ambienteEmailContato()"
+            (ngModelChange)="ambienteEmailContato.set($event)"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ambTelefone">Telefone de Contato</label>
+          <input
+            id="ambTelefone"
+            name="telefoneContato"
+            type="text"
+            class="form-control"
+            placeholder="Ex: (81) 99999-0000"
+            [ngModel]="ambienteTelefone()"
+            (ngModelChange)="ambienteTelefone.set($event)"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="ambLinkedin">LinkedIn URL</label>
+          <input
+            id="ambLinkedin"
+            name="linkedinUrl"
+            type="url"
+            class="form-control"
+            placeholder="https://www.linkedin.com/company/..."
+            [ngModel]="ambienteLinkedin()"
+            (ngModelChange)="ambienteLinkedin.set($event)"
+          />
+        </div>
+
+        <div class="card-actions-bar">
+          <span></span>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Salvando...' : 'Salvar Alterações' }}
+          </button>
+        </div>
+      </section>
+    </form>
+  } @else {
+    <form (ngSubmit)="salvarStartup()">
+      <div class="section-divider">
+        <span class="section-label">Informações Principais</span>
+        <div class="section-line"></div>
+      </div>
+
+      <section class="card">
+        <div class="form-group">
+          <label class="form-label" for="stNome">Nome da Startup</label>
+          <input
+            id="stNome"
+            name="nome"
+            type="text"
+            class="form-control"
+            required
+            [ngModel]="startupNome()"
+            (ngModelChange)="startupNome.set($event)"
+          />
+        </div>
+        <div class="register-buttons-grid" style="margin-top: 0;">
+          <div class="form-group">
+            <label class="form-label" for="stArea">Área de Atuação</label>
+            <input
+              id="stArea"
+              name="areaAtuacao"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Varejo, Logística, EdTech"
+              [ngModel]="startupAreaAtuacao()"
+              (ngModelChange)="startupAreaAtuacao.set($event)"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="stEstagio">Estágio Atual</label>
+            <select
+              id="stEstagio"
+              name="estagioAtual"
+              class="form-control"
+              [ngModel]="startupEstagio()"
+              (ngModelChange)="startupEstagio.set($event)"
+            >
+              <option value="IDEACAO">Ideação</option>
+              <option value="PROTOTIPO_INICIAL">Protótipo Inicial</option>
+              <option value="MVP_FUNCIONAL">MVP Funcional</option>
+              <option value="EM_TESTE">Em Teste Piloto</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="stDescricao">Descrição da Startup e Solução</label>
+          <textarea
+            id="stDescricao"
+            name="descricao"
+            class="form-control"
+            rows="3"
+            placeholder="Descreva sua startup, tecnologia e proposta de valor..."
+            [ngModel]="startupDescricao()"
+            (ngModelChange)="startupDescricao.set($event)"
+          ></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="stValidar">O que precisa validar em ambiente real?</label>
+          <textarea
+            id="stValidar"
+            name="oQuePrecisaValidar"
+            class="form-control"
+            rows="3"
+            placeholder="Descreva sua hipótese de validação..."
+            [ngModel]="startupOQueValidar()"
+            (ngModelChange)="startupOQueValidar.set($event)"
+          ></textarea>
+        </div>
+      </section>
+
+      <div class="section-divider">
+        <span class="section-label">Critérios de Matchmaking</span>
+        <div class="section-line"></div>
+      </div>
+
+      <section class="card">
+        <div class="form-group">
+          <span class="form-label">Modalidades de Teste Suportadas</span>
+          <div class="duration-radios">
+            <label class="duration-pill">
+              <input
+                type="checkbox"
+                [checked]="startupModalidades().includes('REMOTO')"
+                (change)="toggleModalidade('REMOTO')"
+              />
+              <span>Remoto</span>
+            </label>
+            <label class="duration-pill">
+              <input
+                type="checkbox"
+                [checked]="startupModalidades().includes('HIBRIDO')"
+                (change)="toggleModalidade('HIBRIDO')"
+              />
+              <span>Híbrido</span>
+            </label>
+            <label class="duration-pill">
+              <input
+                type="checkbox"
+                [checked]="startupModalidades().includes('PRESENCIAL')"
+                (change)="toggleModalidade('PRESENCIAL')"
+              />
+              <span>Presencial</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="register-buttons-grid" style="margin-top: 0;">
+          <div class="form-group">
+            <label class="form-label" for="stUf">UF</label>
+            <input
+              id="stUf"
+              name="ufIbge"
+              type="text"
+              class="form-control"
+              placeholder="Ex: PE"
+              [ngModel]="startupUf()"
+              (ngModelChange)="startupUf.set($event)"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="stMunicipio">Município</label>
+            <input
+              id="stMunicipio"
+              name="municipioIbge"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Recife"
+              [ngModel]="startupMunicipio()"
+              (ngModelChange)="startupMunicipio.set($event)"
+            />
+          </div>
+        </div>
+
+        <div class="register-buttons-grid" style="margin-top: 0;">
+          <div class="form-group">
+            <label class="form-label" for="stSede">Localidade Sede</label>
+            <input
+              id="stSede"
+              name="localidadeSede"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Recife / PE"
+              [ngModel]="startupLocalidadeSede()"
+              (ngModelChange)="startupLocalidadeSede.set($event)"
+            />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="stAtuacao">Localidade de Atuação</label>
+            <input
+              id="stAtuacao"
+              name="localidadeAtuacao"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Todo o Brasil"
+              [ngModel]="startupLocalidadeAtuacao()"
+              (ngModelChange)="startupLocalidadeAtuacao.set($event)"
+            />
+          </div>
+        </div>
+      </section>
+
+      <div class="section-divider">
+        <span class="section-label">Equipe e Incubadora</span>
+        <div class="section-line"></div>
+      </div>
+
+      <section class="card">
+        <div class="form-group">
+          <label class="form-label" for="stIntegrantes">Integrantes (separados por vírgula)</label>
+          <input
+            id="stIntegrantes"
+            name="integrantes"
+            type="text"
+            class="form-control"
+            placeholder="Ex: Ana Silva, João Souza"
+            [ngModel]="startupIntegrantesText()"
+            (ngModelChange)="startupIntegrantesText.set($event)"
+          />
+        </div>
+
+        <label class="lgpd-check-row" style="margin-bottom: 16px;" for="stIncubadoraCheck">
+          <input
+            id="stIncubadoraCheck"
+            name="ligadaIncubadora"
+            type="checkbox"
+            style="margin-top: 3px;"
+            [ngModel]="startupLigadaIncubadora()"
+            (ngModelChange)="startupLigadaIncubadora.set($event)"
+          />
+          <span>Startup ligada a uma incubadora ou aceleradora</span>
+        </label>
+
+        @if (startupLigadaIncubadora()) {
+          <div class="form-group">
+            <label class="form-label" for="stIncubadoraNome">Nome da Incubadora / Aceleradora</label>
+            <input
+              id="stIncubadoraNome"
+              name="incubadoraLigada"
+              type="text"
+              class="form-control"
+              placeholder="Ex: Porto Digital"
+              [ngModel]="startupIncubadoraNome()"
+              (ngModelChange)="startupIncubadoraNome.set($event)"
+            />
+          </div>
+        }
+
+        <div class="card-actions-bar">
+          <span></span>
+          <button type="submit" class="btn btn-primary" [disabled]="saving()">
+            {{ saving() ? 'Salvando...' : 'Salvar Alterações' }}
+          </button>
+        </div>
+      </section>
+    </form>
+  }
+</app-sidebar-layout>

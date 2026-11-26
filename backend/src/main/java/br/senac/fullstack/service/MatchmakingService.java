@@ -12,6 +12,7 @@ import br.senac.fullstack.model.StatusDesafio;
 import br.senac.fullstack.repository.DesafioValidacaoRepository;
 import br.senac.fullstack.repository.StartupRepository;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,17 +34,29 @@ public class MatchmakingService {
     private final ObjectProvider<StartupService> startupServiceProvider;
     private final ObjectProvider<StartupRepository> startupRepositoryProvider;
     private final ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider;
+    private final ObjectProvider<DesafioValidacaoService> desafioServiceProvider;
     private final ObjectProvider<MatchmakingAiClient> aiClientProvider;
+
+    @Autowired
+    public MatchmakingService(
+            ObjectProvider<StartupService> startupServiceProvider,
+            ObjectProvider<StartupRepository> startupRepositoryProvider,
+            ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider,
+            ObjectProvider<DesafioValidacaoService> desafioServiceProvider,
+            ObjectProvider<MatchmakingAiClient> aiClientProvider) {
+        this.startupServiceProvider = startupServiceProvider;
+        this.startupRepositoryProvider = startupRepositoryProvider;
+        this.desafioRepositoryProvider = desafioRepositoryProvider;
+        this.desafioServiceProvider = desafioServiceProvider;
+        this.aiClientProvider = aiClientProvider;
+    }
 
     public MatchmakingService(
             ObjectProvider<StartupService> startupServiceProvider,
             ObjectProvider<StartupRepository> startupRepositoryProvider,
             ObjectProvider<DesafioValidacaoRepository> desafioRepositoryProvider,
             ObjectProvider<MatchmakingAiClient> aiClientProvider) {
-        this.startupServiceProvider = startupServiceProvider;
-        this.startupRepositoryProvider = startupRepositoryProvider;
-        this.desafioRepositoryProvider = desafioRepositoryProvider;
-        this.aiClientProvider = aiClientProvider;
+        this(startupServiceProvider, startupRepositoryProvider, desafioRepositoryProvider, null, aiClientProvider);
     }
 
     public boolean atendeCriteriosObjetivos(Startup startup, DesafioValidacao desafio) {
@@ -222,9 +235,15 @@ public class MatchmakingService {
     }
 
     public List<DesafioValidacao> obterDesafiosAtivos() {
-        DesafioValidacaoRepository repo = desafioRepositoryProvider.getIfAvailable();
+        DesafioValidacaoRepository repo = desafioRepositoryProvider != null
+                ? desafioRepositoryProvider.getIfAvailable() : null;
         if (repo != null) {
             return repo.findByAtivoTrue();
+        }
+        DesafioValidacaoService service = desafioServiceProvider != null
+                ? desafioServiceProvider.getIfAvailable() : null;
+        if (service != null) {
+            return service.listarEntidadesAtivas();
         }
         return Collections.emptyList();
     }

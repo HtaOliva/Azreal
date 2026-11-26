@@ -48,10 +48,31 @@ export interface StartupResponse {
   descricao?: string;
   areaAtuacao?: string;
   estagioAtual?: Estagio;
+  integrantes?: string[];
+  localidadeSede?: string;
+  localidadeAtuacao?: string;
+  ligadaIncubadora?: boolean;
+  incubadoraLigada?: string;
   oQuePrecisaValidar?: string;
   dataCadastro?: string;
   ufIbge?: string;
   municipioIbge?: string;
+  modalidadesSuportadas?: ModalidadeTeste[];
+}
+
+export interface StartupUpdateRequest {
+  nome?: string;
+  descricao?: string;
+  areaAtuacao?: string;
+  estagioAtual?: Estagio;
+  integrantes?: string[];
+  localidadeSede?: string;
+  localidadeAtuacao?: string;
+  ligadaIncubadora?: boolean;
+  incubadoraLigada?: string;
+  ufIbge?: string;
+  municipioIbge?: string;
+  oQuePrecisaValidar?: string;
   modalidadesSuportadas?: ModalidadeTeste[];
 }
 
@@ -82,6 +103,18 @@ export interface AmbienteValidacaoResponse {
   linkedinUrl?: string;
   ativo: boolean;
   dataCadastro?: string;
+}
+
+export interface AmbienteValidacaoUpdateRequest {
+  razaoSocial?: string;
+  nomeFantasia?: string;
+  setor?: string;
+  porte?: PorteOrganizacao;
+  ufIbge?: string;
+  municipioIbge?: string;
+  emailContato?: string;
+  telefoneContato?: string;
+  linkedinUrl?: string;
 }
 
 export interface DesafioRecomendado {
@@ -193,6 +226,10 @@ export interface TermoPilotoResponse {
   modoPrivacidade?: ModoPrivacidadePoc;
   certificadoEmitido?: boolean;
   dataConfirmacao?: string;
+  nomeStartup?: string;
+  codigoTermo?: string;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export interface EntregaPilotoRequest {
@@ -224,6 +261,10 @@ export interface ConfirmacaoExecucaoResponse {
   justificativaNaoExecucao?: string;
   certificadoEmitido?: boolean;
   dataConfirmacao?: string;
+  nomeStartup?: string;
+  codigoTermo?: string;
+  dataInicio?: string;
+  dataFim?: string;
 }
 
 export interface RegistroOficialPocResponse {

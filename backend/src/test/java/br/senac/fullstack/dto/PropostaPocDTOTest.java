@@ -76,7 +76,26 @@ class PropostaPocDTOTest {
         );
 
         Set<ConstraintViolation<PropostaPocRequestDTO>> violations = validator.validate(dto);
-        assertEquals(2, violations.size());
+        assertFalse(violations.isEmpty());
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("escopoTeste")));
+        assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("metricaValidacao")));
+    }
+
+    @Test
+    void requestDTOComEscopoEMetricaCurtosDeveFalharNaValidacaoDeTamanhoMinimo() {
+        PropostaPocRequestDTO dto = new PropostaPocRequestDTO(
+                UUID.randomUUID(),
+                UUID.randomUUID(),
+                "nananan",
+                20,
+                "Resp startup",
+                "Resp ambiente",
+                "qkjfkajf",
+                true
+        );
+
+        Set<ConstraintViolation<PropostaPocRequestDTO>> violations = validator.validate(dto);
+        assertFalse(violations.isEmpty());
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("escopoTeste")));
         assertTrue(violations.stream().anyMatch(v -> v.getPropertyPath().toString().equals("metricaValidacao")));
     }

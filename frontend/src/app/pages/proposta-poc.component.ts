@@ -1,7 +1,7 @@
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, map, of } from 'rxjs';
 import { SidebarLayoutComponent } from '../components/sidebar-layout.component';
 import { SlotsBannerComponent } from '../components/slots-banner.component';
 import { DesafioValidacaoResponse, PropostaPocResponse } from '../models/azreal.model';
@@ -75,7 +75,10 @@ export class PropostaPocComponent implements OnInit {
     const startupId = this.authService.entityId() ?? undefined;
     forkJoin({
       desafio: desafioId
-        ? this.desafioService.buscar(desafioId).pipe(catchError(() => of(null)))
+        ? this.desafioService.listar().pipe(
+            map((lista) => lista.find((d) => d.id === desafioId) ?? null),
+            catchError(() => of(null))
+          )
         : of(null),
       minhas: this.propostaService.listarMinhas(startupId).pipe(catchError(() => of([])))
     }).subscribe(({ desafio, minhas }) => {
@@ -86,17 +89,19 @@ export class PropostaPocComponent implements OnInit {
 
   preencherExemplo(): void {
     this.escopoTeste.set(
-      'Implantação do widget inteligente de recuperação de carrinho com gatilhos comportamentais em tempo real no checkout web.'
+      'Testar o app de reposição de gôndola em 2 lojas do Recife.'
     );
     this.responsabilidadesStartup.set(
-      'SDK/API configurado e dashboard de acompanhamento em tempo real.'
+      'Instalar aplicativo nos dispositivos móveis e capacitar 5 operadores de loja.'
     );
     this.responsabilidadesAmbiente.set(
-      'Acesso ao ambiente de homologação e amostra de 500 sessões de checkout.'
+      'Acesso aos dados de estoque dos PDVs em 2 lojas físicas e liberação de acesso da equipe.'
     );
     this.metricaValidacao.set(
-      'Aumentar a taxa de conversão de carrinhos abandonados em pelo menos 5% ao fim de 30 dias.'
+      'Reduzir a ruptura de estoque de 8% para 5% em 20 dias.'
     );
+    this.duracaoOption.set('outro');
+    this.duracaoCustom.set(20);
     this.toastService.show('Exemplo realista preenchido nos campos da proposta.');
   }
 
@@ -113,8 +118,21 @@ export class PropostaPocComponent implements OnInit {
       return;
     }
 
-    if (!this.escopoTeste().trim() || !this.metricaValidacao().trim()) {
+    const escopo = this.escopoTeste().trim();
+    const metrica = this.metricaValidacao().trim();
+
+    if (!escopo || !metrica) {
       this.toastService.show('Preencha o escopo do teste e a métrica de validação.');
+      return;
+    }
+
+    if (escopo.length < 10) {
+      this.toastService.show('O escopo do teste deve ter no mínimo 10 caracteres.');
+      return;
+    }
+
+    if (metrica.length < 10) {
+      this.toastService.show('A métrica de validação deve ter no mínimo 10 caracteres com baseline, meta e prazo.');
       return;
     }
 
@@ -123,11 +141,11 @@ export class PropostaPocComponent implements OnInit {
       .criar({
         startupId,
         desafioValidacaoId,
-        escopoTeste: this.escopoTeste().trim(),
+        escopoTeste: escopo,
         duracaoSugeridaDias: this.duracaoSugeridaDias(),
         responsabilidadesStartup: this.responsabilidadesStartup().trim() || undefined,
         responsabilidadesAmbiente: this.responsabilidadesAmbiente().trim() || undefined,
-        metricaValidacao: this.metricaValidacao().trim(),
+        metricaValidacao: metrica,
         aceitePrevioTermoSigilo: true
       })
       .subscribe({

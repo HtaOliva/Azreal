@@ -5,6 +5,7 @@ import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 import java.util.UUID;
 
@@ -16,6 +17,7 @@ public record PropostaPocRequestDTO(
         UUID desafioValidacaoId,
 
         @NotBlank(message = "O escopo do teste e obrigatorio")
+        @Size(min = 10, max = 500, message = "O escopo do teste deve ter no minimo 10 caracteres")
         String escopoTeste,
 
         @NotNull(message = "A duracao sugerida em dias e obrigatoria")
@@ -27,6 +29,7 @@ public record PropostaPocRequestDTO(
         String responsabilidadesAmbiente,
 
         @NotBlank(message = "A metrica de validacao e obrigatoria")
+        @Size(min = 10, max = 300, message = "A metrica de validacao deve conter no minimo 10 caracteres (baseline, meta e prazo mensuraveis)")
         String metricaValidacao,
 
         @NotNull(message = "O aceite previo do termo de sigilo e obrigatorio")

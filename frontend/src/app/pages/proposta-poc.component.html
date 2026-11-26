@@ -63,10 +63,14 @@
           class="form-control"
           rows="2"
           required
-          placeholder="Descreva o que será entregue e testado no piloto..."
+          minlength="10"
+          placeholder="Ex: Testar o app de reposição de gôndola em 2 lojas do Recife."
           [ngModel]="escopoTeste()"
           (ngModelChange)="escopoTeste.set($event)"
         ></textarea>
+        <small style="display: block; margin-top: 4px; font-size: 12px; color: var(--color-text-muted);">
+          Defina um escopo objetivo e mensurável para o piloto (mínimo de 10 caracteres).
+        </small>
       </div>
 
       <div class="form-group">
@@ -96,17 +100,21 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="campoMetrica">3. Métrica de Validação (Critério de Sucesso):</label>
+        <label class="form-label" for="campoMetrica">3. Métrica de Validação (Critério Mensurável de Sucesso):</label>
         <input
           id="campoMetrica"
           name="metricaValidacao"
           type="text"
           class="form-control"
           required
-          placeholder="Ex: Aumentar a conversão em 5% / Método: Relatório de analytics ao fim de 30 dias..."
+          minlength="10"
+          placeholder="Ex: Reduzir a ruptura de estoque de 8% para 5% em 20 dias."
           [ngModel]="metricaValidacao()"
           (ngModelChange)="metricaValidacao.set($event)"
         />
+        <small style="display: block; margin-top: 4px; font-size: 12px; color: var(--color-text-muted);">
+          Informe uma métrica mensurável contendo baseline (situação atual), meta e prazo (mínimo de 10 caracteres). Ex: Reduzir a ruptura de estoque de 8% para 5% em 20 dias.
+        </small>
       </div>
 
       <div class="form-group">
