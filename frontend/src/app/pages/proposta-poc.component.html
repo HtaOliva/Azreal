@@ -1,21 +1,11 @@
 <app-sidebar-layout>
   <header class="page-header">
     <div>
-      <h1 class="page-title">Olá, {{ displayName() }}!</h1>
-      <div class="slots-banner">
-        <span style="font-size: 13px; color: var(--color-text-muted);">Vagas de Propostas em Aberto:</span>
-        <strong style="color: var(--color-secondary);">
-          [ {{ usedSlots() }} / {{ maxSlots }} ] em uso (Você pode enviar mais {{ availableSlots() }})
-        </strong>
-        <div class="slot-pills" aria-hidden="true">
-          @for (idx of slotIndices; track idx) {
-            <span class="slot-pill" [class.used]="idx < usedSlots()"></span>
-          }
-        </div>
-      </div>
+      <h1 class="page-title">Submeter Proposta de POC</h1>
+      <app-slots-banner [used]="usedSlots()" />
     </div>
     <button type="button" class="btn btn-primary" (click)="modalOpen.set(true)">
-      Abrir Nova Proposta de POC
+      Abrir Formulário de Proposta
     </button>
   </header>
 
