@@ -1,12 +1,38 @@
 spring:
   application:
     name: fullstack-api
+  profiles:
+    include: ldap
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME:postgres}
+    password: ${DB_PASSWORD}
+    driver-class-name: org.postgresql.Driver
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    show-sql: false
+    open-in-view: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    baseline-on-migrate: true
+
+logging:
+  level:
+    root: INFO
+    com.zaxxer.hikari: WARN
+    org.springframework.jdbc: WARN
 
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 app:
   environment: production
+  ldap:
+    admin-group: ${LLDAP_ADMIN_GROUP:azrael_admin}
+
+cors:
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:4200}
 
 management:
   endpoints:

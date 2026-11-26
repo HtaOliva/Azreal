@@ -42,3 +42,5 @@ backend-runtime.err
 # Local Secrets & Profiles
 .env
 backend/src/main/resources/application-local.yml
+application-local.yml
+**/application-local.yml
