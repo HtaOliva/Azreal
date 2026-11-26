@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } 
 import { RouterLink } from '@angular/router';
 import { catchError, forkJoin, of } from 'rxjs';
 import { SidebarLayoutComponent } from '../components/sidebar-layout.component';
+import { SlotsBannerComponent } from '../components/slots-banner.component';
 import {
   DesafioRecomendado,
   ModalidadeTeste,
@@ -16,7 +17,7 @@ import { ToastService } from '../services/toast.service';
 @Component({
   selector: 'app-dashboard-startup',
   standalone: true,
-  imports: [SidebarLayoutComponent, RouterLink],
+  imports: [SidebarLayoutComponent, RouterLink, SlotsBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './dashboard-startup.component.html'
 })

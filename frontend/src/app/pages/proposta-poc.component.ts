@@ -3,6 +3,7 @@ import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, forkJoin, map, of } from 'rxjs';
 import { SidebarLayoutComponent } from '../components/sidebar-layout.component';
+import { SlotsBannerComponent } from '../components/slots-banner.component';
 import { DesafioValidacaoResponse, PropostaPocResponse } from '../models/azreal.model';
 import { AuthService } from '../services/auth.service';
 import { DesafioService } from '../services/desafio.service';
@@ -12,7 +13,7 @@ import { ToastService } from '../services/toast.service';
 @Component({
   selector: 'app-proposta-poc',
   standalone: true,
-  imports: [SidebarLayoutComponent, FormsModule, RouterLink],
+  imports: [SidebarLayoutComponent, FormsModule, RouterLink, SlotsBannerComponent],
   changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './proposta-poc.component.html'
 })

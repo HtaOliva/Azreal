@@ -97,7 +97,7 @@
 
 <!-- Modal Cadastro Startup -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'startup'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalStartupTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'startup'" aria-labelledby="modalStartupTitle">
     <div class="modal-header">
       <h3 id="modalStartupTitle" class="modal-title">Cadastrar Startup</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
@@ -206,12 +206,12 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal Cadastro Ambiente -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'ambiente'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="modalAmbienteTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'ambiente'" aria-labelledby="modalAmbienteTitle">
     <div class="modal-header">
       <h3 id="modalAmbienteTitle" class="modal-title">Cadastrar Ambiente de Validação</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
@@ -305,5 +305,5 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
