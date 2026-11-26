@@ -8,6 +8,7 @@ import { routes } from './app.routes';
 import { AuthService } from './services/auth.service';
 import { ToastService } from './services/toast.service';
 import { SidebarLayoutComponent } from './components/sidebar-layout.component';
+import { SlotsBannerComponent } from './components/slots-banner.component';
 
 describe('Azreal App Shell & Core Services', () => {
   beforeEach(() => {
@@ -109,5 +110,12 @@ describe('Azreal App Shell & Core Services', () => {
 
     sidebar.logout();
     expect(auth.isAuthenticated()).toBe(false);
+  });
+
+  it('should instantiate SlotsBannerComponent and calculate slot counts correctly', () => {
+    const injector = createEnvironmentInjector([], Injector.NULL);
+    const banner = runInInjectionContext(injector, () => new SlotsBannerComponent());
+    expect(banner['slotIndices']()).toEqual([0, 1, 2]);
+    expect(banner['available']()).toBe(3);
   });
 });

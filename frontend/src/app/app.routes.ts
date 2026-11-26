@@ -1,26 +1,24 @@
 import { Routes } from '@angular/router';
 import { authGuard, roleGuard } from './guards/auth.guard';
 import { AcessoNegadoComponent } from './pages/acesso-negado.component';
-import {
-  DashboardAmbientePageComponent,
-  DashboardStartupPageComponent,
-  LoginPageComponent,
-  PocsTrajetoriaPageComponent,
-  PropostaPocPageComponent
-} from './pages/sprint-stubs';
+import { DashboardAmbienteComponent } from './pages/dashboard-ambiente.component';
+import { DashboardStartupComponent } from './pages/dashboard-startup.component';
+import { LoginComponent } from './pages/login.component';
+import { PropostaPocComponent } from './pages/proposta-poc.component';
+import { PocsTrajetoriaPageComponent } from './pages/sprint-stubs';
 
 export const routes: Routes = [
   { path: '', pathMatch: 'full', redirectTo: 'login' },
-  { path: 'login', component: LoginPageComponent },
+  { path: 'login', component: LoginComponent },
   { path: 'acesso-negado', component: AcessoNegadoComponent },
   {
     path: 'startup/dashboard',
-    component: DashboardStartupPageComponent,
+    component: DashboardStartupComponent,
     canActivate: [roleGuard(['STARTUP'])]
   },
   {
     path: 'startup/proposta/:desafioId',
-    component: PropostaPocPageComponent,
+    component: PropostaPocComponent,
     canActivate: [roleGuard(['STARTUP'])]
   },
   {
@@ -30,7 +28,7 @@ export const routes: Routes = [
   },
   {
     path: 'ambiente/dashboard',
-    component: DashboardAmbientePageComponent,
+    component: DashboardAmbienteComponent,
     canActivate: [roleGuard(['AMBIENTE_VALIDACAO'])]
   },
   { path: '**', redirectTo: 'login' }

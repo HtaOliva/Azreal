@@ -1,0 +1,178 @@
+<app-sidebar-layout>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Submeter Proposta de POC</h1>
+      <app-slots-banner [used]="usedSlots()" />
+    </div>
+    <button type="button" class="btn btn-primary" (click)="modalOpen.set(true)">
+      Abrir Formulário de Proposta
+    </button>
+  </header>
+
+  <div class="card">
+    <p style="color: var(--color-text-muted); margin-bottom: 14px;">
+      Desafio selecionado:
+      <strong>{{ desafio()?.titulo || 'Desafio de Validação' }}</strong>
+      @if (desafio()?.setor) {
+        (Setor: {{ desafio()?.setor }})
+      }
+      . Preencha a Proposta Enxuta de POC para submeter ao Ambiente de Validação.
+    </p>
+    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+      <button type="button" class="btn btn-secondary" (click)="modalOpen.set(true)">
+        Reabrir Formulário da Proposta
+      </button>
+      <a routerLink="/startup/dashboard" class="btn btn-outline">Voltar aos Desafios</a>
+    </div>
+  </div>
+</app-sidebar-layout>
+
+<div class="modal-backdrop" [class.open]="modalOpen()">
+  <dialog class="modal-box" style="max-width: 740px;" [open]="modalOpen()" aria-labelledby="propostaModalTitle">
+    <div class="modal-header">
+      <h3 id="propostaModalTitle" class="modal-title">NOVA PROPOSTA DE POC</h3>
+      <div style="display: flex; gap: 8px;">
+        <button
+          type="button"
+          class="btn btn-secondary"
+          style="padding: 6px 12px; font-size: 12px;"
+          (click)="preencherExemplo()"
+        >
+          Preencher Exemplo
+        </button>
+        <button type="button" class="modal-close" aria-label="Fechar" (click)="modalOpen.set(false)">X</button>
+      </div>
+    </div>
+
+    <div class="target-banner">
+      <span>
+        Desafio Alvo: {{ desafio()?.titulo || desafioId() }}
+        @if (desafio()?.setor) {
+          (Setor: {{ desafio()?.setor }})
+        }
+      </span>
+      <span class="badge badge-neutral">ANÔNIMO</span>
+    </div>
+
+    <form (ngSubmit)="enviarProposta()">
+      <div class="form-group">
+        <label class="form-label" for="campoEscopo">1. Objetivo e Escopo do Teste:</label>
+        <textarea
+          id="campoEscopo"
+          name="escopoTeste"
+          class="form-control"
+          rows="2"
+          required
+          placeholder="Descreva o que será entregue e testado no piloto..."
+          [ngModel]="escopoTeste()"
+          (ngModelChange)="escopoTeste.set($event)"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="campoRespStartup">2a. O que você entrega (Startup):</label>
+        <textarea
+          id="campoRespStartup"
+          name="respStartup"
+          class="form-control"
+          rows="2"
+          placeholder="Ex: SDK/API configurado e painel de acompanhamento..."
+          [ngModel]="responsabilidadesStartup()"
+          (ngModelChange)="responsabilidadesStartup.set($event)"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="campoRespAmbiente">2b. O que precisa do Ambiente de Validação:</label>
+        <textarea
+          id="campoRespAmbiente"
+          name="respAmbiente"
+          class="form-control"
+          rows="2"
+          placeholder="Ex: Acesso ao ambiente de homologação e amostra de 100 usuários..."
+          [ngModel]="responsabilidadesAmbiente()"
+          (ngModelChange)="responsabilidadesAmbiente.set($event)"
+        ></textarea>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="campoMetrica">3. Métrica de Validação (Critério de Sucesso):</label>
+        <input
+          id="campoMetrica"
+          name="metricaValidacao"
+          type="text"
+          class="form-control"
+          required
+          placeholder="Ex: Aumentar a conversão em 5% / Método: Relatório de analytics ao fim de 30 dias..."
+          [ngModel]="metricaValidacao()"
+          (ngModelChange)="metricaValidacao.set($event)"
+        />
+      </div>
+
+      <div class="form-group">
+        <span class="form-label">4. Duração Sugerida:</span>
+        <div class="duration-radios">
+          <label class="duration-pill">
+            <input
+              type="radio"
+              name="duracaoPoc"
+              value="15"
+              [checked]="duracaoOption() === '15'"
+              (change)="duracaoOption.set('15')"
+            />
+            <span>15 dias</span>
+          </label>
+          <label class="duration-pill">
+            <input
+              type="radio"
+              name="duracaoPoc"
+              value="30"
+              [checked]="duracaoOption() === '30'"
+              (change)="duracaoOption.set('30')"
+            />
+            <span>30 dias</span>
+          </label>
+          <label class="duration-pill">
+            <input
+              type="radio"
+              name="duracaoPoc"
+              value="outro"
+              [checked]="duracaoOption() === 'outro'"
+              (change)="duracaoOption.set('outro')"
+            />
+            <span>Outro:</span>
+            <input
+              type="number"
+              name="duracaoCustom"
+              min="5"
+              max="30"
+              aria-label="Duração customizada em dias"
+              style="width: 64px; border: 1px solid var(--color-border); border-radius: 4px; padding: 2px 6px;"
+              [ngModel]="duracaoCustom()"
+              (ngModelChange)="duracaoCustom.set($event); duracaoOption.set('outro')"
+            />
+          </label>
+        </div>
+      </div>
+
+      <label class="lgpd-check-row" style="margin-top: 12px;" for="aceiteSigiloCheck">
+        <input
+          id="aceiteSigiloCheck"
+          name="aceiteSigilo"
+          type="checkbox"
+          style="margin-top: 3px;"
+          [ngModel]="aceitePrevioTermoSigilo()"
+          (ngModelChange)="aceitePrevioTermoSigilo.set($event)"
+        />
+        <span>Aceito o <strong>Termo de Piloto e a Cláusula de Sigilo</strong> caso a proposta seja aprovada.</span>
+      </label>
+
+      <div class="modal-footer">
+        <a routerLink="/startup/dashboard" class="btn btn-outline">CANCELAR</a>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'ENVIANDO...' : 'ENVIAR PROPOSTA DE POC' }}
+        </button>
+      </div>
+    </form>
+  </dialog>
+</div>
