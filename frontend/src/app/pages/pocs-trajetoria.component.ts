@@ -248,7 +248,7 @@ export class PocsTrajetoriaComponent implements OnInit {
     if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
-      return isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('pt-BR');
+      return Number.isNaN(d.getTime()) ? dateStr : d.toLocaleDateString('pt-BR');
     } catch {
       return dateStr;
     }
@@ -258,7 +258,7 @@ export class PocsTrajetoriaComponent implements OnInit {
     if (!dateStr) return '-';
     try {
       const d = new Date(dateStr);
-      if (isNaN(d.getTime())) return dateStr;
+      if (Number.isNaN(d.getTime())) return dateStr;
       return (
         d.toLocaleDateString('pt-BR') +
         ' às ' +
@@ -275,7 +275,7 @@ export class PocsTrajetoriaComponent implements OnInit {
     }
     if (termo.dataCriacao && termo.duracaoDias) {
       const d = new Date(termo.dataCriacao);
-      if (!isNaN(d.getTime())) {
+      if (!Number.isNaN(d.getTime())) {
         d.setDate(d.getDate() + termo.duracaoDias);
         return d.toLocaleDateString('pt-BR');
       }

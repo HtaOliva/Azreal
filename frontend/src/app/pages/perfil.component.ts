@@ -141,7 +141,7 @@ export class PerfilComponent implements OnInit {
     this.startupDescricao.set(s.descricao || '');
     this.startupOQueValidar.set(s.oQuePrecisaValidar || '');
     this.startupModalidades.set(
-      s.modalidadesSuportadas && s.modalidadesSuportadas.length > 0
+      s.modalidadesSuportadas?.length
         ? s.modalidadesSuportadas
         : ['REMOTO']
     );

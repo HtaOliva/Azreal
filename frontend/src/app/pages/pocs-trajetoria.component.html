@@ -126,7 +126,7 @@
 
 <!-- Modal: Ver Termo de Piloto -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'termo'">
-  <div class="modal-box" style="max-width: 680px;" role="dialog" aria-modal="true" aria-labelledby="termoModalTitle">
+  <dialog class="modal-box" style="max-width: 680px;" [open]="activeModal() === 'termo'" aria-labelledby="termoModalTitle">
     <div class="modal-header">
       <div>
         <h3 id="termoModalTitle" class="modal-title">Termo de Piloto Assinado</h3>
@@ -218,12 +218,12 @@
     <div class="modal-footer">
       <button type="button" class="btn btn-primary" (click)="closeModal()">Fechar Documento</button>
     </div>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal: Registrar Entrega Final -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'entrega'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="entregaModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'entrega'" aria-labelledby="entregaModalTitle">
     <div class="modal-header">
       <h3 id="entregaModalTitle" class="modal-title">Registrar Entrega Final do Piloto</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
@@ -263,12 +263,12 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal: Confirmar Execução (RF19) -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'confirmacao'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="confirmacaoModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'confirmacao'" aria-labelledby="confirmacaoModalTitle">
     <div class="modal-header">
       <h3 id="confirmacaoModalTitle" class="modal-title">Confirmar Execução do Piloto</h3>
       <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
@@ -320,12 +320,12 @@
         </button>
       </div>
     </form>
-  </div>
+  </dialog>
 </div>
 
 <!-- Modal: Evidência de Tração -->
 <div class="modal-backdrop" [class.open]="activeModal() === 'evidencia'">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="evidenciaModalTitle">
+  <dialog class="modal-box" [open]="activeModal() === 'evidencia'" aria-labelledby="evidenciaModalTitle">
     <div class="modal-header">
       <h3 id="evidenciaModalTitle" class="modal-title">
         Certificado Oficial de Evidência de Tração
@@ -362,5 +362,5 @@
         Baixar Comprovante
       </button>
     </div>
-  </div>
+  </dialog>
 </div>
