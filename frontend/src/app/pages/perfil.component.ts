@@ -101,11 +101,12 @@ export class PerfilComponent implements OnInit {
     }
 
     const email = this.authService.currentUser()?.email || this.authService.currentUser()?.username;
+    const emailLower = email?.toLowerCase();
     this.startupService.listar().subscribe({
       next: (lista) => {
-        const encontrada = lista.find(
-          (s) => email && s.email?.toLowerCase() === email.toLowerCase()
-        );
+        const encontrada = emailLower
+          ? lista.find((s) => s.email?.toLowerCase() === emailLower)
+          : undefined;
         if (encontrada) {
           this.preencherStartup(encontrada);
         } else {

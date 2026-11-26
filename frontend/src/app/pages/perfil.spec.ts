@@ -2,7 +2,7 @@ import '@angular/compiler';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { Injector, createEnvironmentInjector, runInInjectionContext } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { of } from 'rxjs';
+import { of, throwError } from 'rxjs';
 import { AmbienteValidacaoService } from '../services/ambiente-validacao.service';
 import { AuthService } from '../services/auth.service';
 import { StartupService } from '../services/startup.service';
@@ -206,5 +206,71 @@ describe('PerfilComponent', () => {
     comp.salvarStartup();
     comp.salvarAmbiente();
     expect(toast.toasts().length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('should handle load/save errors, meuAmbiente fallback, and modality removal in PerfilComponent', () => {
+    const auth = new AuthService();
+    auth.setCurrentUser({
+      id: 'u-2',
+      username: 'inovacao@novaera.com.br',
+      email: 'inovacao@novaera.com.br',
+      roles: ['ROLE_AMBIENTE_VALIDACAO'],
+      perfil: 'AMBIENTE_VALIDACAO'
+    });
+    const toast = new ToastService();
+
+    const fakeHttp = {
+      get: vi.fn((url: string) => {
+        if (url === '/ambientes-validacao/me') {
+          return throwError(() => new Error('Ambiente error'));
+        }
+        return throwError(() => new Error('Startup error'));
+      }),
+      put: vi.fn(() => throwError(() => new Error('Save failed')))
+    } as unknown as HttpClient;
+
+    const injector = createEnvironmentInjector(
+      [
+        { provide: HttpClient, useValue: fakeHttp },
+        { provide: AuthService, useValue: auth },
+        { provide: ToastService, useValue: toast },
+        StartupService,
+        AmbienteValidacaoService
+      ],
+      Injector.NULL
+    );
+
+    const comp = runInInjectionContext(injector, () => new PerfilComponent());
+    comp.ngOnInit();
+    expect(fakeHttp.get).toHaveBeenCalledWith('/ambientes-validacao/me');
+    expect(toast.toasts().some((t) => t.message.includes('perfil do ambiente'))).toBe(true);
+
+    comp['entityId'].set('amb-1');
+    comp.salvarAmbiente();
+    expect(toast.toasts().some((t) => t.message.includes('Save failed'))).toBe(true);
+
+    // Switch to startup error paths and toggle removal
+    auth.setCurrentUser({
+      id: 'u-1',
+      username: 'contato@techpulse.com.br',
+      email: 'contato@techpulse.com.br',
+      roles: ['ROLE_STARTUP'],
+      perfil: 'STARTUP'
+    });
+    auth.setEntityContext('s-1', 'TechPulse');
+    comp.carregarPerfil();
+    expect(toast.toasts().some((t) => t.message.includes('perfil da startup'))).toBe(true);
+
+    comp['entityId'].set('s-1');
+    comp['startupLigadaIncubadora'].set(false);
+    comp.toggleModalidade('REMOTO');
+    expect(comp['startupModalidades']()).toEqual([]);
+    comp.salvarStartup();
+    expect(toast.toasts().some((t) => t.message.includes('Save failed'))).toBe(true);
+
+    // Startup listing fallback error
+    auth.setEntityContext(null, null);
+    comp.carregarPerfil();
+    expect(comp['loading']()).toBe(false);
   });
 });
