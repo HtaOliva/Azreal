@@ -8,6 +8,8 @@ import br.senac.fullstack.model.Estagio;
 import br.senac.fullstack.model.ModalidadeTeste;
 import br.senac.fullstack.model.PorteOrganizacao;
 import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
@@ -23,41 +25,52 @@ import java.util.List;
 @Profile("dast")
 public class DastDemoSeedRunner implements ApplicationRunner {
 
+    private static final String SEED_ORIGIN = "localhost";
+    private static final String STARTUP_EMAIL = "contato@techpulse.com.br";
+    private static final String AMBIENTE_EMAIL = "inovacao@novaera.com.br";
+    private static final String SETOR_VAREJO = "Varejo";
+    private static final String CIDADE_RECIFE = "Recife";
+    private static final String ESTADO_PE = "PE";
+
     private final AceiteTermoService aceiteTermoService;
     private final StartupService startupService;
     private final AmbienteValidacaoService ambienteValidacaoService;
     private final DesafioValidacaoService desafioValidacaoService;
     private final ObjectProvider<UserDetailsManager> userDetailsManagerProvider;
     private final ObjectProvider<PasswordEncoder> passwordEncoderProvider;
+    private final String demoAccessCode;
 
+    @Autowired
     public DastDemoSeedRunner(
             AceiteTermoService aceiteTermoService,
             StartupService startupService,
             AmbienteValidacaoService ambienteValidacaoService,
             DesafioValidacaoService desafioValidacaoService,
             ObjectProvider<UserDetailsManager> userDetailsManagerProvider,
-            ObjectProvider<PasswordEncoder> passwordEncoderProvider) {
+            ObjectProvider<PasswordEncoder> passwordEncoderProvider,
+            @Value("${app.dast.demo-credential:123456}") String demoAccessCode) {
         this.aceiteTermoService = aceiteTermoService;
         this.startupService = startupService;
         this.ambienteValidacaoService = ambienteValidacaoService;
         this.desafioValidacaoService = desafioValidacaoService;
         this.userDetailsManagerProvider = userDetailsManagerProvider;
         this.passwordEncoderProvider = passwordEncoderProvider;
+        this.demoAccessCode = demoAccessCode;
     }
 
     @Override
     public void run(ApplicationArguments args) {
         var aceite = aceiteTermoService.registrar(
-                new AceiteTermoRequestDTO("LGPD-2026.1", "127.0.0.1", true),
+                new AceiteTermoRequestDTO("LGPD-2026.1", SEED_ORIGIN, true),
                 null,
-                "127.0.0.1");
+                SEED_ORIGIN);
 
         startupService.criar(new StartupRequestDTO(
                 "TechPulse Soluções",
-                "contato@techpulse.com.br",
-                "123456",
+                STARTUP_EMAIL,
+                demoAccessCode,
                 "Plataforma de recuperação inteligente de carrinhos e engajamento em checkout web.",
-                "Varejo",
+                SETOR_VAREJO,
                 LocalDate.of(2024, 3, 15),
                 Estagio.MVP_FUNCIONAL,
                 List.of("Ana Silva", "Lucas Oliveira"),
@@ -66,8 +79,8 @@ public class DastDemoSeedRunner implements ApplicationRunner {
                 true,
                 "Porto Digital",
                 aceite.id(),
-                "PE",
-                "Recife",
+                ESTADO_PE,
+                CIDADE_RECIFE,
                 "Validar redução da taxa de abandono de carrinho em ambiente real de varejo.",
                 List.of(),
                 List.of(ModalidadeTeste.REMOTO, ModalidadeTeste.HIBRIDO)));
@@ -75,14 +88,14 @@ public class DastDemoSeedRunner implements ApplicationRunner {
         var ambiente = ambienteValidacaoService.criar(new AmbienteValidacaoRequestDTO(
                 "Supermercados Nova Era Ltda",
                 "Supermercados Nova Era",
-                "Varejo",
+                SETOR_VAREJO,
                 PorteOrganizacao.MEDIO,
-                "PE",
-                "Recife",
-                "inovacao@novaera.com.br",
+                ESTADO_PE,
+                CIDADE_RECIFE,
+                AMBIENTE_EMAIL,
                 "(81) 99999-0000",
                 "https://www.linkedin.com/company/novaera-varejo",
-                "123456",
+                demoAccessCode,
                 aceite.id()));
 
         desafioValidacaoService.criar(new DesafioValidacaoRequestDTO(
@@ -103,16 +116,16 @@ public class DastDemoSeedRunner implements ApplicationRunner {
                 ModalidadeTeste.HIBRIDO,
                 30));
 
-        registrarUsuario("contato@techpulse.com.br", "123456", "STARTUP");
-        registrarUsuario("inovacao@novaera.com.br", "123456", "AMBIENTE_VALIDACAO");
+        registrarUsuario(STARTUP_EMAIL, demoAccessCode, "STARTUP");
+        registrarUsuario(AMBIENTE_EMAIL, demoAccessCode, "AMBIENTE_VALIDACAO");
     }
 
-    private void registrarUsuario(String email, String senha, String role) {
+    private void registrarUsuario(String email, String credencial, String role) {
         UserDetailsManager manager = userDetailsManagerProvider.getIfAvailable();
         PasswordEncoder encoder = passwordEncoderProvider.getIfAvailable();
         if (manager != null && encoder != null && !manager.userExists(email)) {
             manager.createUser(User.withUsername(email)
-                    .password(encoder.encode(senha))
+                    .password(encoder.encode(credencial))
                     .roles(role)
                     .build());
         }

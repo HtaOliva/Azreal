@@ -506,36 +506,11 @@ public class PropostaPocController {
     }
 
     private AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
-        if (ambienteId == null) {
-            return null;
-        }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService == null) {
-            return null;
-        }
-        try {
-            return ambienteService.buscar(ambienteId);
-        } catch (Exception ignored) {
-            return null;
-        }
+        return TermoPilotoService.buscarAmbienteRevelado(ambienteId, ambienteServiceProvider);
     }
 
     private String resolverNomeStartup(UUID startupId) {
-        if (startupId == null) {
-            return null;
-        }
-        StartupService startupService = startupServiceProvider != null
-                ? startupServiceProvider.getIfAvailable() : null;
-        if (startupService == null) {
-            return null;
-        }
-        try {
-            StartupResponseDTO startup = startupService.buscar(startupId);
-            return startup != null ? startup.nome() : null;
-        } catch (Exception ignored) {
-            return null;
-        }
+        return TermoPilotoService.resolverNomeStartup(startupId, startupServiceProvider);
     }
 
     private TermoPilotoService obterTermoPilotoService() {

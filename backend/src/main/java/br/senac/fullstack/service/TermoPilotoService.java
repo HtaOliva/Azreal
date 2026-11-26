@@ -375,11 +375,16 @@ public class TermoPilotoService {
     }
 
     public AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
-        if (ambienteId == null) {
+        return buscarAmbienteRevelado(ambienteId, ambienteServiceProvider);
+    }
+
+    public static AmbienteValidacaoResponseDTO buscarAmbienteRevelado(
+            UUID ambienteId,
+            ObjectProvider<AmbienteValidacaoService> provider) {
+        if (ambienteId == null || provider == null) {
             return null;
         }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
+        AmbienteValidacaoService ambienteService = provider.getIfAvailable();
         if (ambienteService == null) {
             return null;
         }
@@ -396,11 +401,16 @@ public class TermoPilotoService {
     }
 
     public String resolverNomeStartup(UUID startupId) {
-        if (startupId == null) {
+        return resolverNomeStartup(startupId, startupServiceProvider);
+    }
+
+    public static String resolverNomeStartup(
+            UUID startupId,
+            ObjectProvider<StartupService> provider) {
+        if (startupId == null || provider == null) {
             return null;
         }
-        StartupService startupService = startupServiceProvider != null
-                ? startupServiceProvider.getIfAvailable() : null;
+        StartupService startupService = provider.getIfAvailable();
         if (startupService == null) {
             return null;
         }
