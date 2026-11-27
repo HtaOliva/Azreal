@@ -19,12 +19,16 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
 @Profile("ldap")
 public class LdapSecurityConfig {
+
+    @Value("${cors.allowed-origins:${CORS_ALLOWED_ORIGINS:http://localhost:4200}}")
+    private String allowedOrigins = "http://localhost:4200";
 
     @Value("${spring.ldap.urls:ldap://lldap.fchicout.dev:3890}")
     private String ldapUrls;
@@ -98,7 +102,11 @@ public class LdapSecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:4200"));
+        List<String> origins = Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(s -> !s.isEmpty())
+                .toList();
+        config.setAllowedOrigins(origins);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("Authorization", "Content-Type"));
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

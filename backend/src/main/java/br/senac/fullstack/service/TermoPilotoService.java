@@ -332,7 +332,8 @@ public class TermoPilotoService {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado);
+        String nomeStartup = resolverNomeStartup(termo.getStartupId());
+        return TermoPilotoResponseDTO.fromEntity(termo, termo.getStatus(), ambienteRevelado, nomeStartup);
     }
 
     public boolean isAcessoTermoNaoAutorizado(TermoPiloto termo, Authentication authentication) {
@@ -374,11 +375,16 @@ public class TermoPilotoService {
     }
 
     public AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
-        if (ambienteId == null) {
+        return buscarAmbienteRevelado(ambienteId, ambienteServiceProvider);
+    }
+
+    public static AmbienteValidacaoResponseDTO buscarAmbienteRevelado(
+            UUID ambienteId,
+            ObjectProvider<AmbienteValidacaoService> provider) {
+        if (ambienteId == null || provider == null) {
             return null;
         }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
+        AmbienteValidacaoService ambienteService = provider.getIfAvailable();
         if (ambienteService == null) {
             return null;
         }
@@ -394,10 +400,33 @@ public class TermoPilotoService {
                 .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
     }
 
+    public String resolverNomeStartup(UUID startupId) {
+        return resolverNomeStartup(startupId, startupServiceProvider);
+    }
+
+    public static String resolverNomeStartup(
+            UUID startupId,
+            ObjectProvider<StartupService> provider) {
+        if (startupId == null || provider == null) {
+            return null;
+        }
+        StartupService startupService = provider.getIfAvailable();
+        if (startupService == null) {
+            return null;
+        }
+        try {
+            StartupResponseDTO startup = startupService.buscar(startupId);
+            return startup != null ? startup.nome() : null;
+        } catch (Exception ignored) {
+            return null;
+        }
+    }
+
     public TermoPilotoResponseDTO construirResponseDTO(
             TermoPiloto termo,
             AmbienteValidacaoResponseDTO ambiente) {
+        String nomeStartup = termo != null ? resolverNomeStartup(termo.getStartupId()) : null;
         return TermoPilotoResponseDTO.fromEntity(termo, termo != null ? termo.getStatus() : StatusProposta.EM_TESTE,
-                ambiente);
+                ambiente, nomeStartup);
     }
 }

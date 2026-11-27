@@ -1,0 +1,70 @@
+<app-sidebar-layout>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Olá, {{ displayName() }}!</h1>
+      <app-slots-banner [used]="usedSlots()" />
+    </div>
+    <button
+      type="button"
+      class="btn btn-primary"
+      [disabled]="loading()"
+      (click)="atualizarMatchIa()"
+    >
+      {{ loading() ? 'Atualizando...' : 'Atualizar Match IA' }}
+    </button>
+  </header>
+
+  <div class="section-divider">
+    <span class="section-label">Desafios de Validação Compatíveis com sua Solução</span>
+    <div class="section-line"></div>
+  </div>
+
+  @if (error()) {
+    <div class="card" style="margin-bottom: 20px; border-color: #F3C4C4; background: var(--color-danger-bg);">
+      <p style="color: var(--color-danger-text); font-weight: 600;">{{ error() }}</p>
+    </div>
+  }
+
+  @if (loading() && desafios().length === 0) {
+    <div class="card">
+      <p class="page-subtitle">Carregando desafios compatíveis via Matchmaking IA...</p>
+    </div>
+  } @else if (desafios().length === 0) {
+    <div class="card">
+      <p class="page-subtitle">Nenhum desafio compatível encontrado no momento. Tente atualizar o Match IA.</p>
+    </div>
+  } @else {
+    <section class="challenges-grid">
+      @for (desafio of desafios(); track desafio.id) {
+        <article class="card challenge-card">
+          <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+              <span class="badge badge-neutral">ANÔNIMO</span>
+              <span class="badge badge-lavender">
+                {{ formatModalidade(desafio.modalidade) }}
+                @if (desafio.duracaoMaxima) {
+                  • {{ desafio.duracaoMaxima }} dias
+                }
+              </span>
+            </div>
+            <p class="challenge-sector">
+              Setor: {{ desafio.setor }} / {{ formatPorte(desafio.porte) }}
+            </p>
+            <h2 class="challenge-pain">Dor: {{ desafio.titulo }}</h2>
+            <p style="font-size: 13px; color: var(--color-text-muted); margin-bottom: 12px;">
+              {{ desafio.descricaoProblema }}
+            </p>
+            @if (desafio.motivo) {
+              <div class="match-rationale-box">
+                <strong>Match ({{ desafio.origemRecomendacao || 'IA' }}):</strong> {{ desafio.motivo }}
+              </div>
+            }
+          </div>
+          <a [routerLink]="['/startup/proposta', desafio.id]" class="btn btn-primary" style="width: 100%;">
+            VER DETALHES E PROPOR POC
+          </a>
+        </article>
+      }
+    </section>
+  }
+</app-sidebar-layout>

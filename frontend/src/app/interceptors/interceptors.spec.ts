@@ -53,6 +53,31 @@ describe('HTTP Interceptors', () => {
 
       expect(forwardedReq?.headers.get('Authorization')).toBe('Bearer my-jwt-token');
     });
+
+    it('should add Basic Authorization header when basic credentials are present', async () => {
+      const authService = {
+        getBasicCredentials: () => 'dXNlcjpwYXNz',
+        getToken: () => 'my-jwt-token'
+      } as unknown as AuthService;
+      const injector = createEnvironmentInjector(
+        [{ provide: AuthService, useValue: authService }],
+        Injector.NULL
+      );
+
+      const req = new HttpRequest('GET', '/api/test');
+      let forwardedReq: HttpRequest<unknown> | undefined;
+
+      await firstValueFrom(
+        runInInjectionContext(injector, () =>
+          authInterceptor(req, (nextReq) => {
+            forwardedReq = nextReq;
+            return of(new HttpResponse({ status: 200 }));
+          })
+        )
+      );
+
+      expect(forwardedReq?.headers.get('Authorization')).toBe('Basic dXNlcjpwYXNz');
+    });
   });
 
   describe('errorInterceptor', () => {

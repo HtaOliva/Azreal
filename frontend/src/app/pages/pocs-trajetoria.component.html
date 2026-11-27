@@ -1,0 +1,366 @@
+<app-sidebar-layout>
+  <header class="page-header">
+    <div>
+      <h1 class="page-title">Minhas POCs e Trajetória</h1>
+      <p class="page-subtitle">
+        Acompanhe seus pilotos em andamento, termos assinados e registros oficiais de tração.
+      </p>
+    </div>
+    @if (perfil() !== 'AMBIENTE_VALIDACAO') {
+      <a routerLink="/startup/dashboard" class="btn btn-primary">+ Explorar Novos Desafios</a>
+    }
+  </header>
+
+  <div class="section-divider">
+    <span class="section-label">Ativas e Pendentes</span>
+    <div class="section-line"></div>
+  </div>
+
+  @if (loading() && ativasEPendentes().length === 0) {
+    <section class="card">
+      <p class="page-subtitle">Carregando POCs em andamento...</p>
+    </section>
+  } @else if (ativasEPendentes().length === 0) {
+    <section class="card">
+      <p class="page-subtitle">Nenhuma POC ativa ou pendente no momento.</p>
+    </section>
+  } @else {
+    @for (proposta of ativasEPendentes(); track proposta.id) {
+      <section class="card" style="margin-bottom: 16px;">
+        <div class="poc-card-header">
+          @if (proposta.status === 'EM_TESTE') {
+            <span class="badge badge-warning">EM TESTE (Termo de Piloto Ativo)</span>
+            <span class="badge badge-lavender">Identidade Revelada</span>
+          } @else {
+            <span class="badge badge-neutral">AGUARDANDO AVALIAÇÃO</span>
+            <span class="badge badge-lavender">{{ proposta.duracaoSugeridaDias }} dias</span>
+          }
+        </div>
+
+        @if (termoDaProposta(proposta.id); as termo) {
+          <h2 class="poc-partner-highlight">
+            Piloto com: {{ termo.nomeFantasia || termo.razaoSocial || 'Parceiro Revelado' }}
+          </h2>
+        } @else {
+          <h2 class="poc-partner-highlight">Proposta: {{ proposta.escopoTeste }}</h2>
+        }
+
+        <div class="poc-meta-row">
+          <span><strong>Métrica:</strong> {{ proposta.metricaValidacao }}</span>
+          <span><strong>Duração:</strong> {{ proposta.duracaoSugeridaDias }} dias</span>
+          @if (termoDaProposta(proposta.id)?.emailContato; as email) {
+            <span><strong>Contato:</strong> {{ email }}</span>
+          }
+        </div>
+
+        <div class="progress-track" title="Piloto em andamento">
+          <div class="progress-fill" [style.width.%]="proposta.status === 'EM_TESTE' ? 60 : 20"></div>
+        </div>
+
+        <div class="card-actions-bar">
+          @if (proposta.status === 'EM_TESTE') {
+            <button type="button" class="btn btn-outline" (click)="openTermoModal(proposta)">
+              VER TERMO DE PILOTO
+            </button>
+            @if (perfil() === 'AMBIENTE_VALIDACAO') {
+              <button type="button" class="btn btn-primary" (click)="openConfirmacaoModal(proposta)">
+                CONFIRMAR EXECUÇÃO
+              </button>
+            } @else {
+              <button type="button" class="btn btn-primary" (click)="openEntregaModal(proposta)">
+                REGISTRAR ENTREGA FINAL
+              </button>
+            }
+          } @else {
+            <span style="font-size: 12px; color: var(--color-text-muted);">
+              Aguardando resposta do Ambiente de Validação.
+            </span>
+          }
+        </div>
+      </section>
+    }
+  }
+
+  <div class="section-divider">
+    <span class="section-label">Histórico de Validação (Portfólio)</span>
+    <div class="section-line"></div>
+  </div>
+
+  @if (registros().length === 0) {
+    <section class="card">
+      <p class="page-subtitle">Nenhum registro oficial de POC emitido ainda.</p>
+    </section>
+  } @else {
+    @for (reg of registros(); track reg.id) {
+      <section class="card" style="margin-bottom: 16px;">
+        <div class="poc-card-header">
+          <span class="badge badge-success">POC CONCLUÍDA - REGISTRO OFICIAL</span>
+          <span class="badge badge-neutral">Verificado pelo Parceiro</span>
+        </div>
+
+        <div class="poc-meta-row" style="margin-bottom: 8px;">
+          <span><strong>Escopo:</strong> {{ reg.escopoTestado }}</span>
+          <span><strong>Parceiro:</strong> {{ reg.nomeOrganizacao }}</span>
+          <span><strong>Métrica:</strong> {{ reg.metricaValidacao }}</span>
+          <span><strong>Avaliação:</strong> {{ formatAvaliacao(reg.avaliacaoMetrica) }}</span>
+        </div>
+
+        @if (reg.parecer) {
+          <blockquote class="parecer-quote">
+            Parecer do parceiro: "{{ reg.parecer }}"
+          </blockquote>
+        }
+
+        <div class="card-actions-bar">
+          <span style="font-size: 12px; color: var(--color-text-muted);">
+            Hash de Autenticidade: {{ reg.codigoVerificador }}
+          </span>
+          <button type="button" class="btn btn-secondary" (click)="openEvidenciaModal(reg)">
+            BAIXAR EVIDÊNCIA DE TRAÇÃO
+          </button>
+        </div>
+      </section>
+    }
+  }
+</app-sidebar-layout>
+
+<!-- Modal: Ver Termo de Piloto -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'termo'">
+  <dialog class="modal-box" style="max-width: 680px;" [open]="activeModal() === 'termo'" aria-labelledby="termoModalTitle">
+    <div class="modal-header">
+      <div>
+        <h3 id="termoModalTitle" class="modal-title">Termo de Piloto Assinado</h3>
+        @if (selectedTermo(); as termo) {
+          <span style="font-size: 12px; color: var(--color-text-muted);">
+            Código de Registro: <strong>{{ termo.codigoTermo || ('TP-' + termo.id.substring(0, 8).toUpperCase()) }}</strong>
+          </span>
+        }
+      </div>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    @if (selectedTermo(); as termo) {
+      <div style="background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 8px; padding: 16px; margin-bottom: 16px;">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Startup (Proponente)</strong>
+            <p style="margin: 4px 0 0; font-weight: 600;">{{ termo.nomeStartup || 'TechPulse Soluções' }}</p>
+          </div>
+          <div>
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Organização Parceira</strong>
+            <p style="margin: 4px 0 0; font-weight: 600;">
+              {{ termo.nomeFantasia || termo.razaoSocial || 'Parceiro Homologado' }}
+              @if (termo.setor) {
+                <span style="font-size: 12px; font-weight: normal; color: var(--color-text-muted);">({{ termo.setor }})</span>
+              }
+            </p>
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+          <div>
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Data e Hora do Aceite</strong>
+            <p style="margin: 4px 0 0;">{{ formatDataHora(termo.dataCriacao) }}</p>
+          </div>
+          <div>
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Contato do Parceiro</strong>
+            <p style="margin: 4px 0 0;">
+              {{ termo.emailContato || '-' }}
+              @if (termo.telefoneContato) {
+                • {{ termo.telefoneContato }}
+              }
+            </p>
+          </div>
+        </div>
+
+        <div style="margin-bottom: 12px; background: rgba(0,0,0,0.02); padding: 8px 12px; border-radius: 6px; font-size: 12px;">
+          <strong>Signatários:</strong> Aceito previamente pela Startup ({{ termo.nomeStartup || 'TechPulse Soluções' }}) e homologado pelo Parceiro ({{ termo.nomeFantasia || termo.razaoSocial || 'Ambiente de Validação' }}).
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--color-border); margin: 12px 0;" />
+
+        <div style="margin-bottom: 12px;">
+          <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Escopo do Teste</strong>
+          <p style="margin: 4px 0 0;">{{ termo.escopoTeste }}</p>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Duração do Piloto</strong>
+          <p style="margin: 4px 0 0;">
+            <strong>{{ termo.duracaoDias }} dias</strong> (de {{ formatData(termo.dataInicio || termo.dataCriacao) }} até {{ obterDataFim(termo) }})
+          </p>
+        </div>
+
+        <div style="margin-bottom: 12px;">
+          <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Métrica de Validação (Critério Mensurável)</strong>
+          <p style="margin: 4px 0 0;">{{ termo.metricaValidacao }}</p>
+        </div>
+
+        @if (termo.responsabilidadesStartup) {
+          <div style="margin-bottom: 12px;">
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Responsabilidades da Startup</strong>
+            <p style="margin: 4px 0 0;">{{ termo.responsabilidadesStartup }}</p>
+          </div>
+        }
+
+        @if (termo.responsabilidadesAmbiente) {
+          <div style="margin-bottom: 12px;">
+            <strong style="color: var(--color-text-muted); font-size: 11px; text-transform: uppercase;">Responsabilidades do Ambiente de Validação</strong>
+            <p style="margin: 4px 0 0;">{{ termo.responsabilidadesAmbiente }}</p>
+          </div>
+        }
+
+        <div style="margin-top: 12px; padding: 8px 12px; background: rgba(0,0,0,0.03); border-radius: 6px; font-size: 12px; color: var(--color-text-muted); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+          <span>ID de Verificação: <code>{{ termo.id }}</code></span>
+          <span>Cláusula de Sigilo e LGPD ativa</span>
+        </div>
+      </div>
+    }
+    <div class="modal-footer">
+      <button type="button" class="btn btn-primary" (click)="closeModal()">Fechar Documento</button>
+    </div>
+  </dialog>
+</div>
+
+<!-- Modal: Registrar Entrega Final -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'entrega'">
+  <dialog class="modal-box" [open]="activeModal() === 'entrega'" aria-labelledby="entregaModalTitle">
+    <div class="modal-header">
+      <h3 id="entregaModalTitle" class="modal-title">Registrar Entrega Final do Piloto</h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    <form (ngSubmit)="registrarEntrega()">
+      <div class="form-group">
+        <label class="form-label" for="entregaResumo">
+          Resumo do que foi executado e entregue no ambiente real:
+        </label>
+        <textarea
+          id="entregaResumo"
+          name="resumoEntrega"
+          class="form-control"
+          rows="4"
+          required
+          placeholder="Descreva os resultados obtidos frente à métrica combinada..."
+          [ngModel]="resumoEntrega()"
+          (ngModelChange)="resumoEntrega.set($event)"
+        ></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="entregaLinks">Links ou evidências (opcional):</label>
+        <input
+          id="entregaLinks"
+          name="linksEvidencias"
+          type="text"
+          class="form-control"
+          placeholder="Ex: https://relatorio.exemplo.com/poc"
+          [ngModel]="linksEvidencias()"
+          (ngModelChange)="linksEvidencias.set($event)"
+        />
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Enviando...' : 'Confirmar Entrega ao Parceiro' }}
+        </button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+<!-- Modal: Confirmar Execução (RF19) -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'confirmacao'">
+  <dialog class="modal-box" [open]="activeModal() === 'confirmacao'" aria-labelledby="confirmacaoModalTitle">
+    <div class="modal-header">
+      <h3 id="confirmacaoModalTitle" class="modal-title">Confirmar Execução do Piloto</h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    <form (ngSubmit)="confirmarResultado()">
+      <div class="form-group">
+        <label class="form-label" for="confAvaliacao">Avaliação da Métrica:</label>
+        <select
+          id="confAvaliacao"
+          name="avaliacaoMetrica"
+          class="form-control"
+          [ngModel]="avaliacaoMetrica()"
+          (ngModelChange)="avaliacaoMetrica.set($event)"
+        >
+          <option value="ATENDEU_TOTALMENTE">Atendeu totalmente</option>
+          <option value="ATENDEU_PARCIALMENTE">Atendeu parcialmente</option>
+          <option value="NAO_ATINGIU_METRICA">Não atingiu métrica</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="confPrivacidade">Modo de Exibição no Portfólio:</label>
+        <select
+          id="confPrivacidade"
+          name="modoPrivacidade"
+          class="form-control"
+          [ngModel]="modoPrivacidade()"
+          (ngModelChange)="modoPrivacidade.set($event)"
+        >
+          <option value="EXIBICAO_NOMINAL">Exibição Nominal</option>
+          <option value="ANONIMO_QUALIFICADO">Anônimo Qualificado</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="confParecer">Parecer Técnico:</label>
+        <textarea
+          id="confParecer"
+          name="parecer"
+          class="form-control"
+          rows="3"
+          placeholder="Ex: Atendeu totalmente. Interesse em contratação comercial."
+          [ngModel]="parecer()"
+          (ngModelChange)="parecer.set($event)"
+        ></textarea>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-outline" (click)="closeModal()">Cancelar</button>
+        <button type="submit" class="btn btn-primary" [disabled]="submitting()">
+          {{ submitting() ? 'Confirmando...' : 'Emitir Registro Oficial' }}
+        </button>
+      </div>
+    </form>
+  </dialog>
+</div>
+
+<!-- Modal: Evidência de Tração -->
+<div class="modal-backdrop" [class.open]="activeModal() === 'evidencia'">
+  <dialog class="modal-box" [open]="activeModal() === 'evidencia'" aria-labelledby="evidenciaModalTitle">
+    <div class="modal-header">
+      <h3 id="evidenciaModalTitle" class="modal-title">
+        Certificado Oficial de Evidência de Tração
+      </h3>
+      <button type="button" class="modal-close" aria-label="Fechar" (click)="closeModal()">X</button>
+    </div>
+    @if (selectedRegistro(); as reg) {
+      <div class="card" style="background: var(--color-canvas); margin-bottom: 12px;">
+        <p style="font-weight: 700; color: var(--color-secondary); margin-bottom: 8px;">
+          REGISTRO OFICIAL DE PROVA DE CONCEITO — AZREAL
+        </p>
+        <p style="margin-bottom: 6px;"><strong>Startup:</strong> {{ displayName() }}</p>
+        <p style="margin-bottom: 6px;">
+          <strong>Ambiente Validador:</strong> {{ reg.nomeOrganizacao }}
+          @if (reg.setorOrganizacao) {
+            ({{ reg.setorOrganizacao }})
+          }
+        </p>
+        <p style="margin-bottom: 6px;">
+          <strong>Resultado Atestado:</strong> {{ formatAvaliacao(reg.avaliacaoMetrica) }}
+          @if (reg.parecer) {
+            — {{ reg.parecer }}
+          }
+        </p>
+        <p style="margin-bottom: 6px;"><strong>Código Verificador:</strong> {{ reg.codigoVerificador }}</p>
+        <p style="font-size: 12px; color: var(--color-text-muted);">
+          Documento válido para submissão em editais de inovação aberta e programas de aceleração.
+        </p>
+      </div>
+    }
+    <div class="modal-footer">
+      <button type="button" class="btn btn-outline" (click)="closeModal()">Fechar</button>
+      <button type="button" class="btn btn-primary" (click)="baixarComprovante()">
+        Baixar Comprovante
+      </button>
+    </div>
+  </dialog>
+</div>

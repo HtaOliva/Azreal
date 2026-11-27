@@ -178,7 +178,8 @@ public class PropostaPocController {
         TermoPilotoResponseDTO response = TermoPilotoResponseDTO.fromEntity(
                 termo,
                 StatusProposta.EM_TESTE,
-                ambienteRevelado
+                ambienteRevelado,
+                resolverNomeStartup(termo.getStartupId())
         );
         return ResponseEntity.ok(response);
     }
@@ -197,7 +198,8 @@ public class PropostaPocController {
             return ResponseEntity.notFound().build();
         }
         AmbienteValidacaoResponseDTO ambienteRevelado = buscarAmbienteRevelado(termo.getAmbienteValidacaoId());
-        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(termo, StatusProposta.EM_TESTE, ambienteRevelado));
+        return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
+                termo, StatusProposta.EM_TESTE, ambienteRevelado, resolverNomeStartup(termo.getStartupId())));
     }
 
     @PostMapping("/{id}/entrega")
@@ -212,7 +214,8 @@ public class PropostaPocController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(TermoPilotoResponseDTO.fromEntity(
-                piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId())));
+                piloto, piloto.getStatus(), service.buscarAmbienteRevelado(piloto.getAmbienteValidacaoId()),
+                resolverNomeStartup(piloto.getStartupId())));
     }
 
     @PostMapping("/{id}/confirmacao-resultado")
@@ -503,19 +506,11 @@ public class PropostaPocController {
     }
 
     private AmbienteValidacaoResponseDTO buscarAmbienteRevelado(UUID ambienteId) {
-        if (ambienteId == null) {
-            return null;
-        }
-        AmbienteValidacaoService ambienteService = ambienteServiceProvider != null
-                ? ambienteServiceProvider.getIfAvailable() : null;
-        if (ambienteService == null) {
-            return null;
-        }
-        try {
-            return ambienteService.buscar(ambienteId);
-        } catch (Exception ignored) {
-            return null;
-        }
+        return TermoPilotoService.buscarAmbienteRevelado(ambienteId, ambienteServiceProvider);
+    }
+
+    private String resolverNomeStartup(UUID startupId) {
+        return TermoPilotoService.resolverNomeStartup(startupId, startupServiceProvider);
     }
 
     private TermoPilotoService obterTermoPilotoService() {

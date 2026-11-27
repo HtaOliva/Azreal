@@ -5,6 +5,7 @@ import br.senac.fullstack.dto.PropostaPocResponseDTO;
 import br.senac.fullstack.model.PropostaPoc;
 import br.senac.fullstack.model.StatusProposta;
 import br.senac.fullstack.model.TermoPiloto;
+import br.senac.fullstack.repository.PropostaPocRepository;
 import br.senac.fullstack.util.CalendarioPernambucoUtil;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,25 +32,53 @@ public class PropostaPocService {
     private static final String ID_PROPOSTA_OBRIGATORIO = "ID da proposta e obrigatorio";
     private static final String PROPOSTA_NAO_ENCONTRADA = "Proposta de POC nao encontrada";
 
-    private final Map<UUID, PropostaPoc> memory = new ConcurrentHashMap<>();
-    private final Map<UUID, TermoPiloto> termosMemory = new ConcurrentHashMap<>();
+    private final ObjectProvider<PropostaPocRepository> repositoryProvider;
     private final ObjectProvider<TermoPilotoService> termoPilotoServiceProvider;
     private final ObjectProvider<AuditoriaService> auditoriaServiceProvider;
+    private final Map<UUID, PropostaPoc> memory = new ConcurrentHashMap<>();
+    private final Map<UUID, TermoPiloto> termosMemory = new ConcurrentHashMap<>();
 
     @Autowired
     public PropostaPocService(
+            ObjectProvider<PropostaPocRepository> repositoryProvider,
             ObjectProvider<TermoPilotoService> termoPilotoServiceProvider,
             ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
+        this.repositoryProvider = repositoryProvider;
         this.termoPilotoServiceProvider = termoPilotoServiceProvider;
         this.auditoriaServiceProvider = auditoriaServiceProvider;
     }
 
+    public PropostaPocService(
+            ObjectProvider<TermoPilotoService> termoPilotoServiceProvider,
+            ObjectProvider<AuditoriaService> auditoriaServiceProvider) {
+        this(null, termoPilotoServiceProvider, auditoriaServiceProvider);
+    }
+
     public PropostaPocService(ObjectProvider<TermoPilotoService> termoPilotoServiceProvider) {
-        this(termoPilotoServiceProvider, null);
+        this(null, termoPilotoServiceProvider, null);
     }
 
     public PropostaPocService() {
-        this(null, null);
+        this((ObjectProvider<PropostaPocRepository>) null, null, null);
+    }
+
+    private PropostaPocRepository repository() {
+        return repositoryProvider != null ? repositoryProvider.getIfAvailable() : null;
+    }
+
+    private PropostaPoc salvar(PropostaPoc proposta) {
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            try {
+                PropostaPoc saved = repo.save(proposta);
+                memory.put(saved.getId(), saved);
+                return saved;
+            } catch (Exception ignored) {
+                // fallback para memoria
+            }
+        }
+        memory.put(proposta.getId(), proposta);
+        return proposta;
     }
 
     public PropostaPocResponseDTO criar(PropostaPocRequestDTO request) {
@@ -60,7 +89,7 @@ public class PropostaPocService {
         if (proposta.getPrazoRespostaAmbiente() == null && proposta.getDataCriacao() != null) {
             proposta.setPrazoRespostaAmbiente(CalendarioPernambucoUtil.calcularPrazo5DiasUteis(proposta.getDataCriacao()));
         }
-        memory.put(proposta.getId(), proposta);
+        proposta = salvar(proposta);
         gravarAuditoria(proposta.getId(), null, null, StatusProposta.PENDENTE,
                 "STARTUP", "CRIACAO_PROPOSTA", "Criacao da proposta de POC");
         return PropostaPocResponseDTO.fromEntity(proposta);
@@ -96,10 +125,19 @@ public class PropostaPocService {
                     "Startup atingiu o limite maximo de 3 propostas pendentes simultaneas");
         }
 
-        boolean desafioDuplicado = memory.values().stream()
-                .anyMatch(p -> request.startupId().equals(p.getStartupId())
-                        && request.desafioValidacaoId().equals(p.getDesafioValidacaoId())
-                        && (p.getStatus() == StatusProposta.PENDENTE || p.getStatus() == StatusProposta.EM_TESTE));
+        PropostaPocRepository repo = repository();
+        boolean desafioDuplicado;
+        if (repo != null) {
+            desafioDuplicado = repo.existsByStartupIdAndDesafioValidacaoIdAndStatusIn(
+                    request.startupId(),
+                    request.desafioValidacaoId(),
+                    List.of(StatusProposta.PENDENTE, StatusProposta.EM_TESTE));
+        } else {
+            desafioDuplicado = memory.values().stream()
+                    .anyMatch(p -> request.startupId().equals(p.getStartupId())
+                            && request.desafioValidacaoId().equals(p.getDesafioValidacaoId())
+                            && (p.getStatus() == StatusProposta.PENDENTE || p.getStatus() == StatusProposta.EM_TESTE));
+        }
 
         if (desafioDuplicado) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
@@ -110,6 +148,14 @@ public class PropostaPocService {
     public List<PropostaPocResponseDTO> listarFilaAmbiente(Collection<UUID> desafioIds) {
         if (desafioIds == null || desafioIds.isEmpty()) {
             return List.of();
+        }
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findByStatusAndDesafioValidacaoIdIn(StatusProposta.PENDENTE, desafioIds)
+                    .stream()
+                    .sorted(Comparator.comparing(PropostaPoc::getDataCriacao))
+                    .map(PropostaPocResponseDTO::fromEntity)
+                    .toList();
         }
         return memory.values().stream()
                 .filter(p -> p.getStatus() == StatusProposta.PENDENTE
@@ -128,6 +174,11 @@ public class PropostaPocService {
             return new PageImpl<>(List.of(), effectivePageable, 0);
         }
         StatusProposta filtroStatus = status != null ? status : StatusProposta.PENDENTE;
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findByStatusAndDesafioValidacaoIdIn(filtroStatus, desafioIds, effectivePageable)
+                    .map(PropostaPocResponseDTO::fromEntity);
+        }
         List<PropostaPoc> filtradas = memory.values().stream()
                 .filter(p -> p.getStatus() == filtroStatus && desafioIds.contains(p.getDesafioValidacaoId()))
                 .sorted(Comparator.comparing(PropostaPoc::getDataCriacao))
@@ -148,6 +199,11 @@ public class PropostaPocService {
         if (id == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_PROPOSTA_OBRIGATORIO);
         }
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findById(id)
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, PROPOSTA_NAO_ENCONTRADA));
+        }
         PropostaPoc proposta = memory.get(id);
         if (proposta == null) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, PROPOSTA_NAO_ENCONTRADA);
@@ -158,6 +214,12 @@ public class PropostaPocService {
     public List<PropostaPocResponseDTO> listarPorStartup(UUID startupId) {
         if (startupId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
+        }
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findByStartupId(startupId).stream()
+                    .map(PropostaPocResponseDTO::fromEntity)
+                    .toList();
         }
         return memory.values().stream()
                 .filter(p -> startupId.equals(p.getStartupId()))
@@ -173,6 +235,13 @@ public class PropostaPocService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_STARTUP_OBRIGATORIO);
         }
         Pageable effectivePageable = pageable != null ? pageable : PageRequest.of(0, 10);
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            Page<PropostaPoc> page = (status != null)
+                    ? repo.findByStartupIdAndStatus(startupId, status, effectivePageable)
+                    : repo.findByStartupId(startupId, effectivePageable);
+            return page.map(PropostaPocResponseDTO::fromEntity);
+        }
         List<PropostaPoc> filtradas = memory.values().stream()
                 .filter(p -> startupId.equals(p.getStartupId()))
                 .filter(p -> status == null || status.equals(p.getStatus()))
@@ -190,6 +259,12 @@ public class PropostaPocService {
         if (desafioId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ID_DESAFIO_OBRIGATORIO);
         }
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findByDesafioValidacaoId(desafioId).stream()
+                    .map(PropostaPocResponseDTO::fromEntity)
+                    .toList();
+        }
         return memory.values().stream()
                 .filter(p -> desafioId.equals(p.getDesafioValidacaoId()))
                 .map(PropostaPocResponseDTO::fromEntity)
@@ -197,6 +272,12 @@ public class PropostaPocService {
     }
 
     public List<PropostaPocResponseDTO> listarTodas() {
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.findAll().stream()
+                    .map(PropostaPocResponseDTO::fromEntity)
+                    .toList();
+        }
         return memory.values().stream()
                 .map(PropostaPocResponseDTO::fromEntity)
                 .toList();
@@ -205,6 +286,10 @@ public class PropostaPocService {
     public long contarPendentesPorStartup(UUID startupId) {
         if (startupId == null) {
             return 0;
+        }
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            return repo.countByStartupIdAndStatus(startupId, StatusProposta.PENDENTE);
         }
         return memory.values().stream()
                 .filter(p -> startupId.equals(p.getStartupId()) && p.getStatus() == StatusProposta.PENDENTE)
@@ -218,6 +303,7 @@ public class PropostaPocService {
                     "Apenas propostas pendentes podem ser canceladas");
         }
         proposta.setStatus(StatusProposta.CANCELADA);
+        salvar(proposta);
         gravarAuditoria(proposta.getId(), null, StatusProposta.PENDENTE, StatusProposta.CANCELADA,
                 "STARTUP", "CANCELAMENTO_PROPOSTA", "Proposta cancelada pela startup");
         return PropostaPocResponseDTO.fromEntity(proposta);
@@ -239,6 +325,7 @@ public class PropostaPocService {
 
         proposta.setStatus(StatusProposta.RECUSADA);
         proposta.setMotivoRecusa(motivoRecusa.trim());
+        salvar(proposta);
         gravarAuditoria(proposta.getId(), null, StatusProposta.PENDENTE, StatusProposta.RECUSADA,
                 "AMBIENTE_VALIDACAO", "RECUSA_PROPOSTA", "Proposta recusada pelo parceiro: " + motivoRecusa.trim());
         return PropostaPocResponseDTO.fromEntity(proposta);
@@ -259,6 +346,7 @@ public class PropostaPocService {
         }
 
         proposta.setStatus(StatusProposta.EM_TESTE);
+        salvar(proposta);
         TermoPiloto termo = TermoPiloto.congelar(proposta, ambienteValidacaoId);
 
         TermoPilotoService termoService = termoPilotoServiceProvider != null
@@ -293,9 +381,18 @@ public class PropostaPocService {
         if (propostaId == null || status == null) {
             return;
         }
-        PropostaPoc proposta = memory.get(propostaId);
-        if (proposta != null) {
-            proposta.setStatus(status);
+        PropostaPocRepository repo = repository();
+        if (repo != null) {
+            repo.findById(propostaId).ifPresent(p -> {
+                p.setStatus(status);
+                repo.save(p);
+                memory.put(propostaId, p);
+            });
+        } else {
+            PropostaPoc proposta = memory.get(propostaId);
+            if (proposta != null) {
+                proposta.setStatus(status);
+            }
         }
     }
 
