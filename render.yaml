@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: azreal-backend
+    runtime: docker
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: SPRING_PROFILES_ACTIVE
+        value: prod,ldap
+      - key: PORT
+        value: 8080
+      - key: DB_URL
+        sync: false
+      - key: DB_USERNAME
+        value: postgres
+      - key: DB_PASSWORD
+        sync: false
+      - key: JPA_DDL_AUTO
+        value: validate
+      - key: FLYWAY_ENABLED
+        value: "false"
+      - key: CORS_ALLOWED_ORIGINS
+        sync: false
+      - key: AI_ENABLED
+        value: "true"
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_MODEL
+        value: gemini-flash-latest
+      - key: LLDAP_URL
+        sync: false
+      - key: LLDAP_BASE_DN
+        sync: false
+      - key: LLDAP_BIND_DN
+        sync: false
+      - key: LLDAP_BIND_PASSWORD
+        sync: false
+      - key: LLDAP_ADMIN_GROUP
+        value: azrael_admin
